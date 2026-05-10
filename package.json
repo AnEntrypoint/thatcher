@@ -1,6 +1,6 @@
 {
-  "name": "thatcher",
-  "version": "1.0.1",
+  "name": "@anentrypoint/thatcher",
+  "version": "1.0.2",
   "description": "A config-driven application framework for building data-intensive web apps without code. 100% feature-complete extraction from moonlanding.",
   "main": "src/index.js",
   "type": "module",
