@@ -1,0 +1,73 @@
+{
+  "name": "thatcher",
+  "version": "1.0.0",
+  "description": "A config-driven application framework for building data-intensive web apps without code. 100% feature-complete extraction from moonlanding.",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "thatcher": "src/cli.js",
+    "thatcher-dev": "src/cli.js"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.js dev",
+    "start": "bun run src/cli.js start",
+    "test": "bun test",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "framework",
+    "cms",
+    "low-code",
+    "config-driven",
+    "crud",
+    "workflow",
+    "sdk",
+    "bun",
+    "sqlite"
+  ],
+  "author": "Extracted from moonlanding",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "@casl/ability": "^6.8.0",
+    "@lucia-auth/adapter-sqlite": "^3.0.2",
+    "arctic": "^1.9.2",
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^11.10.0",
+    "compression": "^1.8.1",
+    "googleapis": "^140.0.0",
+    "js-yaml": "^4.1.1",
+    "lucia": "^3.2.2",
+    "nanoid": "^5.0.7",
+    "nodemailer": "^6.9.7",
+    "puppeteer": "^21.6.1",
+    "webjsx": "^0.0.73",
+    "tsx": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.16.5",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnEntrypoint/thatcher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AnEntrypoint/thatcher/issues"
+  },
+  "homepage": "https://github.com/AnEntrypoint/thatcher#readme",
+  "files": [
+    "src/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

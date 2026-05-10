@@ -1,0 +1,123 @@
+# Minimal Thatcher Configuration
+# This defines a single "item" entity with basic fields and a simple workflow
+
+roles:
+  admin:
+    hierarchy: 0
+    label: Admin
+    description: Full system access
+    permissions_scope: global
+    can_assign_roles: true
+  user:
+    hierarchy: 1
+    label: User
+    description: Standard user
+    permissions_scope: assigned
+
+permission_templates:
+  basic:
+    admin:
+      - list
+      - view
+      - create
+      - edit
+      - delete
+      - manage_settings
+    user:
+      - list
+      - view
+      - create
+      - edit
+
+entities:
+  item:
+    label: Item
+    label_plural: Items
+    icon: Package
+    order: 1
+    fields:
+      id:
+        type: id
+      name:
+        type: text
+        required: true
+        label: Item Name
+        search: true
+        sortable: true
+      description:
+        type: textarea
+        label: Description
+        required: false
+      status:
+        type: enum
+        label: Status
+        options:
+          - { value: active, label: Active, color: green }
+          - { value: archived, label: Archived, color: gray }
+        default: active
+      priority:
+        type: enum
+        label: Priority
+        options: [low, medium, high]
+        default: medium
+      due_date:
+        type: date
+        label: Due Date
+        required: false
+      assigned_to:
+        type: ref
+        label: Assigned To
+        ref: user
+      created_by:
+        type: ref
+        label: Created By
+        ref: user
+        hidden: true
+      created_at:
+        type: timestamp
+        label: Created At
+        auto: timestamp
+        hidden: true
+      updated_at:
+        type: timestamp
+        label: Updated At
+        auto: timestamp
+        hidden: true
+    list:
+      defaultSort:
+        field: created_at
+        dir: desc
+      pageSize: 20
+
+workflows:
+  item_lifecycle:
+    state_field: status
+    stages:
+      - name: active
+        label: Active
+        forward: [archived]
+        backward: []
+      - name: archived
+        label: Archived
+        forward: []
+        backward: [active]
+        readonly: true
+
+thresholds:
+  system:
+    pagination:
+      default_page_size: 20
+      max_page_size: 100
+  ui:
+    skeleton_count: 3
+
+features:
+  workflow: { enabled: true }
+
+notifications:
+  item_created:
+    template: 'Item {{name}} created'
+    recipients: [assigned_to, created_by]
+
+automation:
+  schedules: []
