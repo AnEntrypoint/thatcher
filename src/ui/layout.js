@@ -163,6 +163,16 @@ export function nav(user, pathname = '') {
 </div>
 <script>
 window.loadingBtn=function(btn,loading,label){if(!btn)return;btn.disabled=loading;btn.style.opacity=loading?'0.7':'1';if(loading){btn._orig=btn.innerHTML;btn.innerHTML='<span class="btn-spinner"></span>'+(label||'Loading...');}else{btn.innerHTML=btn._orig||label||btn.innerHTML;btn.disabled=false}}
+// Canonical client-side date/currency formatters — mirror render-helpers fmtDate so
+// client-rendered template strings format identically to server-rendered ones (fixed
+// en-ZA locale, sec/ms/ISO scale-detect, '-' fallback). Use window.fmtDate(ts) in any
+// client script string instead of inline new Date(...).toLocaleDateString().
+(function(){function toDate(ts){if(ts==null||ts==='')return null;if(ts instanceof Date)return isNaN(ts)?null:ts;var s=String(ts).trim();var n=Number(ts);var d=(!isNaN(n)&&s!==''&&/^\d+$/.test(s))?new Date(n<1e12?n*1000:n):new Date(ts);return isNaN(d)?null:d}
+window.fmtDate=function(ts){var d=toDate(ts);return d?d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'-'};
+window.fmtDateTime=function(ts){var d=toDate(ts);return d?d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):'-'};
+window.fmtDateInput=function(ts){var d=toDate(ts);if(!d)return '';var p=function(x){return String(x).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())};
+window.dateToUnixTimestamp=function(v){var d=toDate(v);return d?Math.floor(d.getTime()/1000):null};
+window.fmtCurrency=function(amount,currency){if(amount==null||amount==='')return '-';var n=Number(amount);if(isNaN(n))return String(amount);var sym=currency==='USD'?'$':currency==='EUR'?'€':'R';return sym+' '+n.toLocaleString('en-ZA',{minimumFractionDigits:0,maximumFractionDigits:2})};})();
 window.showToast=window.showToast||function(m,t){var c=document.getElementById('toast-container');if(!c){c=document.createElement('div');c.id='toast-container';c.className='toast-container';document.body.appendChild(c)}var d=document.createElement('div');d.className='toast toast-'+(t||'info');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove()},300)},3000)}
 window.toggleTheme=function(){var cur=document.documentElement.getAttribute('data-theme')||'light';var next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('thatcher-theme',next)}catch(_){}}
 function toggleUserMenu(e){e.stopPropagation();var d=document.getElementById('user-dropdown');var visible=d.style.display==='block';d.style.display=visible?'none':'block'}

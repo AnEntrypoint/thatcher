@@ -128,9 +128,39 @@ export function nameHash(name) {
 export { getInitials } from '@/lib/utils.js'
 export { icon } from '@/ui/format-helpers.js'
 
-export function fmtDate(ts) {
-  if (!ts) return '-';
+// Canonical date helpers — fixed en-ZA locale + format so the same data renders
+// identically for every user (browser-locale toLocaleDateString gives MM/DD to a
+// US user and DD/MM to a ZA user for the same timestamp; that is the unpredictability
+// these replace). Scale-detect seconds vs milliseconds vs ISO string internally.
+const DATE_LOCALE = 'en-ZA';
+function toDate(ts) {
+  if (ts == null || ts === '') return null;
+  if (ts instanceof Date) return isNaN(ts) ? null : ts;
   const n = Number(ts);
-  if (!isNaN(n) && n > 1e9 && n < 3e9) return new Date(n * 1000).toLocaleDateString();
-  return String(ts);
+  // 10-digit (or smaller) numeric => unix seconds; 13-digit => ms; non-numeric => ISO/parseable
+  const d = !isNaN(n) && String(ts).trim() !== '' && /^\d+$/.test(String(ts).trim())
+    ? new Date(n < 1e12 ? n * 1000 : n)
+    : new Date(ts);
+  return isNaN(d) ? null : d;
+}
+export function fmtDate(ts) {
+  const d = toDate(ts);
+  return d ? d.toLocaleDateString(DATE_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+}
+export function fmtDateTime(ts) {
+  const d = toDate(ts);
+  return d ? d.toLocaleDateString(DATE_LOCALE, { day: '2-digit', month: 'short', year: 'numeric' })
+    + ', ' + d.toLocaleTimeString(DATE_LOCALE, { hour: '2-digit', minute: '2-digit' }) : '-';
+}
+// YYYY-MM-DD for <input type=date> values
+export function fmtDateInput(ts) {
+  const d = toDate(ts);
+  if (!d) return '';
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+// parse any date-ish value to unix seconds (the storage scale)
+export function dateToUnixTimestamp(v) {
+  const d = toDate(v);
+  return d ? Math.floor(d.getTime() / 1000) : null;
 }

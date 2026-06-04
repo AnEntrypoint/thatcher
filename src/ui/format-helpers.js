@@ -1,14 +1,14 @@
 import { STAGE_COLORS, STATUS_COLORS } from './render-helpers.js';
 
 export function formatDate(ts, opts) {
-  if (!ts) return '—';
+  if (!ts) return '-';
   const d = typeof ts === 'number' ? new Date(ts < 1e10 ? ts * 1000 : ts) : new Date(ts);
-  if (isNaN(d)) return '—';
+  if (isNaN(d)) return '-';
   return d.toLocaleDateString('en-ZA', opts || { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function timeAgo(ts) {
-  if (!ts) return '—';
+  if (!ts) return '-';
   const d = typeof ts === 'number' ? new Date(ts < 1e10 ? ts * 1000 : ts) : new Date(ts);
   const diff = Date.now() - d;
   if (diff < 60000) return 'just now';
@@ -19,7 +19,7 @@ export function timeAgo(ts) {
 }
 
 export function formatCurrency(amount, currency) {
-  if (amount == null || amount === '') return '—';
+  if (amount == null || amount === '') return '-';
   const n = Number(amount);
   if (isNaN(n)) return String(amount);
   const sym = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : 'R';
@@ -27,7 +27,7 @@ export function formatCurrency(amount, currency) {
 }
 
 export function formatPercent(val) {
-  if (val == null || val === '') return '—';
+  if (val == null || val === '') return '-';
   const n = Number(val);
   if (isNaN(n)) return val;
   return (n > 1 ? n : Math.round(n * 100)) + '%';
@@ -39,7 +39,7 @@ export function stagePill(stage, stageConfig) {
   // Normalize both the local {color,bg,label} shape and the shared
   // STAGE_COLORS {text,bg,label} shape into {color,bg,label}.
   const cfg = raw ? { label: raw.label, bg: raw.bg, color: raw.color || raw.text } : null;
-  if (!cfg) return stage ? `<span style="background:var(--color-bg,#f5f5f5);color:var(--color-text-muted,#555);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700">${stage}</span>` : '—';
+  if (!cfg) return stage ? `<span style="background:var(--color-bg,#f5f5f5);color:var(--color-text-muted,#555);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700">${stage}</span>` : '-';
   return `<span style="background:${cfg.bg};color:${cfg.color};padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;white-space:nowrap;border:1px solid ${cfg.color}44">${cfg.label}</span>`;
 }
 
@@ -64,25 +64,25 @@ export function statusBadge(status, labelOverride) {
   const [color, bg] = shared
     ? [shared.text, shared.bg]
     : (EXTRA_STATUS_MAP[s] || ['#888', '#f5f5f5']);
-  const label = labelOverride || (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
+  const label = labelOverride || (s ? s.charAt(0).toUpperCase() + s.slice(1) : '-');
   return `<span style="background:${bg};color:${color};padding:2px 9px;border-radius:10px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap">${label}</span>`;
 }
 
 export function roleBadge(role) {
   const known = ['admin','partner','manager','clerk','user','auditor'];
-  if (!role) return statusBadge('', '—');
+  if (!role) return statusBadge('', '-');
   if (!known.includes(role.toLowerCase())) return statusBadge('', 'Unknown');
   return statusBadge(role);
 }
 
 export function formatName(user) {
-  if (!user) return '—';
-  return user.name || user.display_name || user.email || '—';
+  if (!user) return '-';
+  return user.name || user.display_name || user.email || '-';
 }
 
 export function truncate(str, n) {
   const max = n || 50;
-  if (!str) return '—';
+  if (!str) return '-';
   const s = String(str);
   return s.length > max ? s.slice(0, max) + '…' : s;
 }

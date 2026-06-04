@@ -64,7 +64,7 @@ function renderTagsList() {
 function showDialog(mode = 'create', tagId = null) {
   const tag = mode === 'edit' ? tagsStore[tagId] : null;
   const html = `
-    <div class="dialog-overlay" id="tag-dialog-overlay" data-action="gtsCloseDialog" onkeydown="if(event.key==='Escape')gtsCloseDialog()" role="dialog" aria-modal="true" aria-labelledby="tag-dialog-heading" aria-hidden="true">
+    <div class="dialog-overlay" id="tag-dialog-overlay" data-action="gtsCloseDialog" role="dialog" aria-modal="true" aria-labelledby="tag-dialog-heading" aria-hidden="true">
       <div class="dialog-content" data-stop-propagation="true">
         <div class="dialog-header"><h2 id="tag-dialog-heading">${mode === 'create' ? 'Create New Tag' : 'Edit Tag'}</h2><button class="btn btn-sm btn-ghost" data-action="gtsCloseDialog" aria-label="Close dialog">&times;</button></div>
         <div class="dialog-body">
