@@ -1,6 +1,6 @@
 import { AppError } from '@/lib/errors';
 import { HTTP } from '@/config/constants';
-import { now } from '@/lib/database-core';
+import { now } from '@/lib/id-helpers';
 
 const ACTION_FIELD_MAPS = {
   resolve_highlight: { status: 'resolved', color: 'green' },

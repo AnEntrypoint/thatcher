@@ -25,7 +25,7 @@ export const GET = withErrorHandler(async (request) => {
   const page = parseInt(url.searchParams.get('page') || '1');
   const pageSize = parseInt(url.searchParams.get('pageSize') || '100');
 
-  const result = searchLogs(filters, page, pageSize);
+  const result = await searchLogs(filters, page, pageSize);
   return NextResponse.json(result);
 });
 
@@ -38,7 +38,7 @@ export const POST = withErrorHandler(async (request) => {
   const body = await request.json();
   if (body.action === 'rotate') {
     const daysOld = body.daysOld || 90;
-    const result = rotateLogsOlderThan(daysOld);
+    const result = await rotateLogsOlderThan(daysOld);
     return NextResponse.json({ success: true, archived: result.archived, archiveId: result.archiveId });
   }
 

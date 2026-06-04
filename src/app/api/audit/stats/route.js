@@ -13,6 +13,6 @@ export const GET = withErrorHandler(async (request) => {
   const fromDate = url.searchParams.get('from') ? parseInt(url.searchParams.get('from')) : Math.floor(Date.now() / 1000) - (24 * 60 * 60);
   const toDate = url.searchParams.get('to') ? parseInt(url.searchParams.get('to')) : Math.floor(Date.now() / 1000);
 
-  const stats = getLogStats(fromDate, toDate);
+  const stats = await getLogStats(fromDate, toDate);
   return NextResponse.json({ success: true, stats, period: { from: fromDate, to: toDate } });
 });
