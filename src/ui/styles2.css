@@ -211,6 +211,11 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .btn-danger-clean:hover { background: #7f1d1d; }
 }
 .btn-danger-clean:active { opacity: 0.8; }
+/* gmConfirm danger:true emits .btn-error; a rippleui base .btn bg was winning and rendering it
+   gray (witnessed rgb(37,37,44) instead of red). styles2.css loads after rippleui.css, so this
+   explicit rule guarantees destructive-confirm buttons read as danger. */
+.btn-error, button.btn-error { background: var(--color-danger, #dc2626); color: #fff; border-color: var(--color-danger, #dc2626); }
+.btn-error:hover, button.btn-error:hover { background: #b91c1c; border-color: #b91c1c; }
 .btn-danger-clean:focus-visible { outline: 2px solid var(--color-danger); outline-offset: 2px; }
 .btn-edit-clean { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: transparent; color: var(--color-info); border: 1px solid #bfdbfe; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s ease; min-height: 36px; }
 .btn-edit-clean:hover { background: #eff6ff; }
