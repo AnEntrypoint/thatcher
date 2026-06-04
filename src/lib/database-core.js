@@ -54,22 +54,9 @@ export function getDatabase(dbPath = null) {
   return db;
 }
 
-/**
- * Generate unique ID using nanoid-like algorithm
- * @returns {string}
- */
-export function genId() {
-  // Simple but effective ID generation
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/**
- * Get current Unix timestamp (seconds)
- * @returns {number}
- */
-export function now() {
-  return Math.floor(Date.now() / 1000);
-}
+// genId/now live in id-helpers.js (DB-free) so non-DB modules can use them without
+// importing better-sqlite3. Re-exported here for existing importers.
+export { genId, now } from './id-helpers.js';
 
 /**
  * Build column definition from field spec
