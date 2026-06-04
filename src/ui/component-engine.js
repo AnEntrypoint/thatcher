@@ -1,4 +1,12 @@
 import { getConfigEngineSync } from '@/lib/config-generator-engine';
+import { esc } from '@/ui/render-helpers';
+
+// Allow only a safe CSS color token (hex, rgb/rgba/hsl(...), or a bare named color)
+// so an attacker-controlled item.color cannot break out of the style attribute.
+function safeColor(c) {
+  const s = String(c ?? '').trim();
+  return /^#[0-9a-fA-F]{3,8}$|^(rgb|rgba|hsl|hsla)\([0-9.,%\s/]+\)$|^[a-zA-Z]+$/.test(s) ? s : '';
+}
 
 function getComponentDefs() {
   try {
@@ -29,7 +37,7 @@ export function renderComponent(componentId, props = {}) {
         html = html.replace(regex, JSON.stringify(value));
       }
     } else {
-      html = html.replace(regex, String(value ?? ''));
+      html = html.replace(regex, esc(value));
     }
   });
 
@@ -42,11 +50,12 @@ export function renderComponent(componentId, props = {}) {
 }
 
 function renderItem(item, key) {
-  if (typeof item === 'string') return item;
+  if (typeof item === 'string') return esc(item);
   if (typeof item === 'object' && item.name && item.color) {
-    return `<span class="avatar-item" style="background:${item.color}">${item.name.charAt(0)}</span>`;
+    const bg = safeColor(item.color);
+    return `<span class="avatar-item"${bg ? ` style="background:${bg}"` : ''}>${esc(String(item.name).charAt(0))}</span>`;
   }
-  return String(item);
+  return esc(item);
 }
 
 export function getComponentConfig(componentId) {
