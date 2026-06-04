@@ -120,7 +120,7 @@ export function renderSettingsUsers(user, users = []) {
   <div class="flex justify-between items-center mb-2">
     <div>
       <h1 class="text-2xl font-bold">Users</h1>
-      <p class="text-sm text-base-content/50 mt-0.5">${users.length} total &middot; ${active} active</p>
+      <p class="text-sm text-base-content/50 mt-0.5">${users.length} total - ${active} active</p>
     </div>
     <a href="/user/new" class="btn btn-primary btn-sm gap-1">
       <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add User

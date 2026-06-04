@@ -37,7 +37,7 @@ export function renderRfiReport(user, rfi, engagement, questions, responses) {
   .no-print { padding: 12px 0; }
   @media print { .no-print { display: none; } body { padding: 12px; } }
 </style></head><body>
-<div class="no-print"><button onclick="window.print()" style="padding:8px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem">Print / Save PDF</button> <a href="/rfi/${esc(rfi.id)}" style="margin-left:12px;font-size:0.85rem;color:#3b82f6">← Back to RFI</a></div>
+<div class="no-print"><button onclick="window.print()" style="padding:8px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem">Print / Save PDF</button> <a href="/rfi/${esc(rfi.id)}" style="margin-left:12px;font-size:0.85rem;color:#3b82f6">&lt;- Back to RFI</a></div>
 <div class="header">
   <div style="font-size:1.4rem;font-weight:700">${esc(rfi.name||rfi.title||'RFI')}</div>
   <div style="color:#64748b;font-size:0.85rem;margin-top:4px">${esc(e.name||e.client_name||'')}</div>

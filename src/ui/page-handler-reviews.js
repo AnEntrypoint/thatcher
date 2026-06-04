@@ -100,7 +100,7 @@ export async function handleReviewRoutes(normalized, segments, user, req) {
       let h = [], s = [];
       try { h = list('highlight', {}).filter(x => x.review_id === reviewId); } catch {}
       try { s = list('review_section', {}).filter(x => x.review_id === reviewId); } catch {}
-      // Flatten bounding_rect JSON → x/y/width/height for the overlay renderer.
+      // Flatten bounding_rect JSON -> x/y/width/height for the overlay renderer.
       h = h.map((x) => {
         let br = null; try { br = typeof x.bounding_rect === 'string' ? JSON.parse(x.bounding_rect) : x.bounding_rect; } catch {}
         let rects = []; try { rects = typeof x.rects === 'string' ? JSON.parse(x.rects) : (x.rects || []); } catch {}

@@ -121,7 +121,7 @@ export function renderFlexupReport(user, engagement, client, rfis, reviews, high
 </head><body>
 <div class="wrap">
   <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <a href="/engagement/${esc(e.id)}" style="color:#475569;text-decoration:none;font-size:13px">← Back</a>
+    <a href="/engagement/${esc(e.id)}" style="color:#475569;text-decoration:none;font-size:13px">&lt;- Back</a>
     <button class="pbtn" onclick="window.print()">Print / Save as PDF</button>
   </div>
   <div class="accent"></div>
