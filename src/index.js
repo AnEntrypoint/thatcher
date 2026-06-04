@@ -139,14 +139,26 @@ export class Thatcher {
   }
 
   /**
-   * Initialize database with schema from config
+   * Initialize the data layer (busybase embedded) and wire it into the store + audit
+   * log. busybase is schemaless, so there is no SQL migrate step; tables are created
+   * lazily on first insert.
    */
   async initDatabase() {
     if (_databaseInitialized) return;
-    const { migrate } = await import(resolveModule('./lib/database-core.js'));
-    migrate(_configEngine);
-    const { getDatabase } = await import(resolveModule('./lib/database-core.js'));
-    getDatabase(); // prime the connection
+    const { createEmbedded } = await import('busybase/embedded');
+    const dir = this.options.dataDir || process.env.BUSYBASE_DIR || 'busybase_data';
+    const client = await createEmbedded({ dir });
+
+    const store = await import(resolveModule('./lib/busybase-store.js'));
+    store.setBusyBaseClient(client);
+    const audit = await import(resolveModule('./lib/busybase-audit.js'));
+    audit.setBusyBaseClient(client);
+
+    this.busybase = client;
+    globalThis.__thatcherBusyBase = client;
+    if (globalThis.__debug__) {
+      globalThis.__debug__.expose('datastore', { kind: () => 'busybase', dir: () => dir }, 'Data Store');
+    }
     _databaseInitialized = true;
   }
 

@@ -3,8 +3,7 @@
  * This is where request/response handling, validation, auth, and business logic meet
  */
 
-import { list, get, listWithPagination, searchWithPagination } from './query-engine.js';
-import { create, update, remove } from './query-engine-write.js';
+import { get, listWithPagination, searchWithPagination, create, update, remove } from './busybase-store.js';
 import { validateEntity, validateUpdate, sanitizeData } from './validate.js';
 import { requirePermission, getSessionToken } from './auth-middleware.js';
 import { executeHook } from './hook-engine.js';
@@ -13,9 +12,9 @@ import { ok, created, paginated, noContent, error } from './response-formatter.j
 import { HTTP } from '../config/constants.js';
 import { permissionService } from '../services/permission.service.js';
 import { parse as parseQuery } from './query-string-adapter.js';
-import { now } from './database-core.js';
+import { now } from './id-helpers.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
-import { logAction } from './audit-logger.js';
+import { logAction } from './busybase-audit.js';
 
 /**
  * Build a complete set of CRUD handlers for an entity
@@ -85,7 +84,7 @@ export function createCrudHandlers(entityName, spec) {
 
       if (!id) throw new AppError('ID required', 'BAD_REQUEST', HTTP.BAD_REQUEST);
 
-      const item = get(entityName, id);
+      const item = await get(entityName, id);
       if (!item) throw NotFoundError(entityName, id);
 
       if (!permissionService.checkRowAccess(user, spec, item)) {
@@ -111,7 +110,7 @@ export function createCrudHandlers(entityName, spec) {
       }
 
       const sanitized = sanitizeData(entityName, rawData, spec);
-      const record = create(entityName, sanitized, user);
+      const record = await create(entityName, sanitized, user);
 
       // Audit log (ported from moon)
       logAction(entityName, record.id, 'create', user?.id, null, record);
@@ -136,7 +135,7 @@ export function createCrudHandlers(entityName, spec) {
 
       if (!id) throw new AppError('ID required', 'BAD_REQUEST', HTTP.BAD_REQUEST);
 
-      const existing = get(entityName, id);
+      const existing = await get(entityName, id);
       if (!existing) throw NotFoundError(entityName, id);
 
       if (!permissionService.checkRowAccess(user, spec, existing)) {
@@ -152,7 +151,7 @@ export function createCrudHandlers(entityName, spec) {
       }
 
       const sanitized = sanitizeData(entityName, rawData, spec, existing);
-      const record = update(entityName, id, sanitized, user);
+      const record = await update(entityName, id, sanitized, user);
 
       // Audit log (ported from moon)
       logAction(entityName, id, 'update', user?.id, existing, record);
@@ -178,7 +177,7 @@ export function createCrudHandlers(entityName, spec) {
 
       if (!id) throw new AppError('ID required', 'BAD_REQUEST', HTTP.BAD_REQUEST);
 
-      const existing = get(entityName, id);
+      const existing = await get(entityName, id);
       if (!existing) throw NotFoundError(entityName, id);
 
       if (!permissionService.checkRowAccess(user, spec, existing)) {
@@ -190,13 +189,13 @@ export function createCrudHandlers(entityName, spec) {
       let result;
       if (spec.immutable === true && spec.immutable_strategy === 'move_to_archive') {
         const archiveData = { archived: true, archived_at: now(), archived_by: user?.id };
-        result = update(entityName, id, archiveData, user);
+        result = await update(entityName, id, archiveData, user);
         logAction(entityName, id, 'archive', user?.id, existing, archiveData);
       } else if (spec.fields?.status) {
-        result = update(entityName, id, { status: 'deleted' }, user);
+        result = await update(entityName, id, { status: 'deleted' }, user);
         logAction(entityName, id, 'delete', user?.id, existing, { status: 'deleted' });
       } else {
-        result = remove(entityName, id);
+        result = await remove(entityName, id);
         logAction(entityName, id, 'delete', user?.id, existing, null);
       }
 
@@ -217,7 +216,7 @@ export function createCrudHandlers(entityName, spec) {
       const { user } = context;
       await requirePermission(user, spec, 'edit'); // Simplified permission check
 
-      const record = get(entityName, id);
+      const record = await get(entityName, id);
       if (!record) throw NotFoundError(entityName, id);
 
       // Custom action logic (upload, manage_flags, etc.)

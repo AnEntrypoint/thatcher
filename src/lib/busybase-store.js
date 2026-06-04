@@ -146,14 +146,19 @@ export async function create(entity, data, user) {
   const record = {
     ...data,
     id: data.id || genId(),
-    created_by: user?.id || null,
+    created_by: user?.id || '',
     created_at: now(),
-    updated_at: null,
+    updated_at: 0,
     status: data.status || RECORD_STATUS.ACTIVE,
   };
   for (const [key, field] of Object.entries(spec.fields || {})) {
     if (field.auto === 'uuid' && !record[key]) record[key] = genId();
     if (field.auto === 'timestamp' && !record[key]) record[key] = now();
+  }
+  // LanceDB cannot infer a column's type from a null on first insert; coerce any
+  // null/undefined to a typed sentinel ('' for strings) so the insert schema is stable.
+  for (const k of Object.keys(record)) {
+    if (record[k] === null || record[k] === undefined) record[k] = '';
   }
   const [created] = unwrap(await client().from(tbl).insert(record), 'create');
   return created || record;
@@ -195,5 +200,54 @@ export async function remove(entity, id) {
 export async function bulkCreate(entity, records, user) {
   const out = [];
   for (const data of records) out.push(await create(entity, data, user));
+  return out;
+}
+
+/**
+ * Substring search across the entity's text-ish fields (busybase has no FTS, so this
+ * is the in-memory equivalent of the old LIKE fallback). Returns visible rows only.
+ */
+export async function search(entity, query, where = {}, options = {}) {
+  const spec = getSpec(entity);
+  const rows = await list(entity, where, { ...options, limit: undefined, offset: undefined });
+  const q = String(query || '').toLowerCase();
+  if (!q) return rows;
+  const fields = Object.keys(spec.fields || {}).filter(
+    f => ['text', 'textarea', 'email'].includes(spec.fields[f].type)
+  );
+  let matched = rows.filter(r => fields.some(f => String(r[f] ?? '').toLowerCase().includes(q)));
+  if (options.offset || options.limit) {
+    const off = parseInt(options.offset || 0, 10);
+    const lim = options.limit ? parseInt(options.limit, 10) : matched.length;
+    matched = matched.slice(off, off + lim);
+  }
+  return matched;
+}
+
+export async function searchWithPagination(entity, query, where = {}, page = 1, pageSize = null) {
+  const spec = getSpec(entity);
+  const finalPageSize = pageSize || spec.list?.pageSize || 50;
+  const finalPage = Math.max(1, page);
+  const all = await search(entity, query, where);
+  const total = all.length;
+  const items = all.slice((finalPage - 1) * finalPageSize, finalPage * finalPageSize);
+  return { items, pagination: { page: finalPage, pageSize: finalPageSize, total, totalPages: Math.ceil(total / finalPageSize) } };
+}
+
+/** Children of a parent via foreign-key field (old: WHERE fk = ? AND status != deleted). */
+export async function getChildren(parentEntity, parentId, childDef) {
+  const fk = childDef.fk || childDef.foreignKey || `${parentEntity}_id`;
+  return list(childDef.entity, { [fk]: parentId });
+}
+
+/** Batch-fetch children for several child definitions. */
+export async function batchGetChildren(parentEntity, parentId, childSpecs) {
+  const defs = Array.isArray(childSpecs)
+    ? childSpecs.map(e => [e, { entity: e }])
+    : Object.entries(childSpecs);
+  const out = {};
+  for (const [key, def] of defs) {
+    out[key] = await getChildren(parentEntity, parentId, def.entity ? def : { entity: key, ...def });
+  }
   return out;
 }
