@@ -63,7 +63,7 @@ export function renderMlConsole(user, candidates, reviewMap) {
             the next implementation step.
         </div>
     </div>
-    <div id="ml-ask-dialog" class="modal" style="display:none" data-dialog-close-overlay="true">
+    <div id="ml-ask-dialog" class="modal" style="display:none">
       <div class="modal-overlay" data-dialog-close="ml-ask-dialog"></div>
       <div class="modal-content rounded-box max-w-lg p-6">
         <h3 style="font-size:16px;font-weight:600;margin:0 0 12px 0">AI Suggestion</h3>
