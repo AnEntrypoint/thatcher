@@ -1,6 +1,6 @@
-import { getBy } from '@/engine';
+import { getBy, list, update } from '@/engine';
 import { lucia } from '@/engine.server';
-import { getDatabase, now } from '@/lib/database-core';
+import { now } from '@/lib/id-helpers';
 import { withErrorHandler } from '@/lib/with-error-handler';
 import crypto from 'crypto';
 
@@ -21,25 +21,15 @@ export const POST = withErrorHandler(async (request) => {
   }
 
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-  const db = getDatabase();
 
-  let bridgeRecord;
+  let bridgeRecord = null;
   try {
-    bridgeRecord = db.prepare('SELECT * FROM mwr_bridge_tokens WHERE token_hash = ? AND used = 0').get(tokenHash);
-  } catch (e) {
-    db.exec(`CREATE TABLE IF NOT EXISTS mwr_bridge_tokens (
-      id TEXT PRIMARY KEY,
-      token_hash TEXT NOT NULL,
-      email TEXT NOT NULL,
-      expires_at INTEGER NOT NULL,
-      used INTEGER DEFAULT 0,
-      created_at INTEGER NOT NULL
-    )`);
-    db.exec('CREATE INDEX IF NOT EXISTS idx_mwr_bridge_token ON mwr_bridge_tokens(token_hash)');
-    bridgeRecord = null;
-  }
+    const matches = (await list('mwr_bridge_tokens', { token_hash: tokenHash }))
+      .filter(r => !r.used || r.used === 0);
+    bridgeRecord = matches[0] || null;
+  } catch { bridgeRecord = null; }
 
-  const user = getBy('user', 'email', email.toLowerCase().trim());
+  const user = await getBy('user', 'email', email.toLowerCase().trim());
   if (!user) {
     return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404, headers: { 'Content-Type': 'application/json' }
@@ -48,7 +38,7 @@ export const POST = withErrorHandler(async (request) => {
 
   if (bridgeRecord) {
     if (bridgeRecord.expires_at < now()) {
-      db.prepare('UPDATE mwr_bridge_tokens SET used = 1 WHERE id = ?').run(bridgeRecord.id);
+      await update('mwr_bridge_tokens', bridgeRecord.id, { used: 1 });
       return new Response(JSON.stringify({ error: 'Bridge token has expired' }), {
         status: 401, headers: { 'Content-Type': 'application/json' }
       });
@@ -60,7 +50,7 @@ export const POST = withErrorHandler(async (request) => {
       });
     }
 
-    db.prepare('UPDATE mwr_bridge_tokens SET used = 1 WHERE id = ?').run(bridgeRecord.id);
+    await update('mwr_bridge_tokens', bridgeRecord.id, { used: 1 });
   }
 
   const session = await lucia.createSession(user.id, {});
