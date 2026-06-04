@@ -1374,6 +1374,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
 .tab-count { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 100px; font-size: 11px; font-weight: 600; padding: 1px 7px; color: var(--color-text-muted); }
 .tab-btn.active .tab-count { background: var(--color-primary); color: #fff; border-color: transparent; }
+/* Dark-mode --color-primary (#64b5f6) is light; white text on it is 2.2:1 (fails AA).
+   Use dark text on the active-tab count badge in dark theme (witnessed on /review). */
+[data-theme="dark"] .tab-btn.active .tab-count { color: #0b1220; }
 
 /* Form improvements */
 .form-field { margin-bottom: 1rem; }
