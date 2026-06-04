@@ -46,9 +46,9 @@ export function collaboratorRow(c) {
 }
 
 export function addCollaboratorDialog(reviewId) {
-  return `<div id="collab-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true">
+  return `<div id="collab-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="collab-dialog-title" data-dialog-close="collab-dialog">
     <div class="dialog-panel" style="max-width:400px;width:100%">
-      <h3 style="font-size:16px;font-weight:600;color:var(--color-text);margin:0 0 16px">Add Collaborator</h3>
+      <h3 id="collab-dialog-title" style="font-size:16px;font-weight:600;color:var(--color-text);margin:0 0 16px">Add Collaborator</h3>
       <div class="form-field" style="margin-bottom:12px">
         <label class="form-label">Email</label>
         <input type="email" id="collab-email" class="form-input" placeholder="collaborator@example.com"/>

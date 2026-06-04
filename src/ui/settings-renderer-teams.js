@@ -14,7 +14,7 @@ function parseMembers(t) {
 }
 
 export function renderSettingsTeams(user, teams = [], allUsers = []) {
-  const editDialog = `<div id="team-dialog" class="modal" style="display:none" data-overlay-close="true" data-action="closeTeamDialog">
+  const editDialog = `<div id="team-dialog" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="team-dialog-title" data-overlay-close="true" data-action="closeTeamDialog">
     <div class="modal-overlay" data-action="closeTeamDialog"></div>
     <div class="modal-content rounded-box max-w-md p-6">
       <h3 id="team-dialog-title" class="text-lg font-semibold mb-4">Edit Team</h3>

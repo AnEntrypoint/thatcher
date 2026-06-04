@@ -65,9 +65,9 @@ export function renderEngagementGrid(user, engagements, options = {}) {
   const rows = engagements.map(e => engRow(e)).join('') ||
     `<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--color-text-muted)">No engagements found</td></tr>`;
 
-  const emailReceiveDialog = `<div id="email-receive-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true">
+  const emailReceiveDialog = `<div id="email-receive-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="email-receive-dialog-title" data-dialog-close="email-receive-dialog">
     <div class="dialog-panel" style="max-width:540px">
-      <div class="dialog-header"><span class="dialog-title">Receive Email</span><button class="dialog-close" aria-label="Close dialog" data-dialog-close="email-receive-dialog">&times;</button></div>
+      <div class="dialog-header"><span class="dialog-title" id="email-receive-dialog-title">Receive Email</span><button class="dialog-close" aria-label="Close dialog" data-dialog-close="email-receive-dialog">&times;</button></div>
       <div class="dialog-body">
         <div class="modal-form-group"><label>Email Content</label><textarea id="email-receive-content" class="form-input" rows="8" placeholder="Paste raw email content here..."></textarea></div>
         <div id="email-receive-result" style="display:none;margin-top:8px"></div>
