@@ -1,5 +1,6 @@
 import { NextResponse } from '@/lib/next-polyfills';
-import { getDatabase, now } from '@/lib/database-core';
+import { now } from '@/lib/id-helpers';
+import { list, update } from '@/engine';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 import { EMAIL_STATUS } from '@/config/constants';
 import { sendSingleEmail, checkFailureRate } from '@/lib/email-sender';
@@ -19,7 +20,6 @@ export async function POST(request) {
   if (!token || token !== process.env.CRON_SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const db = getDatabase();
   try {
     const emailCfg = await getEmailConfig();
     const MAX_RETRIES = emailCfg.send_max_retries || 3;
@@ -27,8 +27,10 @@ export async function POST(request) {
     const RATE_LIMIT_DELAY = emailCfg.rate_limit_delay_ms || 6000;
     const MAX_DELAY_MS = emailCfg.retry_max_delay_ms || 30000;
 
-    const pendingEmails = db.prepare(`SELECT * FROM email WHERE status=? AND (retry_count IS NULL OR retry_count < ?) ORDER BY created_at ASC LIMIT ?`)
-      .all(EMAIL_STATUS.PENDING, MAX_RETRIES, BATCH_SIZE);
+    // pending emails under the retry cap, oldest first, limited to the batch size
+    const pendingEmails = (await list('email', { status: EMAIL_STATUS.PENDING }, { sort: { field: 'created_at', dir: 'ASC' } }))
+      .filter(e => (e.retry_count == null || e.retry_count < MAX_RETRIES))
+      .slice(0, BATCH_SIZE);
 
     if (!pendingEmails.length)
       return NextResponse.json({ success: true, message: 'No pending emails', processed: 0 });
@@ -38,15 +40,15 @@ export async function POST(request) {
 
     for (let i = 0; i < pendingEmails.length; i++) {
       const email = pendingEmails[i];
-      db.prepare(`UPDATE email SET status=?, updated_at=? WHERE id=?`).run(EMAIL_STATUS.PROCESSING, now(), email.id);
-      const result = await sendSingleEmail(db, email, email.retry_count || 1, MAX_RETRIES, MAX_DELAY_MS);
+      await update('email', email.id, { status: EMAIL_STATUS.PROCESSING, updated_at: now() });
+      const result = await sendSingleEmail(email, email.retry_count || 1, MAX_RETRIES, MAX_DELAY_MS);
       results.push(result);
       result.success ? successCount++ : failureCount++;
       if (i < pendingEmails.length - 1)
         await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY));
     }
 
-    checkFailureRate(db);
+    await checkFailureRate();
     return NextResponse.json({ success: true, processed: pendingEmails.length, results: { success: successCount, failed: failureCount }, details: results });
   } catch (error) {
     console.error('[EMAIL] Queue processing error:', error);
@@ -59,16 +61,23 @@ export async function GET(request) {
   if (!token || token !== process.env.CRON_SECRET)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const db = getDatabase();
   try {
-    const stats = db.prepare(`SELECT status, COUNT(*) as count FROM email GROUP BY status`).all();
-    const failureStats = db.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN status=? THEN 1 ELSE 0 END) as failed FROM email WHERE created_at >= ?`)
-      .get(EMAIL_STATUS.FAILED, now() - 86400);
-    const recentFailures = db.prepare(`SELECT id, recipient_email, subject, processing_error, retry_count, created_at FROM email WHERE status=? ORDER BY created_at DESC LIMIT 10`)
-      .all(EMAIL_STATUS.FAILED);
+    const emails = await list('email', {});
+    // status counts (old GROUP BY status)
+    const stats = {};
+    for (const e of emails) stats[e.status] = (stats[e.status] || 0) + 1;
+    // failure rate over the last 24h
+    const cutoff = now() - 86400;
+    const recent = emails.filter(e => (e.created_at || 0) >= cutoff);
+    const failedTotal = recent.filter(e => e.status === EMAIL_STATUS.FAILED).length;
+    const recentFailures = emails
+      .filter(e => e.status === EMAIL_STATUS.FAILED)
+      .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
+      .slice(0, 10)
+      .map(e => ({ id: e.id, recipient_email: e.recipient_email, subject: e.subject, processing_error: e.processing_error, retry_count: e.retry_count, created_at: e.created_at }));
     return NextResponse.json({
-      stats: stats.reduce((acc, r) => ({ ...acc, [r.status]: r.count }), {}),
-      failureRate: failureStats.total > 0 ? failureStats.failed / failureStats.total : 0,
+      stats,
+      failureRate: recent.length > 0 ? failedTotal / recent.length : 0,
       recentFailures,
     });
   } catch (error) {

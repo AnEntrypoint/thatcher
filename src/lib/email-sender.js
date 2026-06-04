@@ -1,4 +1,5 @@
-import { now } from '@/lib/database-core';
+import { now, genId } from '@/lib/id-helpers';
+import { list, update, create } from '@/lib/busybase-store';
 import { sendEmail } from '@/adapters/google-gmail';
 import { EMAIL_STATUS } from '@/config/constants';
 import { config } from '@/config/env';
@@ -31,19 +32,20 @@ export function parseAttachments(attachmentsJson) {
   } catch { return []; }
 }
 
-export function logEmailActivity(db, emailId, action, metadata = {}) {
+export async function logEmailActivity(emailId, action, metadata = {}) {
   try {
-    db.prepare(`INSERT INTO activity_log (id, entity_type, entity_id, action, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
-      .run(crypto.randomUUID?.() || `${Date.now()}_${Math.random()}`, 'email', emailId, action, JSON.stringify(metadata), now());
+    await create('activity_log', { id: genId(), entity_type: 'email', entity_id: emailId, action, metadata: JSON.stringify(metadata), created_at: now() });
   } catch (e) { console.error('[EMAIL] Failed to log activity:', e.message); }
 }
 
-export function checkFailureRate(db) {
+export async function checkFailureRate() {
   try {
-    const stats = db.prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as failed FROM email WHERE created_at >= ?`)
-      .get(EMAIL_STATUS.FAILED, now() - 86400);
-    if (stats.total > 0 && stats.failed / stats.total > 0.5 && stats.total > 10)
-      console.warn('[EMAIL] HIGH FAILURE RATE ALERT:', { failureRate: `${((stats.failed / stats.total) * 100).toFixed(1)}%`, failed: stats.failed, total: stats.total });
+    const cutoff = now() - 86400;
+    const recent = (await list('email', {})).filter(e => (e.created_at || 0) >= cutoff);
+    const total = recent.length;
+    const failed = recent.filter(e => e.status === EMAIL_STATUS.FAILED).length;
+    if (total > 10 && failed / total > 0.5)
+      console.warn('[EMAIL] HIGH FAILURE RATE ALERT:', { failureRate: `${((failed / total) * 100).toFixed(1)}%`, failed, total });
   } catch (e) { console.error('[EMAIL] Failed to check failure rate:', e.message); }
 }
 
@@ -51,13 +53,12 @@ async function exponentialBackoff(attempt, maxDelayMs) {
   await new Promise(r => setTimeout(r, Math.min(1000 * Math.pow(2, attempt), maxDelayMs)));
 }
 
-export async function sendSingleEmail(db, emailRecord, attempt = 1, maxRetries = 3, maxDelayMs = 30000) {
+export async function sendSingleEmail(emailRecord, attempt = 1, maxRetries = 3, maxDelayMs = 30000) {
   const validationErrors = validateEmailData(emailRecord);
   if (validationErrors.length > 0) {
     const errorMsg = validationErrors.join('; ');
-    db.prepare(`UPDATE email SET status=?, processing_error=?, retry_count=?, updated_at=? WHERE id=?`)
-      .run(EMAIL_STATUS.FAILED, errorMsg, attempt, now(), emailRecord.id);
-    logEmailActivity(db, emailRecord.id, 'email_send_failed', { error: errorMsg, attempt });
+    await update('email', emailRecord.id, { status: EMAIL_STATUS.FAILED, processing_error: errorMsg, retry_count: attempt, updated_at: now() });
+    await logEmailActivity(emailRecord.id, 'email_send_failed', { error: errorMsg, attempt });
     return { success: false, error: errorMsg, emailId: emailRecord.id };
   }
 
@@ -76,9 +77,8 @@ export async function sendSingleEmail(db, emailRecord, attempt = 1, maxRetries =
     };
 
     const result = await sendEmail(emailData);
-    db.prepare(`UPDATE email SET status=?, processed=?, message_id=?, processing_error=NULL, retry_count=?, processed_at=?, updated_at=? WHERE id=?`)
-      .run(EMAIL_STATUS.PROCESSED, true, result.id || result.messageId, attempt, now(), now(), emailRecord.id);
-    logEmailActivity(db, emailRecord.id, 'email_sent', { messageId: result.id || result.messageId, to: emailData.to, attempt });
+    await update('email', emailRecord.id, { status: EMAIL_STATUS.PROCESSED, processed: true, message_id: result.id || result.messageId, processing_error: '', retry_count: attempt, processed_at: now(), updated_at: now() });
+    await logEmailActivity(emailRecord.id, 'email_sent', { messageId: result.id || result.messageId, to: emailData.to, attempt });
     return { success: true, messageId: result.id || result.messageId, emailId: emailRecord.id };
   } catch (error) {
     const isRateLimit = error.message?.includes('429') || /quota|rate limit/i.test(error.message);
@@ -87,14 +87,13 @@ export async function sendSingleEmail(db, emailRecord, attempt = 1, maxRetries =
 
     if (isPermanent || attempt >= maxRetries) {
       const bounceStatus = isBounce ? 'bounced' : EMAIL_STATUS.FAILED;
-      db.prepare(`UPDATE email SET status=?, processing_error=?, retry_count=?, bounce_reason=?, bounced_at=?, bounce_permanent=?, updated_at=? WHERE id=?`)
-        .run(bounceStatus, error.message, attempt, isBounce ? error.message : null, isBounce ? now() : null, isBounce ? 1 : 0, now(), emailRecord.id);
-      logEmailActivity(db, emailRecord.id, 'email_send_failed', { error: error.message, attempt, permanent: isPermanent });
+      await update('email', emailRecord.id, { status: bounceStatus, processing_error: error.message, retry_count: attempt, bounce_reason: isBounce ? error.message : '', bounced_at: isBounce ? now() : 0, bounce_permanent: isBounce ? 1 : 0, updated_at: now() });
+      await logEmailActivity(emailRecord.id, 'email_send_failed', { error: error.message, attempt, permanent: isPermanent });
       return { success: false, error: error.message, emailId: emailRecord.id, permanent: isPermanent };
     }
 
     if (isRateLimit) await exponentialBackoff(attempt, maxDelayMs);
-    db.prepare(`UPDATE email SET retry_count=?, processing_error=?, updated_at=? WHERE id=?`).run(attempt, error.message, now(), emailRecord.id);
-    return sendSingleEmail(db, emailRecord, attempt + 1, maxRetries, maxDelayMs);
+    await update('email', emailRecord.id, { retry_count: attempt, processing_error: error.message, updated_at: now() });
+    return sendSingleEmail(emailRecord, attempt + 1, maxRetries, maxDelayMs);
   }
 }
