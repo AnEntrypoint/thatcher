@@ -3,7 +3,7 @@ import { esc } from '@/ui/render-helpers.js';
 export function createDialog(id, title, body, footer, opts = {}) {
   const maxWidth = opts.maxWidth || '640px';
   const extraClass = opts.class || '';
-  return `<div id="${esc(id)}" class="dialog-overlay ${extraClass}" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="${esc(id)}-title" aria-hidden="true">
+  return `<div id="${esc(id)}" class="dialog-overlay ${extraClass}" style="display:none" data-dialog-close="${esc(id)}" role="dialog" aria-modal="true" aria-labelledby="${esc(id)}-title" aria-hidden="true">
   <div class="dialog-panel" style="max-width:${maxWidth}">
     <div class="dialog-header">
       <span class="dialog-title" id="${esc(id)}-title">${title}</span>

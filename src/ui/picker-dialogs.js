@@ -10,7 +10,7 @@ export function colorPickerDialog(id = 'cpd', selected = '#B0B0B0', onSelect = '
   const swatches = DIALOG_COLORS.map(c =>
     `<div class="cpd-swatch${c === selected ? ' cpd-selected' : ''}" style="background:${c}" data-color="${c}" role="option" tabindex="0" aria-label="Color ${c}" aria-selected="${c === selected}" data-action="cpdSelect" data-args='["${id}","${c}",${onSelect ? "true" : "false"}]'></div>`
   ).join('')
-  return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
+  return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close="${id}-dialog" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
     <div class="dialog-panel" style="max-width:360px">
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Choose Color</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body"><div class="color-picker-grid" role="listbox" aria-label="Color options">${swatches}</div>
@@ -33,7 +33,7 @@ export function dateChoiceDialog(id = 'dcd') {
     { label: '+3 Months', days: 90 }, { label: 'End of Month', days: 'eom' }, { label: 'End of Quarter', days: 'eoq' },
   ]
   const presetBtns = presets.map(p => `<button class="date-preset-btn" data-action="dcdPreset" data-args='["${id}",${typeof p.days === 'number' ? p.days : '"' + p.days + '"'}]'>${p.label}</button>`).join('')
-  return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
+  return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close="${id}-dialog" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
     <div class="dialog-panel" style="max-width:380px">
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Choose Date</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">
@@ -50,7 +50,7 @@ export function dateChoiceDialog(id = 'dcd') {
 
 export function stageTransitionDialog(stages = null) {
   const stageKeys = stages || Object.keys(STAGE_COLORS)
-  return `<div id="stage-trans-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="stage-trans-dialog-title" aria-hidden="true">
+  return `<div id="stage-trans-dialog" class="dialog-overlay" style="display:none" data-dialog-close="stage-trans-dialog" role="dialog" aria-modal="true" aria-labelledby="stage-trans-dialog-title" aria-hidden="true">
     <div class="dialog-panel">
       <div class="dialog-header"><span class="dialog-title" id="stage-trans-dialog-title">Transition Stage</span><button class="dialog-close" data-dialog-close="stage-trans-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">
@@ -68,7 +68,7 @@ export function stageTransitionDialog(stages = null) {
 }
 
 export function teamAssignmentDialog(id = 'tad') {
-  return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
+  return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close="${id}-dialog" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
     <div class="dialog-panel">
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Assign Team Members</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">

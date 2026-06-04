@@ -1,5 +1,5 @@
 export function engagementLetterDialog(engagementId) {
-  return `<div id="eng-letter-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="eng-letter-dialog-title" aria-hidden="true">
+  return `<div id="eng-letter-dialog" class="dialog-overlay" style="display:none" data-dialog-close="eng-letter-dialog" role="dialog" aria-modal="true" aria-labelledby="eng-letter-dialog-title" aria-hidden="true">
     <div class="dialog-panel" style="max-width:640px">
       <div class="dialog-header"><span class="dialog-title" id="eng-letter-dialog-title">Engagement Letter</span><button class="dialog-close" data-dialog-close="eng-letter-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">
@@ -20,7 +20,7 @@ export function engagementLetterDialog(engagementId) {
 }
 
 export function engagementLetterTemplateUpload() {
-  return `<div id="letter-tpl-upload" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="letter-tpl-upload-title" aria-hidden="true">
+  return `<div id="letter-tpl-upload" class="dialog-overlay" style="display:none" data-dialog-close="letter-tpl-upload" role="dialog" aria-modal="true" aria-labelledby="letter-tpl-upload-title" aria-hidden="true">
     <div class="dialog-panel">
       <div class="dialog-header"><span class="dialog-title" id="letter-tpl-upload-title">Upload Letter Template</span><button class="dialog-close" data-dialog-close="letter-tpl-upload" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">

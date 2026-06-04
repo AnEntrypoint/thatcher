@@ -34,7 +34,7 @@ function statusBadge(status) {
 function reviewRow(r) {
   const isPri = (r.is_priority || r.flagged || (r.flags_count > 0)) ? 1 : 0;
   return `<tr class="review-row" data-status="${r.status || ''}" data-flags="${r.flags_count || 0}" data-highlights="${r.highlights_count || 0}" data-archived="${r.archived || 0}" data-priority="${isPri}" data-stage="${r.stage || r.status || ''}" data-navigate="/review/${r.id}" oncontextmenu="showCtxMenu(event,'${r.id}')" style="cursor:pointer">
-    <td style="width:32px"><button class="review-priority-star${isPri?' is-priority':''}" data-action="togglePriority" data-args='["${r.id}"]' aria-label="Toggle priority" onclick="event.stopPropagation()">${isPri?'★':'☆'}</button></td>
+    <td style="width:32px"><button class="review-priority-star${isPri?' is-priority':''}" data-action="togglePriority" data-args='["${r.id}"]' aria-label="Toggle priority" aria-pressed="${isPri?'true':'false'}" data-stop-propagation><svg width="16" height="16" viewBox="0 0 24 24" fill="${isPri?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button></td>
     <td class="review-row-name">${r.name || r.title || 'Untitled'}</td>
     <td style="font-size:13px;color:var(--color-text)">${r.engagement_name || r.engagement_id_display || '-'}</td>
     <td>${statusBadge(r.status)}</td>
