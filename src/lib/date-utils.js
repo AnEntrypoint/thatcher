@@ -2,7 +2,7 @@
  * Date/Time Utilities - Common date operations
  */
 
-import { now } from './database-core.js';
+import { now } from './id-helpers.js';
 
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE;

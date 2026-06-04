@@ -172,8 +172,8 @@ class PermissionService {
   /**
    * Check collaborator-style permission
    */
-  hasCollaboratorPermission(collaboratorId, permission) {
-    return getCollaboratorRole(collaboratorId)?.permissions?.includes(permission);
+  async hasCollaboratorPermission(collaboratorId, permission) {
+    return (await getCollaboratorRole(collaboratorId))?.permissions?.includes(permission);
   }
 }
 

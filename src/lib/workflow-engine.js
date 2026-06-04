@@ -3,7 +3,7 @@
  * Handles validation of state transitions and available actions
  */
 
-import { get, update, create } from './query-engine.js';
+import { get, update, create } from './busybase-store.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { AppError } from './error-handler.js';
 import { HTTP } from '../config/constants.js';
@@ -165,7 +165,7 @@ export function getTransitionStatus(record) {
  */
 export async function transition(entityType, entityId, workflowName, toState, user, reason = '') {
   // Validate transition
-  const record = get(entityType, entityId);
+  const record = await get(entityType, entityId);
   if (!record) throw new AppError('Record not found', 'NOT_FOUND', HTTP.NOT_FOUND);
 
   validateTransition(workflowName, record.status || record.stage, toState, user);
@@ -181,8 +181,8 @@ export async function transition(entityType, entityId, workflowName, toState, us
   }
 
   // Dynamically import write engine to avoid circular dependency
-  const { update: updateRecord } = await import('./query-engine-write.js');
-  const updated = updateRecord(entityType, entityId, updates, user);
+  const { update: updateRecord } = await import('./busybase-store.js');
+  const updated = await updateRecord(entityType, entityId, updates, user);
 
   // Execute hooks
   executeHook(`transition:${entityType}`, {

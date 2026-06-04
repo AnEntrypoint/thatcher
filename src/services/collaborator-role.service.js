@@ -3,7 +3,7 @@
  * Extracted from moonlanding/src/services/collaborator-role.service.js
  */
 
-import { list, get, update, create } from '../lib/query-engine.js';
+import { list, get, update, create } from '../lib/busybase-store.js';
 import { AppError } from '../lib/error-handler.js';
 import { HTTP } from '../config/constants.js';
 
@@ -28,17 +28,17 @@ const COLLABORATOR_ROLE_PERMISSIONS = {
  * @param {string} collaboratorId
  * @returns {object|null}
  */
-export function getCollaboratorRole(collaboratorId) {
+export async function getCollaboratorRole(collaboratorId) {
   if (!collaboratorId) return null;
-  const collaborator = get('collaborator', collaboratorId);
+  const collaborator = await get('collaborator', collaboratorId);
   if (!collaborator) return null;
 
   if (collaborator.primary_role_id) {
-    const role = get('collaborator_role', collaborator.primary_role_id);
+    const role = await get('collaborator_role', collaborator.primary_role_id);
     if (role && role.is_active) return role;
   }
 
-  const roles = list('collaborator_role')
+  const roles = (await list('collaborator_role'))
     .filter(r => r.collaborator_id === collaboratorId && r.is_active);
 
   if (roles.length === 0) return null;
@@ -47,7 +47,7 @@ export function getCollaboratorRole(collaboratorId) {
   const activeRole = roles[0];
 
   if (collaborator.primary_role_id !== activeRole.id) {
-    update('collaborator', collaboratorId, {
+    await update('collaborator', collaboratorId, {
       primary_role_id: activeRole.id,
       is_manager: activeRole.role_type === 'manager'
     });
@@ -61,8 +61,8 @@ export function getCollaboratorRole(collaboratorId) {
  * @param {string} permission
  * @returns {boolean}
  */
-export function hasCollaboratorPermission(collaboratorId, permission) {
-  const role = getCollaboratorRole(collaboratorId);
+export async function hasCollaboratorPermission(collaboratorId, permission) {
+  const role = await getCollaboratorRole(collaboratorId);
   if (!role) return false;
   const perms = COLLABORATOR_ROLE_PERMISSIONS[role.role_type];
   return perms ? perms.includes(permission) : false;
@@ -75,14 +75,14 @@ export function hasCollaboratorPermission(collaboratorId, permission) {
  * @param {object} [record]
  * @returns {boolean}
  */
-export function checkCollaboratorAccess(collaboratorId, action, record = null) {
-  const role = getCollaboratorRole(collaboratorId);
+export async function checkCollaboratorAccess(collaboratorId, action, record = null) {
+  const role = await getCollaboratorRole(collaboratorId);
   if (!role) return false;
   const perms = COLLABORATOR_ROLE_PERMISSIONS[role.role_type];
   if (!perms) return false;
   if (perms.includes(action)) return true;
   if (action === 'delete_highlights' && perms.includes('delete_own_highlights') && record) {
-    const collaborator = get('collaborator', collaboratorId);
+    const collaborator = await get('collaborator', collaboratorId);
     return record.created_by === collaborator?.user_id;
   }
   return false;
@@ -93,9 +93,9 @@ export function checkCollaboratorAccess(collaboratorId, action, record = null) {
  * @param {string} collaboratorId
  * @returns {Array}
  */
-export function getCollaboratorRoleHistory(collaboratorId) {
+export async function getCollaboratorRoleHistory(collaboratorId) {
   if (!collaboratorId) return [];
-  return list('collaborator_role')
+  return (await list('collaborator_role'))
     .filter(r => r.collaborator_id === collaboratorId)
     .sort((a, b) => b.assigned_at - a.assigned_at);
 }
@@ -126,7 +126,7 @@ export function canAssignRole(userRole, targetRoleType) {
  * @param {object} options
  * @returns {object}
  */
-export function addCollaborator(reviewId, email, options = {}) {
+export async function addCollaborator(reviewId, email, options = {}) {
   const { expiresAt, createdBy = 'system', reason = '' } = options;
   const nowSeconds = Math.floor(Date.now() / 1000);
   const isPermanent = !expiresAt;
@@ -137,7 +137,7 @@ export function addCollaborator(reviewId, email, options = {}) {
     if (expiresAt > maxAllowed) throw new Error('Expiry date cannot exceed 30 days from now');
   }
 
-  return create('collaborator', {
+  return await create('collaborator', {
     review_id: reviewId,
     email,
     expires_at: expiresAt || null,
@@ -154,8 +154,8 @@ export function addCollaborator(reviewId, email, options = {}) {
  * @param {string} reviewId
  * @returns {Array}
  */
-export function getReviewCollaborators(reviewId) {
-  const collaborators = list('collaborator', { review_id: reviewId });
+export async function getReviewCollaborators(reviewId) {
+  const collaborators = await list('collaborator', { review_id: reviewId });
   const nowSeconds = Math.floor(Date.now() / 1000);
 
   return collaborators.map(c => ({
@@ -178,11 +178,11 @@ export function getReviewCollaborators(reviewId) {
  * @param {string} [revokedBy='system']
  * @returns {boolean}
  */
-export function revokeCollaborator(collaboratorId, reason = 'manual_revoke', revokedBy = 'system') {
-  const collaborator = get('collaborator', collaboratorId);
+export async function revokeCollaborator(collaboratorId, reason = 'manual_revoke', revokedBy = 'system') {
+  const collaborator = await get('collaborator', collaboratorId);
   if (!collaborator) throw new Error('Collaborator not found');
 
-  update('collaborator', collaboratorId, {
+  await update('collaborator', collaboratorId, {
     revoked_at: Math.floor(Date.now() / 1000),
     revoked_by: revokedBy,
     revocation_reason: reason,

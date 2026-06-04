@@ -2,7 +2,7 @@
  * Utility Functions - Common helpers
  */
 
-import { list } from './query-engine.js';
+import { list } from './busybase-store.js';
 import { getSpec } from '../config/spec-helpers.js';
 
 /**
@@ -18,7 +18,7 @@ export async function loadFormOptions(spec) {
   for (const [key, field] of Object.entries(spec.fields || {})) {
     if (field.type === 'ref' && field.ref) {
       try {
-        const data = list(field.ref);
+        const data = await list(field.ref);
         if (field.ref === 'engagement') {
           options[key] = data
             .filter(r => r.status !== 'archived')
