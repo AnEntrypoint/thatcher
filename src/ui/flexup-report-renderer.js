@@ -108,6 +108,9 @@ export function renderFlexupReport(user, engagement, client, rfis, reviews, high
   .no-print { display: block; }
   .foot { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
   .pbtn { background: ${esc(themeColor)}; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+  }
   @media print {
     body { background: white; }
     .no-print { display: none !important; }

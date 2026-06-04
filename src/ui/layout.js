@@ -134,7 +134,7 @@ export function nav(user, pathname = '') {
 </nav>
 <div id="mobile-nav-drawer" style="display:none;position:fixed;inset:0;z-index:200;pointer-events:none" aria-hidden="true">
   <div data-action="closeMobileNav" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);pointer-events:auto"></div>
-  <div style="position:absolute;left:0;top:0;bottom:0;width:280px;max-width:80vw;background:#04141f;padding:0;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform 0.25s ease" id="mobile-nav-panel">
+  <div style="position:absolute;left:0;top:0;bottom:0;width:min(280px,70vw);max-width:80vw;background:#04141f;padding:0;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform 0.25s ease" id="mobile-nav-panel">
     <div class="mobile-nav-header-bar">
       <span class="mobile-nav-header-title">Moonlanding</span>
       <button data-action="closeMobileNav" class="mobile-nav-close-btn" aria-label="Close menu">&times;</button>

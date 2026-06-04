@@ -24,9 +24,14 @@ export async function handleAdminPage(normalized, segments, user) {
   if (!isPartner(user)) return renderAccessDenied(user, 'admin', 'view');
 
   if (normalized === '/admin/settings') {
-    const config = await getSystemConfig();
-    const counts = await getSettingsCounts();
-    return renderSettingsHome(user, config, counts);
+    try {
+      const config = await getSystemConfig();
+      const counts = await getSettingsCounts();
+      return renderSettingsHome(user, config, counts);
+    } catch (err) {
+      console.error('Failed to load admin settings:', err);
+      return generateHtml('Settings', '<div class="empty-state"><div class="empty-state-title">Failed to load. Refresh.</div><div class="empty-state-desc">The settings could not be loaded. Please refresh the page to try again.</div></div>', []);
+    }
   }
   if (normalized === '/admin/settings/system') { const config = await getSystemConfig(); return renderSettingsSystem(user, config); }
   if (normalized === '/admin/settings/users') { return renderSettingsUsers(user, list('user', {})); }

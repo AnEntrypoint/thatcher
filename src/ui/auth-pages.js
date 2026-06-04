@@ -74,7 +74,7 @@ export function renderPasswordResetConfirm(token) {
   <div class="auth-shell"><div class="auth-wrap">
     ${authLogoHtml('Set a new password')}
     <div class="auth-card">
-      <div id="confirm-success" class="auth-success" style="display:none" role="alert">Password updated. <a href="/login" style="color:#15803d;text-decoration:underline;font-weight:600">Sign in now</a></div>
+      <div id="confirm-success" class="auth-success" style="display:none" role="alert">Password updated. <a href="/login" style="color:var(--color-success,#15803d);text-decoration:underline;font-weight:600">Sign in now</a></div>
       <form id="confirm-form" aria-label="Set new password" novalidate>
         <input type="hidden" name="token" value="${esc(token)}">
         <div class="auth-field"><label class="auth-label" for="password">New password</label>

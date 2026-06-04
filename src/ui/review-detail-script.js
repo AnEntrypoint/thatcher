@@ -21,12 +21,12 @@ async function removeCollaborator(collabId){if(!confirm('Remove this collaborato
 async function openChecklistPicker(reviewId){
   var dlg=document.getElementById('checklist-picker-dialog');if(!dlg)return;
   dlg.style.display='flex';
-  var sel=document.getElementById('checklist-picker-template');sel.innerHTML='<option>Loading...</option>';
+  var sel=document.getElementById('checklist-picker-template');sel.setAttribute('aria-busy','true');sel.innerHTML='<option>Loading...</option>';
   try{
     var r=await fetch('/api/mwr/checklist-template',{credentials:'include'});var data=await r.json();
-    if(!data.success||!data.templates||!data.templates.length){sel.innerHTML='<option value="">No templates available</option>';return}
-    sel.innerHTML=data.templates.map(function(t){return '<option value="'+__esc(t.id)+'">'+__esc(t.name)+' ('+__esc(t.item_count)+' items)</option>'}).join('');
-  }catch(e){sel.innerHTML='<option value="">Failed to load templates</option>'}
+    if(!data.success||!data.templates||!data.templates.length){sel.removeAttribute('aria-busy');sel.innerHTML='<option value="">No templates available</option>';return}
+    sel.removeAttribute('aria-busy');sel.innerHTML=data.templates.map(function(t){return '<option value="'+__esc(t.id)+'">'+__esc(t.name)+' ('+__esc(t.item_count)+' items)</option>'}).join('');
+  }catch(e){sel.removeAttribute('aria-busy');sel.innerHTML='<option value="">Failed to load templates</option>'}
 }
 async function saveChecklistFromTemplate(reviewId){
   var sel=document.getElementById('checklist-picker-template');var nameInput=document.getElementById('checklist-picker-name');
@@ -83,14 +83,14 @@ async function removeLink(reviewId,idx){if(!confirm('Remove this link?'))return;
 async function loadHistory(reviewId){
   var list=document.getElementById('history-list');
   if(!list)return;
-  list.innerHTML='<div style="font-size:13px;color:var(--color-text-muted);padding:24px 0;text-align:center">Loading...</div>';
+  list.innerHTML='<div aria-busy="true" style="font-size:13px;color:var(--color-text-muted);padding:24px 0;text-align:center">Loading...</div>';
   try{
     var r=await fetch('/api/audit/logs?entity_type=review&entity_id='+reviewId,{credentials:'include'});
     var data=await r.json();
     var logs=(data.logs||data.data||[]);
     if(!logs.length){list.innerHTML='<div style="font-size:13px;color:var(--color-text-muted);padding:24px 0;text-align:center">No history found</div>';return}
-    list.innerHTML=logs.map(function(log){var ts=log.timestamp?new Date(log.timestamp).toLocaleString():'-';var op=log.operation||log.action||'-';var uid=log.user_id?'User '+log.user_id:'System';var details='';if(log.details&&typeof log.details==='object'){var keys=Object.keys(log.details).slice(0,3);details=keys.map(function(k){return k+': '+String(log.details[k]).slice(0,40)}).join(', ');}return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--color-border,#e5e7eb)"><div style="width:8px;height:8px;border-radius:50%;background:var(--color-primary,#2563eb);margin-top:5px;flex-shrink:0"></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:500;color:var(--color-text)">'+__esc(op.replace(/_/g,' '))+'</span><span style="font-size:12px;color:var(--color-text-muted);white-space:nowrap">'+__esc(ts)+'</span></div><div style="font-size:12px;color:var(--color-text-muted);margin-top:2px">'+__esc(uid)+(details?' &mdash; '+__esc(details):'')+'</div></div></div>';}).join('');
-  }catch(e){list.innerHTML='<div style="font-size:13px;color:var(--color-danger,#dc2626);padding:24px 0;text-align:center">Failed to load history</div>'}
+    list.innerHTML=logs.map(function(log){var ts=log.timestamp?new Date(log.timestamp).toLocaleString():'-';var op=log.operation||log.action||'-';var uid=log.user_id?'User '+log.user_id:'System';var details='';var detailsFull='';if(log.details&&typeof log.details==='object'){var keys=Object.keys(log.details).slice(0,3);details=keys.map(function(k){return k+': '+String(log.details[k]).slice(0,40)}).join(', ');detailsFull=keys.map(function(k){return k+': '+String(log.details[k])}).join(', ');}return '<div style="display:flex;gap:12px;align-items:flex-start;max-width:100%;padding:10px 0;border-bottom:1px solid var(--color-border,#e5e7eb)"><div style="width:8px;height:8px;border-radius:50%;background:var(--color-primary,#2563eb);margin-top:5px;flex-shrink:0"></div><div style="flex:1;min-width:0;max-width:100%;word-break:break-word"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:500;color:var(--color-text)">'+__esc(op.replace(/_/g,' '))+'</span><span style="font-size:12px;color:var(--color-text-muted);white-space:nowrap">'+__esc(ts)+'</span></div><div'+(detailsFull?' title="'+__esc(detailsFull)+'"':'')+' style="font-size:12px;color:var(--color-text-muted);margin-top:2px">'+__esc(uid)+(details?' &mdash; '+__esc(details):'')+'</div></div></div>';}).join('');
+  }catch(e){list.innerHTML='<div role="alert" style="font-size:13px;color:var(--color-danger,#dc2626);padding:24px 0;text-align:center">Failed to load history</div>'}
 }
 ${reviewHighlightActionsScript(reviewId)}`;
 }

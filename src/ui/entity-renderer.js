@@ -89,7 +89,7 @@ export function renderEntityDetail(entityName, item, spec, user) {
 
   const headerExtra = entityName === 'user' ? `
     <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
-      <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:#0369a1;flex-shrink:0">
+      <div style="width:3.5rem;height:3.5rem;border-radius:50%;background:var(--color-avatar-bg,#e0f2fe);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--color-avatar-fg,#0369a1);flex-shrink:0">
         ${item.photo_url ? `<img src="${item.photo_url}" style="width:3.5rem;height:3.5rem;border-radius:50%;object-fit:cover" alt="${displayName}" onerror="this.style.display='none'"/>` : initials}
       </div>
       <div>

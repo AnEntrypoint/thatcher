@@ -11,14 +11,16 @@ export function colorPickerDialog(id = 'cpd', selected = '#B0B0B0', onSelect = '
     <div class="dialog-panel" style="max-width:360px">
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Choose Color</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body"><div class="color-picker-grid" role="listbox" aria-label="Color options">${swatches}</div>
-        <div style="margin-top:0.75rem;display:flex;align-items:center;gap:0.75rem"><label class="text-sm text-gray-500" for="${id}-custom">Custom:</label><input type="color" id="${id}-custom" value="${selected}" onchange="cpdSelect('${id}',this.value,true)" aria-label="Custom color picker" style="width:40px;height:32px;border:none;cursor:pointer"/><span id="${id}-val" class="text-sm font-medium" aria-live="polite">${selected}</span></div>
+        <div style="margin-top:0.75rem;display:flex;align-items:center;gap:0.75rem"><label class="text-sm text-gray-500" for="${id}-custom">Custom:</label><input type="color" id="${id}-custom" value="${selected}" onchange="cpdSelect('${id}',this.value,true)" aria-label="Custom color picker" class="focus-visible-ring" style="width:44px;height:44px;min-width:44px;min-height:44px;border:none;cursor:pointer"/><span id="${id}-val" class="text-sm font-medium" aria-live="polite">${selected}</span></div>
       </div>
       <div class="dialog-footer"><button class="btn btn-ghost btn-sm" data-dialog-close="${id}-dialog">Cancel</button><button class="btn btn-primary btn-sm" data-action="cpdConfirm" data-args='["${id}"]'>Select</button></div>
     </div></div>
   <script>window._cpd=window._cpd||{};window._cpd['${id}']='${selected}';
   window.cpdSelect=function(id,c){window._cpd[id]=c;document.getElementById(id+'-val').textContent=c;document.getElementById(id+'-custom').value=c;document.querySelectorAll('#'+id+'-dialog .cpd-swatch').forEach(function(el){el.classList.toggle('cpd-selected',el.dataset.color===c)})};
   window.cpdConfirm=function(id){var c=window._cpd[id];document.getElementById(id+'-dialog').style.display='none';if(window._cpdCallback)window._cpdCallback(c)};
-  window.showColorPicker=function(id,current,cb){window._cpdCallback=cb;if(current)cpdSelect(id,current);document.getElementById(id+'-dialog').style.display='flex'};</script>`
+  window.showColorPicker=function(id,current,cb){window._cpdCallback=cb;if(current)cpdSelect(id,current);document.getElementById(id+'-dialog').style.display='flex'};
+  window.cpdKeydown=function(id,e){var sw=Array.prototype.slice.call(document.querySelectorAll('#'+id+'-dialog .cpd-swatch'));if(!sw.length)return;var cur=sw.indexOf(document.activeElement);if(cur<0)cur=0;var next=cur;var k=e.key;if(k==='ArrowRight'||k==='ArrowDown')next=Math.min(sw.length-1,cur+1);else if(k==='ArrowLeft'||k==='ArrowUp')next=Math.max(0,cur-1);else if(k==='Home')next=0;else if(k==='End')next=sw.length-1;else return;e.preventDefault();sw[next].focus()};
+  document.querySelectorAll('#'+'${id}'+'-dialog .cpd-swatch').forEach(function(el){el.addEventListener('keydown',function(e){window.cpdKeydown('${id}',e)})});</script>`
 }
 
 export function dateChoiceDialog(id = 'dcd') {
@@ -68,7 +70,7 @@ export function teamAssignmentDialog(id = 'tad') {
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Assign Team Members</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">
         <input type="text" id="${id}-search" class="tad-search" placeholder="Search by name or email..." aria-label="Search team members" oninput="tadFilter('${id}')"/>
-        <div id="${id}-list" class="tad-list"></div>
+        <div id="${id}-list" class="tad-list" role="region" aria-live="polite" aria-label="Team member results"></div>
       </div>
       <div class="dialog-footer"><button class="btn btn-ghost btn-sm" data-dialog-close="${id}-dialog">Cancel</button><button class="btn btn-primary btn-sm" data-action="tadConfirm" data-args='["${id}"]'>Assign</button></div>
     </div></div>
@@ -83,18 +85,18 @@ export function teamAssignmentDialog(id = 'tad') {
 
 export function teamSelector(id = 'ts', teams = []) {
   const items = teams.map(t =>
-    `<div class="tad-row" data-name="${(t.name || '').toLowerCase()}" data-action="tsSelect" data-args='["${id}","${t.id}","${(t.name || '').replace(/"/g, '&quot;')}"]'><div class="tad-name">${t.name || 'Unknown'}</div><div class="tad-email">${t.member_count || 0} members</div></div>`
+    `<div class="tad-row" role="option" aria-selected="false" tabindex="-1" data-name="${(t.name || '').toLowerCase()}" data-action="tsSelect" data-args='["${id}","${t.id}","${(t.name || '').replace(/"/g, '&quot;')}"]'><div class="tad-name">${t.name || 'Unknown'}</div><div class="tad-email">${t.member_count || 0} members</div></div>`
   ).join('')
   return `<div class="ts-wrap" id="${id}-wrap">
     <div id="${id}-badges" class="ts-badges"></div>
-    <input type="text" id="${id}-search" class="tad-search" placeholder="Search teams..." aria-label="Search teams" oninput="tsFilter('${id}')" onfocus="document.getElementById('${id}-dropdown').classList.add('ts-open')" />
-    <div id="${id}-dropdown" class="ts-dropdown">${items}</div>
+    <input type="text" id="${id}-search" class="tad-search" placeholder="Search teams..." aria-label="Search teams" role="combobox" aria-expanded="false" aria-controls="${id}-dropdown" aria-autocomplete="list" oninput="tsFilter('${id}')" onfocus="document.getElementById('${id}-dropdown').classList.add('ts-open');this.setAttribute('aria-expanded','true')" />
+    <div id="${id}-dropdown" class="ts-dropdown" role="listbox" aria-label="Teams">${items}</div>
     <input type="hidden" id="${id}-value" name="team_id" value=""/>
   </div>
   <script>window._ts=window._ts||{};window._ts['${id}']=[];
   window.tsFilter=function(id){var q=document.getElementById(id+'-search').value.toLowerCase();document.querySelectorAll('#'+id+'-dropdown .tad-row').forEach(function(r){r.style.display=r.dataset.name.includes(q)?'':'none'})};
-  window.tsSelect=function(id,tid,name){window._ts[id].push({id:tid,name:name});tsRender(id);document.getElementById(id+'-dropdown').classList.remove('ts-open');document.getElementById(id+'-search').value=''};
+  window.tsSelect=function(id,tid,name){window._ts[id].push({id:tid,name:name});tsRender(id);document.getElementById(id+'-dropdown').classList.remove('ts-open');document.getElementById(id+'-search').setAttribute('aria-expanded','false');document.getElementById(id+'-search').value=''};
   function tsRender(id){var b=document.getElementById(id+'-badges');b.innerHTML='';window._ts[id].forEach(function(t,i){b.innerHTML+='<span class="ts-badge">'+t.name+' <span class="ts-badge-x" data-action="tsRemove" data-args=\\'["'+id+'",'+i+']\\' >&times;</span></span>'});document.getElementById(id+'-value').value=window._ts[id].map(function(t){return t.id}).join(',')}
   window.tsRemove=function(id,idx){window._ts[id].splice(idx,1);tsRender(id)};
-  document.addEventListener('click',function(e){if(!document.getElementById('${id}-wrap').contains(e.target))document.getElementById('${id}-dropdown').classList.remove('ts-open')});</script>`
+  document.addEventListener('click',function(e){if(!document.getElementById('${id}-wrap').contains(e.target)){document.getElementById('${id}-dropdown').classList.remove('ts-open');document.getElementById('${id}-search').setAttribute('aria-expanded','false')}});</script>`
 }

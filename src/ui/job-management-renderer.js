@@ -42,19 +42,19 @@ export function renderJobManagement(user, jobs, recentLogs = []) {
     { label: 'Running', value: runningJobs, color: runningJobs > 0 ? 'blue' : '' },
     { label: 'Failed', value: failedJobs, color: failedJobs > 0 ? 'red' : '' },
     { label: 'Healthy', value: totalJobs - failedJobs, color: 'green' },
-  ].map(s => `<div class="card-clean"><div class="card-clean-body" style="padding:0.75rem 0"><h3 class="text-gray-500 text-sm">${s.label}</h3><p class="text-xl font-bold${s.color ? ` text-${s.color}-600` : ''}">${s.value}</p></div></div>`).join('')}</div>`;
+  ].map(s => `<div class="card-clean"><div class="card-clean-body" style="padding:0.75rem 0"><h3 class="text-gray-500 dark:text-gray-400 text-sm">${s.label}</h3><p class="text-xl font-bold${s.color ? ` text-${s.color}-600 dark:text-${s.color}-400` : ''}">${s.value}</p></div></div>`).join('')}</div>`;
 
   const headers = '<th>Job</th><th>Schedule</th><th>Status</th><th>Last Run</th><th>Next Run</th><th>Duration</th><th>Result</th><th>Actions</th>';
   const rows = jobs.map(j => jobRow(j, canManage)).join('');
-  const table = `<div class="card-clean" style="margin-bottom:1.5rem" style="overflow-x:auto"><div class="card-clean-body"><h3 class="font-semibold mb-3">Scheduled Jobs</h3><table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows || '<tr><td colspan="8" class="text-center py-8 text-gray-500">No jobs configured</td></tr>'}</tbody></table></div></div>`;
+  const table = `<div class="card-clean" style="margin-bottom:1.5rem"><div class="card-clean-body"><h3 class="font-semibold mb-3">Scheduled Jobs</h3><div style="overflow-x:auto"><table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows || '<tr><td colspan="8" class="text-center py-8 text-gray-500 dark:text-gray-400">No jobs configured</td></tr>'}</tbody></table></div></div></div>`;
 
   const logRows = recentLogs.slice(0, 20).map(l => {
-    const sts = l.success ? '<span class="text-green-600">OK</span>' : '<span class="text-red-600">FAIL</span>';
-    return `<tr><td class="text-sm">${l.job_name || '-'}</td><td>${sts}</td><td class="text-xs text-gray-500">${fmtDate(l.started_at)}</td><td class="text-xs">${l.duration ? l.duration + 'ms' : '-'}</td><td class="text-xs text-gray-500 max-w-xs truncate">${l.message || '-'}</td></tr>`;
+    const sts = l.success ? '<span class="text-green-600 dark:text-green-400">OK</span>' : '<span class="text-red-600 dark:text-red-400">FAIL</span>';
+    return `<tr><td class="text-sm">${l.job_name || '-'}</td><td>${sts}</td><td class="text-xs text-gray-500 dark:text-gray-400">${fmtDate(l.started_at)}</td><td class="text-xs">${l.duration ? l.duration + 'ms' : '-'}</td><td class="text-xs text-gray-500 dark:text-gray-400 max-w-xs truncate">${l.message || '-'}</td></tr>`;
   }).join('');
-  const logTable = `<div class="card-clean"><div class="card-clean-body"><h3 class="font-semibold mb-3">Recent Execution Logs</h3><table class="data-table"><thead><tr><th>Job</th><th>Result</th><th>Time</th><th>Duration</th><th>Message</th></tr></thead><tbody>${logRows || '<tr><td colspan="5" class="text-center py-4 text-gray-400">No recent logs</td></tr>'}</tbody></table></div></div>`;
+  const logTable = `<div class="card-clean"><div class="card-clean-body"><h3 class="font-semibold mb-3">Recent Execution Logs</h3><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Job</th><th>Result</th><th>Time</th><th>Duration</th><th>Message</th></tr></thead><tbody>${logRows || '<tr><td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">No recent logs</td></tr>'}</tbody></table></div></div></div>`;
 
-  const content = `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Scheduled Jobs</h1>${canManage ? '<button class="btn btn-primary btn-sm" data-action="triggerAll">Run All Now</button>' : ''}</div>${statCards}${table}${logTable}`;
+  const content = `<main><div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Scheduled Jobs</h1>${canManage ? '<button class="btn btn-primary btn-sm" data-action="triggerAll">Run All Now</button>' : ''}</div>${statCards}${table}${logTable}</main>`;
 
   const jobScript = `window.triggerJob=async function(name){try{const r=await fetch('/api/admin/jobs/'+name+'/trigger',{method:'POST'});if(r.ok){location.reload()}else{showToast('Trigger failed: '+(await r.text()),'error')}}catch(e){showToast(e.message,'error')}};window.toggleJob=async function(name,enabled){try{const r=await fetch('/api/admin/jobs/'+name,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});if(r.ok)location.reload();else showToast('Toggle failed','error')}catch(e){showToast(e.message,'error')}};window.triggerAll=async function(){if(!(await window.gmConfirm({title:'Please confirm',message:'Run all jobs now?',danger:false,confirmLabel:'OK'})))return;try{const r=await fetch('/api/admin/jobs/trigger-all',{method:'POST'});if(r.ok)location.reload();else showToast('Failed','error')}catch(e){showToast(e.message,'error')}}`;
 

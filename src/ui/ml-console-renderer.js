@@ -23,7 +23,7 @@ export function renderMlConsole(user, candidates, reviewMap) {
                 <div style="font-weight:500">${esc(reviewName)}</div>
                 <div style="font-size:11px;color:var(--color-text-muted);margin-top:2px">p.${h.page_number || '?'}</div>
             </td>
-            <td style="padding:8px 10px;border-bottom:1px solid var(--color-border);font-size:13px;max-width:560px">${esc(truncated)}</td>
+            <td title="${esc(comment)}" style="padding:8px 10px;border-bottom:1px solid var(--color-border);font-size:13px;max-width:560px">${esc(truncated)}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--color-border);font-size:12px;color:var(--color-text-muted);white-space:nowrap">${fmtDate(h.created_at)}</td>
             <td style="padding:8px 10px;border-bottom:1px solid var(--color-border);text-align:right">
                 <a href="/review/${esc(h.review_id)}/pdf#h-${esc(h.id)}" class="btn-ghost-clean" style="padding:4px 10px;font-size:12px">Open</a>
@@ -68,7 +68,7 @@ export function renderMlConsole(user, candidates, reviewMap) {
       <div class="modal-content rounded-box max-w-lg p-6">
         <h3 style="font-size:16px;font-weight:600;margin:0 0 12px 0">AI Suggestion</h3>
         <div id="ml-ask-query" style="font-size:13px;color:var(--color-text-muted);margin-bottom:12px;padding:8px 10px;background:var(--color-surface-muted,#f8fafc);border-radius:6px"></div>
-        <div id="ml-ask-result" style="font-size:14px;white-space:pre-wrap;min-height:60px;padding:10px;background:white;border:1px solid var(--color-border);border-radius:6px">
+        <div id="ml-ask-result" style="font-size:14px;white-space:pre-wrap;min-height:60px;padding:10px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:6px">
           <div style="color:var(--color-text-muted);font-style:italic">Generating suggestion…</div>
         </div>
         <div id="ml-ask-meta" style="font-size:11px;color:var(--color-text-muted);margin-top:8px"></div>

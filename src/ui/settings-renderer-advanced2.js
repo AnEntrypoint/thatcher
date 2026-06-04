@@ -85,26 +85,26 @@ export function renderSettingsMwrPermissions(user, permissions = []) {
   </tr>`).join('');
   const content = `${settingsBack()}<div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold">MWR Permissions</h1>
-    <button class="btn btn-primary btn-sm" onclick="document.getElementById('grant-perm-dialog').style.display='flex'">+ Grant Permission</button>
+    <button class="btn btn-primary btn-sm" data-action="openDialog" data-args='["grant-perm-dialog"]'>+ Grant Permission</button>
   </div>
   ${inlineTable(['Entity Type','Entity ID','User ID','Permission','Granted','Actions'], rows, 'No permissions configured')}
-  <div id="grant-perm-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true">
-    <div class="dialog-panel" style="max-width:460px">
-      <div class="dialog-header"><span class="dialog-title">Grant Permission</span><button class="dialog-close" onclick="document.getElementById('grant-perm-dialog').style.display='none'">&times;</button></div>
+  <div id="grant-perm-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="gp-dialog-title" data-dialog-close="grant-perm-dialog">
+    <div class="dialog-panel" style="max-width:min(460px,90vw)">
+      <div class="dialog-header"><span class="dialog-title" id="gp-dialog-title">Grant Permission</span><button class="dialog-close" data-dialog-close="grant-perm-dialog" aria-label="Close">&times;</button></div>
       <div class="dialog-body">
-        <div class="modal-form-group"><label>Entity Type</label><input id="gp-entity-type" class="form-input" placeholder="review"/></div>
-        <div class="modal-form-group"><label>Entity ID</label><input id="gp-entity-id" class="form-input" placeholder="entity id"/></div>
-        <div class="modal-form-group"><label>User ID</label><input id="gp-user-id" class="form-input" placeholder="user id"/></div>
+        <div class="modal-form-group"><label>Entity Type</label><input id="gp-entity-type" class="form-input" placeholder="e.g. review"/></div>
+        <div class="modal-form-group"><label>Entity ID</label><input id="gp-entity-id" class="form-input" placeholder="e.g. 1a2b3c"/></div>
+        <div class="modal-form-group"><label>User ID</label><input id="gp-user-id" class="form-input" placeholder="e.g. user_42"/></div>
         <div class="modal-form-group"><label>Permission Type</label><select id="gp-perm-type" class="form-input"><option value="view">view</option><option value="edit">edit</option><option value="admin">admin</option></select></div>
         <div id="gp-result" style="display:none;margin-top:8px"></div>
       </div>
       <div class="dialog-footer">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('grant-perm-dialog').style.display='none'">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="grantPermission()">Grant</button>
+        <button class="btn btn-ghost btn-sm" data-dialog-close="grant-perm-dialog">Cancel</button>
+        <button class="btn btn-primary btn-sm" data-action="grantPermission">Grant</button>
       </div>
     </div>
   </div>`;
-  const script = `${TOAST_SCRIPT}async function grantPermission(){var body={entity_type:document.getElementById('gp-entity-type').value.trim(),entity_id:document.getElementById('gp-entity-id').value.trim(),user_id:document.getElementById('gp-user-id').value.trim(),permission_type:document.getElementById('gp-perm-type').value};var res=document.getElementById('gp-result');if(!body.entity_type||!body.entity_id||!body.user_id){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">All fields required.</div>';return}try{var r=await fetch('/api/mwr/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();if(r.ok&&d.success){showToast('Permission granted','success');document.getElementById('grant-perm-dialog').style.display='none';setTimeout(function(){location.reload()},500)}else{res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||'Failed')+'</div>'}}catch(e){showToast('Error: '+e.message,'error')}}async function revokePermission(id){if(!confirm('Revoke this permission?'))return;try{var r=await fetch('/api/permission/'+id,{method:'DELETE'});if(r.ok){showToast('Revoked','success');setTimeout(function(){location.reload()},500)}else{showToast('Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}`;
+  const script = `${TOAST_SCRIPT}window.grantPermission=async function(){var body={entity_type:document.getElementById('gp-entity-type').value.trim(),entity_id:document.getElementById('gp-entity-id').value.trim(),user_id:document.getElementById('gp-user-id').value.trim(),permission_type:document.getElementById('gp-perm-type').value};var res=document.getElementById('gp-result');if(!body.entity_type||!body.entity_id||!body.user_id){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">All fields required.</div>';return}try{var r=await fetch('/api/mwr/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();if(r.ok&&d.success){showToast('Permission granted','success');(window.closeDialog?window.closeDialog('grant-perm-dialog'):document.getElementById('grant-perm-dialog').style.display='none');setTimeout(function(){location.reload()},500)}else{res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||'Failed')+'</div>'}}catch(e){showToast('Error: '+e.message,'error')}};window.revokePermission=async function(id){if(!confirm('Revoke this permission?'))return;try{var r=await fetch('/api/permission/'+id,{method:'DELETE'});if(r.ok){showToast('Revoked','success');setTimeout(function(){location.reload()},500)}else{showToast('Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}`;
   return settingsPage(user, 'MWR Permissions', bc('MWR Permissions'), content, [script]);
 }
 

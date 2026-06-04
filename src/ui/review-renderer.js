@@ -35,11 +35,11 @@ function reviewRow(r) {
   return `<tr class="review-row" data-status="${r.status || ''}" data-flags="${r.flags_count || 0}" data-highlights="${r.highlights_count || 0}" data-archived="${r.archived || 0}" data-priority="${isPri}" data-stage="${r.stage || r.status || ''}" data-navigate="/review/${r.id}" oncontextmenu="showCtxMenu(event,'${r.id}')" style="cursor:pointer">
     <td style="width:32px"><button class="review-priority-star${isPri?' is-priority':''}" data-action="togglePriority" data-args='["${r.id}"]' aria-label="Toggle priority" onclick="event.stopPropagation()">${isPri?'★':'☆'}</button></td>
     <td class="review-row-name">${r.name || r.title || 'Untitled'}</td>
-    <td style="font-size:13px;color:var(--color-text-muted)">${r.engagement_name || r.engagement_id_display || '-'}</td>
+    <td style="font-size:13px;color:var(--color-text)">${r.engagement_name || r.engagement_id_display || '-'}</td>
     <td>${statusBadge(r.status)}</td>
     <td style="text-align:center;font-size:13px">${r.highlights_count !== undefined ? r.highlights_count : '-'}</td>
     <td style="font-size:13px">${fmtDate(r.deadline)}</td>
-    <td style="font-size:13px;color:var(--color-text-light)">${fmtDate(r.created_at)}</td>
+    <td style="font-size:13px;color:var(--color-text-muted)">${fmtDate(r.created_at)}</td>
   </tr>`;
 }
 
