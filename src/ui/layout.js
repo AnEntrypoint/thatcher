@@ -162,7 +162,7 @@ export function nav(user, pathname = '') {
   </div>
 </div>
 <script>
-window.loadingBtn=function(btn,loading,label){if(!btn)return;btn.disabled=loading;btn.style.opacity=loading?'0.7':'1';if(loading){btn._orig=btn.innerHTML;btn.innerHTML='<span class="btn-spinner"></span>'+(label||'Loading...');}else{btn.innerHTML=btn._orig||label||btn.innerHTML;btn.disabled=false}}
+window.loadingBtn=function(btn,loading,label){if(!btn)return;btn.disabled=loading;btn.style.opacity=loading?'0.7':'1';if(loading){btn._orig=btn.innerHTML;btn.innerHTML='<span class="btn-spinner"></span>'+(label||'Loading...');}else{btn.innerHTML=btn._orig||label||btn.innerHTML;btn.disabled=false}};
 // Canonical client-side date/currency formatters — mirror render-helpers fmtDate so
 // client-rendered template strings format identically to server-rendered ones (fixed
 // en-ZA locale, sec/ms/ISO scale-detect, '-' fallback). Use window.fmtDate(ts) in any
