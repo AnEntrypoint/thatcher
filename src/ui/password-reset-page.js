@@ -87,8 +87,20 @@ export function renderPasswordResetPage(params = {}) {
     var alertContainer = document.getElementById('alertContainer');
     var isConfirm = ${isConfirm};
 
-    function showAlert(message, type) {
-      alertContainer.innerHTML = '<div class="alert alert-' + (type || 'error') + '">' + message + '</div>';
+    function showAlert(message, type, link) {
+      alertContainer.innerHTML = '';
+      var div = document.createElement('div');
+      div.className = 'alert alert-' + (type || 'error');
+      div.appendChild(document.createTextNode(message));
+      if (link) {
+        div.appendChild(document.createTextNode(' '));
+        var a = document.createElement('a');
+        a.href = link.href;
+        a.textContent = link.text;
+        if (link.style) a.setAttribute('style', link.style);
+        div.appendChild(a);
+      }
+      alertContainer.appendChild(div);
     }
 
     if (isConfirm && !form.token.value) {
@@ -121,7 +133,7 @@ export function renderPasswordResetPage(params = {}) {
         var result = await res.json().catch(function() { return {}; });
         if (res.ok) {
           if (isConfirm) {
-            showAlert('Password updated. <a href="/login" style="color:var(--success);font-weight:600;text-decoration:underline">Sign in now</a>', 'success');
+            showAlert('Password updated. ', 'success', { href: '/login', text: 'Sign in now', style: 'color:var(--success);font-weight:600;text-decoration:underline' });
             form.style.display = 'none';
           } else {
             form.reset();

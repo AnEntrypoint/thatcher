@@ -5,6 +5,7 @@ import { reviewHighlightActionsScript } from '@/ui/review-highlight-actions-scri
 export function reviewDetailScript(reviewId) {
   const id = esc(reviewId || '');
   return `${TOAST_SCRIPT}
+function __esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function switchTab(tab){
   document.querySelectorAll('.rv-panel').forEach(function(p){p.style.display='none'});
   var panel=document.getElementById('rvpanel-'+tab);if(panel)panel.style.display='';
@@ -24,7 +25,7 @@ async function openChecklistPicker(reviewId){
   try{
     var r=await fetch('/api/mwr/checklist-template',{credentials:'include'});var data=await r.json();
     if(!data.success||!data.templates||!data.templates.length){sel.innerHTML='<option value="">No templates available</option>';return}
-    sel.innerHTML=data.templates.map(function(t){return '<option value="'+t.id+'">'+t.name.replace(/</g,'&lt;')+' ('+t.item_count+' items)</option>'}).join('');
+    sel.innerHTML=data.templates.map(function(t){return '<option value="'+__esc(t.id)+'">'+__esc(t.name)+' ('+__esc(t.item_count)+' items)</option>'}).join('');
   }catch(e){sel.innerHTML='<option value="">Failed to load templates</option>'}
 }
 async function saveChecklistFromTemplate(reviewId){
@@ -88,7 +89,7 @@ async function loadHistory(reviewId){
     var data=await r.json();
     var logs=(data.logs||data.data||[]);
     if(!logs.length){list.innerHTML='<div style="font-size:13px;color:var(--color-text-muted);padding:24px 0;text-align:center">No history found</div>';return}
-    list.innerHTML=logs.map(function(log){var ts=log.timestamp?new Date(log.timestamp).toLocaleString():'-';var op=log.operation||log.action||'-';var uid=log.user_id?'User '+log.user_id:'System';var details='';if(log.details&&typeof log.details==='object'){var keys=Object.keys(log.details).slice(0,3);details=keys.map(function(k){return k+': '+String(log.details[k]).slice(0,40)}).join(', ');}return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--color-border,#e5e7eb)"><div style="width:8px;height:8px;border-radius:50%;background:var(--color-primary,#2563eb);margin-top:5px;flex-shrink:0"></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:500;color:var(--color-text)">'+op.replace(/_/g,' ')+'</span><span style="font-size:12px;color:var(--color-text-muted);white-space:nowrap">'+ts+'</span></div><div style="font-size:12px;color:var(--color-text-muted);margin-top:2px">'+uid+(details?' &mdash; '+details:'')+'</div></div></div>';}).join('');
+    list.innerHTML=logs.map(function(log){var ts=log.timestamp?new Date(log.timestamp).toLocaleString():'-';var op=log.operation||log.action||'-';var uid=log.user_id?'User '+log.user_id:'System';var details='';if(log.details&&typeof log.details==='object'){var keys=Object.keys(log.details).slice(0,3);details=keys.map(function(k){return k+': '+String(log.details[k]).slice(0,40)}).join(', ');}return '<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--color-border,#e5e7eb)"><div style="width:8px;height:8px;border-radius:50%;background:var(--color-primary,#2563eb);margin-top:5px;flex-shrink:0"></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px;font-weight:500;color:var(--color-text)">'+__esc(op.replace(/_/g,' '))+'</span><span style="font-size:12px;color:var(--color-text-muted);white-space:nowrap">'+__esc(ts)+'</span></div><div style="font-size:12px;color:var(--color-text-muted);margin-top:2px">'+__esc(uid)+(details?' &mdash; '+__esc(details):'')+'</div></div></div>';}).join('');
   }catch(e){list.innerHTML='<div style="font-size:13px;color:var(--color-danger,#dc2626);padding:24px 0;text-align:center">Failed to load history</div>'}
 }
 ${reviewHighlightActionsScript(reviewId)}`;

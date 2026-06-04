@@ -70,7 +70,7 @@ export function monitoringDashboardScript() {
       function updateRequests(requests) {
         const html = Object.entries(requests).map(([endpoint, stats]) => \`
           <div class="mb-4 p-3 bg-base-100 rounded">
-            <div class="font-bold">\${endpoint}</div>
+            <div class="font-bold">\${mdEsc(endpoint)}</div>
             <div class="grid grid-cols-7 gap-2 text-sm mt-2">
               <div>Count: \${stats.count}</div>
               <div>Min: \${stats.min.toFixed(1)}ms</div>

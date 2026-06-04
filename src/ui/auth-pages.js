@@ -1,10 +1,11 @@
 import { generateHtml } from '@/ui/layout.js'
 import { nav as navFn } from '@/ui/layout.js'
 import { AUTH_CSS, GOOGLE_SVG, WARN_SVG, LOGO_SVG, authLogoHtml } from '@/ui/auth-styles.js'
+import { esc } from '@/ui/render-helpers.js'
 
 export function renderLogin(error = null, hasGoogleAuth = false) {
   const errHtml = error
-    ? `<div class="auth-err" role="alert">${WARN_SVG}${String(error).replace(/</g, '&lt;')}</div>`
+    ? `<div class="auth-err" role="alert">${WARN_SVG}${esc(error)}</div>`
     : ''
   const googleBtn = hasGoogleAuth
     ? `<a href="/api/auth/google" class="auth-google-btn" aria-label="Continue with Google">${GOOGLE_SVG}Continue with Google</a>
@@ -75,7 +76,7 @@ export function renderPasswordResetConfirm(token) {
     <div class="auth-card">
       <div id="confirm-success" class="auth-success" style="display:none" role="alert">Password updated. <a href="/login" style="color:#15803d;text-decoration:underline;font-weight:600">Sign in now</a></div>
       <form id="confirm-form" aria-label="Set new password" novalidate>
-        <input type="hidden" name="token" value="${token}">
+        <input type="hidden" name="token" value="${esc(token)}">
         <div class="auth-field"><label class="auth-label" for="password">New password</label>
           <input type="password" name="password" id="password" class="auth-input" placeholder="At least 8 characters" minlength="8" required autocomplete="new-password" autofocus></div>
         <div class="auth-field"><label class="auth-label" for="confirm_password">Confirm new password</label>
@@ -107,7 +108,7 @@ export function renderAccessDenied(user, entityName, action) {
   const body = `<div class="min-h-screen">${navFn(user)}<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px">
     <div style="font-size:48px;margin-bottom:16px" aria-hidden="true">&#128274;</div>
     <h1 style="font-size:24px;font-weight:700;color:var(--color-text,#0f172a);margin:0 0 8px">Access Denied</h1>
-    <p style="color:var(--color-text-muted,#64748b);margin:0 0 24px;max-width:400px">You do not have permission to ${txt[action] || action} in ${entityName}.</p>
+    <p style="color:var(--color-text-muted,#64748b);margin:0 0 24px;max-width:400px">You do not have permission to ${esc(txt[action] || action)} in ${esc(entityName)}.</p>
     <a href="/" class="btn-primary-clean">Return to Dashboard</a>
   </div></div>`
   return generateHtml('Access Denied | Moonlanding', body)

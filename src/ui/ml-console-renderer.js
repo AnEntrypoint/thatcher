@@ -84,7 +84,13 @@ export function renderMlConsole(user, candidates, reviewMap) {
         var qText = row ? row.querySelector('td:nth-child(2)').textContent.trim() : '';
         var dlg = document.getElementById('ml-ask-dialog');
         document.getElementById('ml-ask-query').textContent = qText;
-        document.getElementById('ml-ask-result').innerHTML = '<div style="color:#64748b;font-style:italic">Generating suggestion…</div>';
+        var resultEl = document.getElementById('ml-ask-result');
+        resultEl.textContent = '';
+        var loadingEl = document.createElement('div');
+        loadingEl.style.color = '#64748b';
+        loadingEl.style.fontStyle = 'italic';
+        loadingEl.textContent = 'Generating suggestion…';
+        resultEl.appendChild(loadingEl);
         document.getElementById('ml-ask-meta').textContent = '';
         dlg.style.display = 'flex';
         try {

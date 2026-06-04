@@ -34,7 +34,7 @@ export function renderComponent(componentId, props = {}) {
       if (Array.isArray(value)) {
         html = html.replace(regex, value.map(v => renderItem(v, key)).join(''));
       } else {
-        html = html.replace(regex, JSON.stringify(value));
+        html = html.replace(regex, esc(JSON.stringify(value)));
       }
     } else {
       html = html.replace(regex, esc(value));
