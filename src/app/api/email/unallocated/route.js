@@ -1,5 +1,5 @@
 import { NextResponse } from '@/lib/next-polyfills';
-import { getDatabase } from '@/lib/database-core';
+import { list } from '@/engine';
 
 export async function GET(request) {
   try {
@@ -11,17 +11,11 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    const db = getDatabase();
-
-    const emails = db.prepare(`
-      SELECT *
-      FROM email
-      WHERE allocated = 0
-      ORDER BY received_at DESC
-      LIMIT ? OFFSET ?
-    `).all(limit, offset);
-
-    const total = db.prepare('SELECT COUNT(*) as count FROM email WHERE allocated = 0').get();
+    // Unallocated emails, newest first, paginated (busybase + in-memory slice).
+    const all = (await list('email', {}, { sort: { field: 'received_at', dir: 'DESC' } }))
+      .filter(e => !e.allocated || e.allocated === 0);
+    const total = { count: all.length };
+    const emails = all.slice(offset, offset + limit);
 
     const emailsWithParsedAttachments = emails.map(email => ({
       ...email,
