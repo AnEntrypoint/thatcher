@@ -121,6 +121,7 @@ export function nameHash(name) {
 }
 
 export { getInitials } from '@/lib/utils.js'
+export { icon } from '@/ui/format-helpers.js'
 
 export function fmtDate(ts) {
   if (!ts) return '-';
