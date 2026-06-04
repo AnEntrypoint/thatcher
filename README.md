@@ -12,7 +12,7 @@ Thatcher is a complete extraction of the moonlanding application framework. Buil
 - **Plugin System** — Extend entities with hooks, validators, and custom fields
 - **External Integrations** — Google Drive/Gmail, Email (SMTP), PDF generation
 - **Hot Reload** — Config changes reflect instantly without restart
-- **Production-Ready** — SQLite, WAL mode, connection pooling, metrics, audit logging
+- **Production-Ready** — busybase (LanceDB) document store, vector search, metrics, audit logging
 
 ## Quick Start
 
@@ -84,7 +84,7 @@ thresholds:
 ```
 
 That's it. Start the server and you have:
-- SQLite tables `item` with correct schema
+- busybase `item` table (schemaless; created on first insert)
 - REST endpoints: `GET/POST/PUT/DELETE /api/item`
 - Role-based permissions enforced
 - State transitions via `POST /api/item/:id/transition`
@@ -143,7 +143,7 @@ thatcher/
 │   │   ├── env.js               # Environment config
 │   │   └── constants.js         # HTTP codes, statuses
 │   ├── lib/
-│   │   ├── database-core.js     # SQLite init, migrations
+│   │   ├── busybase-store.js    # busybase data layer (async CRUD)
 │   │   ├── query-engine.js      # Read operations (GET, search)
 │   │   ├── query-engine-write.js # Write operations (CRUD)
 │   │   ├── config-generator-engine.js  # Spec builder
@@ -359,7 +359,7 @@ All APIs accessible via thatcher instance:
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `PORT` | Server port | 3000 |
-| `DATABASE_PATH` | SQLite file path | `./data/app.db` |
+| `BUSYBASE_DIR` | busybase data directory | `busybase_data` |
 | `NODE_ENV` | `development` \| `production` | `development` |
 | `DEBUG` | Enable debug logging | `false` |
 | `GOOGLE_CLIENT_ID` | OAuth client ID | — |

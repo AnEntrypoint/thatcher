@@ -4,10 +4,9 @@
  */
 
 import { Lucia } from 'lucia';
-import { BetterSqlite3Adapter } from '@lucia-auth/adapter-sqlite';
 import { Google } from 'arctic';
 import bcrypt from 'bcrypt';
-import { getDatabase } from './lib/database-core.js';
+import { BusyBaseLuciaAdapter } from './lib/busybase-lucia-adapter.js';
 import { buildConfig, hasGoogleAuth } from './config/env.js';
 
 let _lucia = null;
@@ -20,9 +19,8 @@ let _adapter = null;
  */
 export function initAuth(config = null) {
   const cfg = config || buildConfig();
-  const db = getDatabase(cfg.db.path);
 
-  _adapter = new BetterSqlite3Adapter(db, { user: 'users', session: 'sessions' });
+  _adapter = new BusyBaseLuciaAdapter();
 
   _lucia = new Lucia(_adapter, {
     sessionCookie: {
@@ -176,9 +174,9 @@ export async function verifyPassword(password, hash) {
  * @param {string} email
  * @returns {object|null}
  */
-export function getUserByEmail(email) {
-  const db = getDatabase();
-  return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+export async function getUserByEmail(email) {
+  const { getBy } = await import('./lib/busybase-store.js');
+  return getBy('user', 'email', email);
 }
 
 /**
@@ -188,7 +186,7 @@ export function getUserByEmail(email) {
  */
 export async function createUser(userData) {
   const hashedPassword = await hashPassword(userData.password);
-  const { create } = await import('./query-engine-write.js');
+  const { create } = await import('./lib/busybase-store.js');
   return create('user', {
     ...userData,
     password: hashedPassword,
@@ -202,7 +200,7 @@ export async function createUser(userData) {
  * @returns {object|null} User if valid, null otherwise
  */
 export async function authenticate(email, password) {
-  const user = getUserByEmail(email);
+  const user = await getUserByEmail(email);
   if (!user) return null;
 
   const valid = await verifyPassword(password, user.password);

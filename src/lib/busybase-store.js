@@ -45,9 +45,17 @@ function unwrap({ data, error }, op) {
  * for every ref field with a `display` spec, fetch the referenced rows and attach
  * `<field>_display`. Batched per ref-table to avoid N+1 within a single field.
  */
+// getSpec returns null for raw infra tables (sessions, audit_logs, structured_logs,
+// password_reset_tokens, mwr_bridge_tokens, email, activity_log, ...) that aren't
+// config entities. Treat those as plain document tables: no ref-display, no
+// soft-delete, hard CRUD. specOf() guarantees a usable shape.
+function specOf(entity) {
+  return getSpec(entity) || { fields: {}, raw: true };
+}
+
 async function attachRefDisplays(entity, rows) {
   if (!rows.length) return rows;
-  const spec = getSpec(entity);
+  const spec = specOf(entity);
   const refFields = Object.entries(spec.fields || {}).filter(([, f]) => f.type === 'ref' && f.display);
   if (!refFields.length) return rows;
 
@@ -87,7 +95,7 @@ function applyWhere(builder, where) {
 
 /** List records (optionally filtered), with ref-display + visibility + sort/limit. */
 export async function list(entity, where = {}, options = {}) {
-  const spec = getSpec(entity);
+  const spec = specOf(entity);
   const tbl = tableName(entity);
   let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'list');
   rows = applyVisibility(spec, rows, where, options);
@@ -111,7 +119,7 @@ export async function list(entity, where = {}, options = {}) {
 
 /** Count records matching `where` (after visibility filtering). */
 export async function count(entity, where = {}, options = {}) {
-  const spec = getSpec(entity);
+  const spec = specOf(entity);
   const tbl = tableName(entity);
   let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'count');
   rows = applyVisibility(spec, rows, where, options);
@@ -139,8 +147,7 @@ export async function getBy(entity, field, value) {
 }
 
 export async function create(entity, data, user) {
-  const spec = getSpec(entity);
-  if (!spec) throw new Error(`Entity not found: ${entity}`);
+  const spec = specOf(entity);
   const tbl = tableName(entity);
 
   const record = {
@@ -165,8 +172,7 @@ export async function create(entity, data, user) {
 }
 
 export async function update(entity, id, data) {
-  const spec = getSpec(entity);
-  if (!spec) throw new Error(`Entity not found: ${entity}`);
+  const spec = specOf(entity);
   const tbl = tableName(entity);
 
   const existing = await get(entity, id);
@@ -178,8 +184,7 @@ export async function update(entity, id, data) {
 }
 
 export async function remove(entity, id) {
-  const spec = getSpec(entity);
-  if (!spec) throw new Error(`Entity not found: ${entity}`);
+  const spec = specOf(entity);
   const tbl = tableName(entity);
 
   const existing = await get(entity, id);
@@ -208,7 +213,7 @@ export async function bulkCreate(entity, records, user) {
  * is the in-memory equivalent of the old LIKE fallback). Returns visible rows only.
  */
 export async function search(entity, query, where = {}, options = {}) {
-  const spec = getSpec(entity);
+  const spec = specOf(entity);
   const rows = await list(entity, where, { ...options, limit: undefined, offset: undefined });
   const q = String(query || '').toLowerCase();
   if (!q) return rows;
@@ -225,7 +230,7 @@ export async function search(entity, query, where = {}, options = {}) {
 }
 
 export async function searchWithPagination(entity, query, where = {}, page = 1, pageSize = null) {
-  const spec = getSpec(entity);
+  const spec = specOf(entity);
   const finalPageSize = pageSize || spec.list?.pageSize || 50;
   const finalPage = Math.max(1, page);
   const all = await search(entity, query, where);
