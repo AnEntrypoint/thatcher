@@ -4,6 +4,23 @@
   "description": "A config-driven application framework for building data-intensive web apps without code. 100% feature-complete extraction from moonlanding.",
   "main": "src/index.js",
   "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./engine.server": "./src/engine.server.js",
+    "./lib/*": "./src/lib/*.js",
+    "./lib/*.js": "./src/lib/*.js",
+    "./ui/*": "./src/ui/*.js",
+    "./ui/*.js": "./src/ui/*.js",
+    "./config/*": "./src/config/*.js",
+    "./config/*.js": "./src/config/*.js",
+    "./services/*": "./src/services/*.js",
+    "./services/*.js": "./src/services/*.js",
+    "./migration/*": "./src/migration/*.js",
+    "./validation/*": "./src/validation/*.js",
+    "./adapters/*": "./src/adapters/*.js",
+    "./plugins/*": "./src/plugins/*.js",
+    "./package.json": "./package.json"
+  },
   "bin": {
     "thatcher": "src/cli.js",
     "thatcher-dev": "src/cli.js"
