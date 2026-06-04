@@ -2,6 +2,7 @@
  * Error Handling - Centralized error types and utilities
  */
 
+// AppError stays a real class (base error type; `instanceof AppError` works).
 export class AppError extends Error {
   constructor(message, code = 'APP_ERROR', status = 500, details = null) {
     super(message);
@@ -9,62 +10,38 @@ export class AppError extends Error {
     this.code = code;
     this.status = status;
     this.details = details;
-    if (Error.captureStackTrace) Error.captureStackTrace(this, AppError);
+    if (Error.captureStackTrace) Error.captureStackTrace(this, this.constructor);
   }
 }
 
-export class UnauthorizedError extends AppError {
-  constructor(message = 'Authentication required') {
-    super(message, 'UNAUTHORIZED', 401);
-    this.name = 'UnauthorizedError';
-  }
+// The specific error types are exported as FACTORY FUNCTIONS, not classes, so
+// both `throw UnauthorizedError(x)` (the style moonlanding and ~17 callsites in
+// this repo use) and a plain call work. A derived `class X extends AppError`
+// cannot be invoked without `new` at all (the engine throws before the body, so
+// a new.target guard does not help) — a factory is the portable fix. Each
+// returns an AppError instance, so `instanceof AppError` still holds in catch.
+export function UnauthorizedError(message = 'Authentication required') {
+  const e = new AppError(message, 'UNAUTHORIZED', 401); e.name = 'UnauthorizedError'; return e;
 }
-
-export class PermissionError extends AppError {
-  constructor(message = 'Permission denied') {
-    super(message, 'PERMISSION_DENIED', 403);
-    this.name = 'PermissionError';
-  }
+export function PermissionError(message = 'Permission denied') {
+  const e = new AppError(message, 'PERMISSION_DENIED', 403); e.name = 'PermissionError'; return e;
 }
-
-export class NotFoundError extends AppError {
-  constructor(entity = 'Resource', id = null) {
-    const msg = id ? `${entity} with id ${id} not found` : `${entity} not found`;
-    super(msg, 'NOT_FOUND', 404);
-    this.name = 'NotFoundError';
-    this.entity = entity;
-    this.id = id;
-  }
+export function NotFoundError(entity = 'Resource', id = null) {
+  const msg = id ? `${entity} with id ${id} not found` : `${entity} not found`;
+  const e = new AppError(msg, 'NOT_FOUND', 404); e.name = 'NotFoundError'; e.entity = entity; e.id = id; return e;
 }
-
-export class ValidationError extends AppError {
-  constructor(message = 'Validation failed', errors = {}) {
-    super(message, 'VALIDATION_ERROR', 422);
-    this.name = 'ValidationError';
-    this.errors = errors;
-  }
+export function ValidationError(message = 'Validation failed', errors = {}) {
+  const e = new AppError(message, 'VALIDATION_ERROR', 422); e.name = 'ValidationError'; e.errors = errors; return e;
 }
-
-export class DatabaseError extends AppError {
-  constructor(operation = 'Database operation', originalError = null) {
-    super(`Database ${operation} failed: ${originalError?.message || 'unknown error'}`, 'DATABASE_ERROR', 500);
-    this.name = 'DatabaseError';
-    this.originalError = originalError;
-  }
+export function DatabaseError(operation = 'Database operation', originalError = null) {
+  const e = new AppError(`Database ${operation} failed: ${originalError?.message || 'unknown error'}`, 'DATABASE_ERROR', 500);
+  e.name = 'DatabaseError'; e.originalError = originalError; return e;
 }
-
-export class ConflictError extends AppError {
-  constructor(message = 'Resource already exists') {
-    super(message, 'CONFLICT', 409);
-    this.name = 'ConflictError';
-  }
+export function ConflictError(message = 'Resource already exists') {
+  const e = new AppError(message, 'CONFLICT', 409); e.name = 'ConflictError'; return e;
 }
-
-export class BadRequestError extends AppError {
-  constructor(message = 'Invalid request') {
-    super(message, 'BAD_REQUEST', 400);
-    this.name = 'BadRequestError';
-  }
+export function BadRequestError(message = 'Invalid request') {
+  const e = new AppError(message, 'BAD_REQUEST', 400); e.name = 'BadRequestError'; return e;
 }
 
 /**
