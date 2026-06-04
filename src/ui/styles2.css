@@ -176,6 +176,23 @@ html, body { overflow-x: hidden; max-width: 100%; }
 .stage-finalization { background: #dcfce7; color: #15803d; }
 .stage-closeout { background: #f1f5f9; color: #475569; }
 
+/* Dark-mode overrides for status pills + stage pills: keep them as dark-tinted
+   islands (not light-on-dark) with legible light text. */
+@media (prefers-color-scheme: dark) {
+  .pill-success { background: #14321f; color: #4ade80; }
+  .pill-danger { background: #3a1717; color: #f87171; }
+  .pill-warning { background: #3a2c12; color: #fbbf24; }
+  .pill-info { background: #16263f; color: #60a5fa; }
+  .pill-neutral { background: #25303d; color: #cbd5e1; }
+  .pill-primary { background: #122b3a; color: #38bdf8; }
+  .stage-info_gathering { background: #3a1717; color: #fca5a5; }
+  .stage-commencement { background: #3a2c12; color: #fcd34d; }
+  .stage-team_execution { background: #16263f; color: #93c5fd; }
+  .stage-partner_review { background: #261b3f; color: #c4b5fd; }
+  .stage-finalization { background: #14321f; color: #86efac; }
+  .stage-closeout { background: #25303d; color: #cbd5e1; }
+}
+
 /* Buttons */
 .btn-primary-clean { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; background: var(--color-primary); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.15s ease; min-height: 40px; }
 .btn-primary-clean:hover { background: var(--color-primary-hover); color: white; transform: translateY(-1px); box-shadow: var(--shadow-md); }
@@ -1473,6 +1490,24 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   --panel-select: rgba(255,255,255,0.10);
   --panel-accent: #B8FF00;
   --panel-accent-fg: #0B0B09;
+  /* Manual dark toggle must drive the --color-* system too: the @media (prefers-color-scheme: dark)
+     block below only fires on OS preference, so without these the toggle left --color-text* dark
+     on a dark --color-bg (witnessed 1.4:1 date cells / breadcrumb-sep on /review). */
+  --color-primary: #64b5f6;
+  --color-primary-hover: #42a5f5;
+  --color-surface: #1a1a1a;
+  --color-bg: #0f172a;
+  --color-border: #334155;
+  --color-text: #f1f5f9;
+  --color-text-muted: #cbd5e1;
+  --color-text-light: #94a3b8;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+  --color-info: #60a5fa;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.6), 0 4px 6px rgba(0,0,0,0.4);
 }
 
 @media (prefers-color-scheme: dark) {
