@@ -2,6 +2,7 @@ export function monitoringDashboardScript() {
   return `
     <script>
       let currentTab = 'requests'
+      function mdEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
       function showTab(name) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'))
@@ -86,9 +87,9 @@ export function monitoringDashboardScript() {
 
       function updateAlerts(alerts) {
         const html = alerts.map(alert => \`
-          <div class="p-3 rounded alert-\${alert.severity}">
-            <div class="font-bold">[\${alert.severity.toUpperCase()}] \${alert.type}</div>
-            <div>\${alert.message}</div>
+          <div class="p-3 rounded alert-\${mdEsc(alert.severity)}">
+            <div class="font-bold">[\${mdEsc(String(alert.severity).toUpperCase())}] \${mdEsc(alert.type)}</div>
+            <div>\${mdEsc(alert.message)}</div>
             <div class="text-sm text-gray-600">\${new Date(alert.timestamp).toLocaleString()}</div>
           </div>
         \`).join('')
@@ -104,7 +105,7 @@ export function monitoringDashboardScript() {
             <div class="mt-4 font-bold">Slow Queries:</div>
             \${(db.slowQueries || []).map(q => \`
               <div class="p-2 bg-base-100 rounded text-sm">
-                <div class="font-mono">\${q.sql}</div>
+                <div class="font-mono">\${mdEsc(q.sql)}</div>
                 <div>Duration: \${q.duration.toFixed(2)}ms</div>
               </div>
             \`).join('') || '<p>None</p>'}
@@ -136,9 +137,9 @@ export function monitoringDashboardScript() {
 
       function updateLogs(logs) {
         const html = logs.map(log => \`
-          <div class="log-\${log.level} mb-1">
-            [\${log.iso}] [\${log.level.toUpperCase()}] \${log.message}
-            \${Object.keys(log.metadata).length ? ' ' + JSON.stringify(log.metadata) : ''}
+          <div class="log-\${mdEsc(log.level)} mb-1">
+            [\${mdEsc(log.iso)}] [\${mdEsc(String(log.level).toUpperCase())}] \${mdEsc(log.message)}
+            \${Object.keys(log.metadata).length ? ' ' + mdEsc(JSON.stringify(log.metadata)) : ''}
           </div>
         \`).join('')
         document.getElementById('log-list').innerHTML = html || '<p>No logs</p>'
