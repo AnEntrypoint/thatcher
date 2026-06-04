@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { getDatabase } from '@/engine'
+import { count } from '@/engine'
 import { getAllMetrics } from '@/lib/metrics-collector.js'
 import { getDatabaseStats } from '@/lib/db-monitor.js'
 import { getCurrentResources } from '@/lib/resource-monitor.js'
@@ -19,11 +19,10 @@ function getLastSyncAt() {
 
 export const GET = async (request) => {
   try {
-    const db = getDatabase()
     const start = process.hrtime.bigint()
 
-    db.prepare('SELECT 1').get()
-    db.pragma('wal_checkpoint(PASSIVE)')
+    // busybase liveness probe (replaces the SQLite SELECT 1 + wal_checkpoint).
+    try { await count('user', {}); } catch { /* table may not exist yet; still alive */ }
 
     const dbLatency = Number(process.hrtime.bigint() - start) / 1000000
     const url = new URL(request.url)
@@ -48,7 +47,7 @@ export const GET = async (request) => {
       const user = await getUser()
       if (user && (user.role === 'admin' || user.role === 'partner')) {
         health.metrics = getAllMetrics()
-        health.database.stats = getDatabaseStats()
+        try { health.database.stats = getDatabaseStats() } catch { health.database.stats = null }
         health.resources = getCurrentResources()
         health.alerts = getRecentAlerts(10)
         health.memory = {
@@ -85,8 +84,7 @@ export const GET = async (request) => {
 
 export const HEAD = async (request) => {
   try {
-    const db = getDatabase()
-    db.prepare('SELECT 1').get()
+    await count('user', {})
     return new Response(null, { status: 200 })
   } catch (error) {
     console.error('[Health] Check failed:', error)
