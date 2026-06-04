@@ -4,7 +4,7 @@ import { cookies } from '@/lib/next-polyfills';
 import {
   logPermissionChange, getPermissionAuditTrail, searchPermissionAudit,
   getPermissionAuditByDateRange, exportPermissionAuditCSV,
-} from '@/lib/audit-logger';
+} from '@/lib/busybase-audit-reads';
 
 async function getUser() {
   const sessionId = (await cookies()).get(lucia.sessionCookieName)?.value ?? null;
@@ -37,9 +37,9 @@ export async function GET(request) {
 
     let results;
     if (search) {
-      results = searchPermissionAudit(search, limit);
+      results = await searchPermissionAudit(search, limit);
     } else if (startDate && endDate) {
-      results = getPermissionAuditByDateRange(parseInt(startDate, 10), parseInt(endDate, 10), limit);
+      results = await getPermissionAuditByDateRange(parseInt(startDate, 10), parseInt(endDate, 10), limit);
     } else {
       const filters = {};
       const entityType = searchParams.get('entity_type');
@@ -53,7 +53,7 @@ export async function GET(request) {
       if (affectedUserId) filters.affectedUserId = affectedUserId;
       filters.limit = limit;
       filters.offset = offset;
-      results = getPermissionAuditTrail(filters);
+      results = await getPermissionAuditTrail(filters);
     }
 
     if (format === 'csv') {
@@ -80,7 +80,7 @@ export async function POST(request) {
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null;
     const sessionId = (await cookies()).get(lucia.sessionCookieName)?.value ?? null;
 
-    const auditId = logPermissionChange({
+    const auditId = await logPermissionChange({
       userId: user.id, entityType, entityId, action, oldPermissions, newPermissions,
       reason, reasonCode: reasonCode || 'other', affectedUserId, ipAddress, sessionId, metadata,
     });

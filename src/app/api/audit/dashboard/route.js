@@ -3,7 +3,7 @@ import { getUser, setCurrentRequest } from '@/engine.server';
 import {
   getPermissionAuditTrail, getPermissionAuditStats, getPermissionAuditBreakdown,
   getPermissionAuditByDateRange, searchPermissionAudit, getPermissionDiff,
-} from '@/lib/audit-logger';
+} from '@/lib/busybase-audit-reads';
 
 export async function GET(request) {
   setCurrentRequest(request);
@@ -28,10 +28,10 @@ export async function GET(request) {
     let data;
     switch (view) {
       case 'summary': {
-        const stats = getPermissionAuditStats();
-        const actionBreakdown = getPermissionAuditBreakdown('action');
-        const reasonBreakdown = getPermissionAuditBreakdown('reason_code');
-        const changes = getPermissionAuditByDateRange(startTs, nowTs, limit);
+        const stats = await getPermissionAuditStats();
+        const actionBreakdown = await getPermissionAuditBreakdown('action');
+        const reasonBreakdown = await getPermissionAuditBreakdown('reason_code');
+        const changes = await getPermissionAuditByDateRange(startTs, nowTs, limit);
         data = {
           period_days: days,
           total_changes: changes.length,
@@ -42,17 +42,17 @@ export async function GET(request) {
         break;
       }
       case 'recent':
-        data = { period: `Last ${days} days`, changes: getPermissionAuditByDateRange(startTs, nowTs, limit) };
+        data = { period: `Last ${days} days`, changes: await getPermissionAuditByDateRange(startTs, nowTs, limit) };
         break;
       case 'user':
         if (!userId) return NextResponse.json({ error: 'user_id required' }, { status: 400 });
-        data = { user_id: userId, changes: getPermissionAuditTrail({ userId, limit }) };
+        data = { user_id: userId, changes: await getPermissionAuditTrail({ userId, limit }) };
         break;
       case 'entity':
         if (!entityType || !entityId) return NextResponse.json({ error: 'entity_type and entity_id required' }, { status: 400 });
         data = {
           entity_type: entityType, entity_id: entityId,
-          timeline: getPermissionAuditTrail({ entityType, entityId, limit }).map(c => ({
+          timeline: (await getPermissionAuditTrail({ entityType, entityId, limit })).map(c => ({
             ...c, timestamp_iso: new Date(c.timestamp * 1000).toISOString(),
             diff: c.old_permissions && c.new_permissions ? getPermissionDiff(c.old_permissions, c.new_permissions) : null,
           })),
@@ -60,10 +60,10 @@ export async function GET(request) {
         break;
       case 'search':
         if (!searchTerm) return NextResponse.json({ error: 'search parameter required' }, { status: 400 });
-        data = { search_term: searchTerm, results: searchPermissionAudit(searchTerm, limit) };
+        data = { search_term: searchTerm, results: await searchPermissionAudit(searchTerm, limit) };
         break;
       case 'roles':
-        data = { changes: getPermissionAuditTrail({ limit }).filter(c => c.action === 'role_change') };
+        data = { changes: (await getPermissionAuditTrail({ limit })).filter(c => c.action === 'role_change') };
         break;
       default:
         return NextResponse.json({ error: `Unknown view: ${view}` }, { status: 400 });

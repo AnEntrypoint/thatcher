@@ -1,6 +1,6 @@
 import { NextResponse, cookies } from '@/lib/next-polyfills';
 import { lucia } from '@/engine.server';
-import { getPermissionAuditById, getPermissionDiff } from '@/lib/audit-logger';
+import { getPermissionAuditById, getPermissionDiff } from '@/lib/busybase-audit-reads';
 
 async function getUser() {
   const sessionId = (await cookies()).get(lucia.sessionCookieName)?.value ?? null;
@@ -18,7 +18,7 @@ export async function GET(request, context) {
     const auditId = params.id;
     if (!auditId) return NextResponse.json({ error: 'Audit ID is required' }, { status: 400 });
 
-    const audit = getPermissionAuditById(auditId);
+    const audit = await getPermissionAuditById(auditId);
     if (!audit) return NextResponse.json({ error: 'Audit record not found' }, { status: 404 });
 
     if (user.role === 'clerk' && audit.user_id !== user.id) return NextResponse.json({ error: 'Permission denied' }, { status: 403 });

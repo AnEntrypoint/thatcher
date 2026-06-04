@@ -1,5 +1,5 @@
 import { requireAuth, requirePermission } from '@/lib/auth-middleware';
-import { getAuditHistory, getActionStats, getUserStats } from '@/lib/audit-logger';
+import { getAuditHistory, getActionStats, getUserStats } from '@/lib/busybase-audit-reads';
 import { getSpec } from '@/config/spec-helpers';
 import { paginated, ok } from '@/lib/response-formatter';
 import { withErrorHandler } from '@/lib/with-error-handler';
@@ -32,8 +32,8 @@ export const GET = withErrorHandler(async (request) => {
     if (!fromDate || !toDate) {
       throw new AppError('fromDate and toDate required for stats', 'BAD_REQUEST', HTTP.BAD_REQUEST);
     }
-    const actionStats = getActionStats(fromDate, toDate);
-    const userStats = getUserStats(fromDate, toDate);
+    const actionStats = await getActionStats(fromDate, toDate);
+    const userStats = await getUserStats(fromDate, toDate);
     return ok({
       actionStats,
       userStats
@@ -48,7 +48,7 @@ export const GET = withErrorHandler(async (request) => {
   if (fromDate) filters.fromDate = fromDate;
   if (toDate) filters.toDate = toDate;
 
-  const { items, pagination } = getAuditHistory(filters, page, pageSize);
+  const { items, pagination } = await getAuditHistory(filters, page, pageSize);
 
   const enriched = items.map(log => ({
     ...log,

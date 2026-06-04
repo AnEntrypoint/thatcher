@@ -1,6 +1,6 @@
 import { NextResponse } from '@/lib/next-polyfills';
 import { getUser, setCurrentRequest } from '@/engine.server';
-import { getPermissionAuditStats, getPermissionAuditBreakdown } from '@/lib/audit-logger';
+import { getPermissionAuditStats, getPermissionAuditBreakdown } from '@/lib/busybase-audit-reads';
 
 export async function GET(request) {
   setCurrentRequest(request);
@@ -9,9 +9,9 @@ export async function GET(request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'partner' && user.role !== 'manager') return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
 
-    const stats = getPermissionAuditStats();
-    const actionBreakdown = getPermissionAuditBreakdown('action');
-    const reasonCodeBreakdown = getPermissionAuditBreakdown('reason_code');
+    const stats = await getPermissionAuditStats();
+    const actionBreakdown = await getPermissionAuditBreakdown('action');
+    const reasonCodeBreakdown = await getPermissionAuditBreakdown('reason_code');
 
     return NextResponse.json({
       success: true,
