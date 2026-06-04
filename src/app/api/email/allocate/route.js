@@ -1,5 +1,6 @@
 import { NextResponse } from '@/lib/next-polyfills';
-import { getDatabase, genId, now } from '@/lib/database-core';
+import { genId, now } from '@/lib/id-helpers';
+import { get, create } from '@/engine';
 import {
   allocateEmailToEntity,
   autoAllocateEmail,
@@ -23,8 +24,7 @@ export async function POST(request) {
       );
     }
 
-    const db = getDatabase();
-    const email = db.prepare('SELECT * FROM email WHERE id = ?').get(email_id);
+    const email = await get('email', email_id);
 
     if (!email) {
       return NextResponse.json(
@@ -104,24 +104,20 @@ export async function POST(request) {
     const logId = genId();
     const timestamp = now();
 
-    db.prepare(`
-      INSERT INTO activity_log (
-        id, entity_type, entity_id, action, message, details, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      logId,
-      'email',
-      email_id,
-      'allocated',
-      `Email allocated to ${result.engagement_id ? 'engagement' : 'RFI'}`,
-      JSON.stringify({
+    await create('activity_log', {
+      id: logId,
+      entity_type: 'email',
+      entity_id: email_id,
+      action: 'allocated',
+      message: `Email allocated to ${result.engagement_id ? 'engagement' : 'RFI'}`,
+      details: JSON.stringify({
         engagement_id: result.engagement_id || null,
         rfi_id: result.rfi_id || null,
         method: auto ? 'automatic' : 'manual',
         confidence: result.confidence || 100,
       }),
-      timestamp
-    );
+      created_at: timestamp,
+    });
 
     return NextResponse.json({
       success: true,

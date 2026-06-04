@@ -1,5 +1,6 @@
 import { NextResponse } from '@/lib/next-polyfills';
-import { getDatabase, genId, now } from '@/lib/database-core';
+import { genId, now } from '@/lib/id-helpers';
+import { create } from '@/engine';
 import path from 'path';
 import fs from 'fs';
 
@@ -86,45 +87,30 @@ export async function POST(request) {
       processing_error: null,
     };
 
-    const db = getDatabase();
-    const stmt = db.prepare(`
-      INSERT INTO email (
-        id, sender_email, sender_name, subject, body, html_body,
-        message_id, in_reply_to, references, received_at, allocated,
-        engagement_id, rfi_id, attachments, status, processed, processing_error,
-        created_at, updated_at
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?,
-        ?, ?
-      )
-    `);
-
     const emailId = genId();
     const timestamp = now();
 
-    stmt.run(
-      emailId,
-      emailRecord.sender_email,
-      emailRecord.sender_name,
-      emailRecord.subject,
-      emailRecord.body,
-      emailRecord.html_body,
-      emailRecord.message_id,
-      emailRecord.in_reply_to,
-      emailRecord.references,
-      emailRecord.received_at,
-      emailRecord.allocated ? 1 : 0,
-      emailRecord.engagement_id,
-      emailRecord.rfi_id,
-      emailRecord.attachments,
-      emailRecord.status,
-      emailRecord.processed ? 1 : 0,
-      emailRecord.processing_error,
-      timestamp,
-      timestamp
-    );
+    await create('email', {
+      id: emailId,
+      sender_email: emailRecord.sender_email,
+      sender_name: emailRecord.sender_name,
+      subject: emailRecord.subject,
+      body: emailRecord.body,
+      html_body: emailRecord.html_body,
+      message_id: emailRecord.message_id,
+      in_reply_to: emailRecord.in_reply_to || '',
+      references: emailRecord.references || '',
+      received_at: emailRecord.received_at,
+      allocated: emailRecord.allocated ? 1 : 0,
+      engagement_id: emailRecord.engagement_id || '',
+      rfi_id: emailRecord.rfi_id || '',
+      attachments: emailRecord.attachments,
+      status: emailRecord.status,
+      processed: emailRecord.processed ? 1 : 0,
+      processing_error: emailRecord.processing_error || '',
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
 
     return NextResponse.json({
       success: true,
