@@ -1,4 +1,4 @@
-import { list, get, count } from '@/lib/query-engine.js';
+import { list, get, count } from '@/lib/busybase-store.js';
 import { getConfigEngineSync } from '@/lib/config-generator-engine.js';
 
 export function resolveEnumOptions(spec) {
@@ -14,28 +14,28 @@ export function resolveEnumOptions(spec) {
   return resolvedSpec;
 }
 
-export function getRefOptions(spec) {
+export async function getRefOptions(spec) {
   const refOptions = {};
   for (const [fieldKey, field] of Object.entries(spec.fields || {}).filter(([k, f]) => f.type === 'ref' && f.ref)) {
-    try { refOptions[fieldKey] = list(field.ref, {}).map(r => ({ value: r.id, label: r.name || r.title || r.label || r.email || r.id })); }
+    try { refOptions[fieldKey] = (await list(field.ref, {})).map(r => ({ value: r.id, label: r.name || r.title || r.label || r.email || r.id })); }
     catch { refOptions[fieldKey] = []; }
   }
   return refOptions;
 }
 
+// busybase-store's list()/get() already attach `<field>_display` for ref fields (the
+// old LEFT JOIN equivalent), so this is now a sync pass-through: it just guarantees a
+// `_display` key exists (falling back to the raw id) without issuing any query.
 export function resolveRefFields(items, spec) {
   try {
     const refFields = Object.entries(spec.fields || {}).filter(([k, f]) => f.type === 'ref' && f.ref);
     if (!refFields.length) return items;
-    const refCaches = {};
-    for (const [fieldKey, field] of refFields) {
-      const refIds = [...new Set(items.map(i => i[fieldKey]).filter(Boolean))];
-      if (refIds.length) try { refCaches[fieldKey] = Object.fromEntries(list(field.ref, {}).map(r => [r.id, r.name || r.title || r.label || r.id])); } catch {}
-    }
     return items.map(item => {
       const resolved = { ...item };
       for (const [fieldKey] of refFields) {
-        if (item[fieldKey] && refCaches[fieldKey]) resolved[`${fieldKey}_display`] = refCaches[fieldKey][item[fieldKey]] || item[fieldKey];
+        if (item[fieldKey] && resolved[`${fieldKey}_display`] === undefined) {
+          resolved[`${fieldKey}_display`] = item[fieldKey];
+        }
       }
       return resolved;
     });
@@ -44,11 +44,11 @@ export function resolveRefFields(items, spec) {
 
 export async function getDashboardStats(user) {
   try {
-    const engagements = list('engagement', {});
-    const clients = list('client', {});
+    const engagements = await list('engagement', {});
+    const clients = await list('client', {});
     const clientMap = Object.fromEntries(clients.map(c => [c.id, c.name]));
-    const rfis = list('rfi', {});
-    const reviews = list('review', {});
+    const rfis = await list('rfi', {});
+    const reviews = await list('review', {});
     const myRfis = user ? rfis.filter(r => r.assigned_to === user.id) : [];
     const now = Math.floor(Date.now() / 1000);
     const overdueRfis = rfis.filter(r => r.status !== 'closed' && r.due_date && r.due_date < now).map(r => ({ ...r, daysOverdue: Math.floor((now - r.due_date) / 86400) }));
@@ -60,7 +60,7 @@ export async function getDashboardStats(user) {
 export async function getSettingsCounts() {
   const counts = {};
   const entities = { users: 'user', teams: 'team', rfiSections: 'rfi_section', templates: 'review_template', checklists: 'checklist', recreation: 'permission_audit', rfiTemplates: 'rfi_template' };
-  for (const [key, entity] of Object.entries(entities)) { try { counts[key] = count(entity); } catch { counts[key] = 0; } }
+  for (const [key, entity] of Object.entries(entities)) { try { counts[key] = await count(entity); } catch { counts[key] = 0; } }
   return counts;
 }
 
@@ -75,19 +75,19 @@ export async function getSystemConfig() {
 
 export async function getAuditData() {
   try {
-    const audits = list('permission_audit', {});
+    const audits = await list('permission_audit', {});
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
     const recent = audits.filter(a => (a.timestamp || a.created_at) > cutoff);
     return { summary: { total_actions: recent.length, grants: recent.filter(a => a.action === 'grant').length, revokes: recent.filter(a => a.action === 'revoke').length, role_changes: recent.filter(a => a.action === 'role_change').length }, recentActivity: audits.slice(0, 50) };
   } catch { return { summary: {}, recentActivity: [] }; }
 }
 
-export function getClientDashboardStats(clientId) {
+export async function getClientDashboardStats(clientId) {
   try {
-    const engagements = list('engagement', {}).filter(e => e.client_id === clientId);
-    const rfis = list('rfi', {}).filter(r => engagements.some(e => e.id === r.engagement_id));
-    const reviews = list('review', {}).filter(r => engagements.some(e => e.id === r.engagement_id));
-    const users = list('user', {}).filter(u => u.client_id === clientId);
+    const engagements = (await list('engagement', {})).filter(e => e.client_id === clientId);
+    const rfis = (await list('rfi', {})).filter(r => engagements.some(e => e.id === r.engagement_id));
+    const reviews = (await list('review', {})).filter(r => engagements.some(e => e.id === r.engagement_id));
+    const users = (await list('user', {})).filter(u => u.client_id === clientId);
     return { engagements: engagements.length, activeRfis: rfis.filter(r => r.status !== 'closed' && r.status !== 'completed').length, users: users.length, reviews: reviews.length, engagementList: engagements.slice(0, 10) };
   } catch { return { engagements: 0, activeRfis: 0, users: 0, reviews: 0, engagementList: [] }; }
 }
@@ -95,7 +95,7 @@ export function getClientDashboardStats(clientId) {
 export async function getSystemHealth() {
   try {
     const entityCounts = {};
-    for (const e of ['user','client','engagement','rfi','review','team']) { try { entityCounts[e] = count(e); } catch { entityCounts[e] = 0; } }
+    for (const e of ['user','client','engagement','rfi','review','team']) { try { entityCounts[e] = await count(e); } catch { entityCounts[e] = 0; } }
     const u = process.uptime();
     return { database: { status: 'Connected', type: 'SQLite' }, server: { port: 3004, uptime: `${Math.floor(u/3600)}h ${Math.floor((u%3600)/60)}m` }, entities: entityCounts };
   } catch { return {}; }
