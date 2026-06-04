@@ -107,17 +107,17 @@ export function nav(user, pathname = '') {
     ${engLink}${clientLink}${settingsLink}${reviewLink}
   </div>
   <div class="main-nav-actions">
-    <button id="theme-toggle" type="button" data-action="toggleTheme" aria-label="Toggle dark mode" title="Toggle theme" style="background:none;border:none;color:var(--color-text-muted,#ced4da);cursor:pointer;padding:6px;border-radius:4px;display:flex;align-items:center;min-width:32px;min-height:32px">
+    <button id="theme-toggle" type="button" data-action="toggleTheme" aria-label="Toggle dark mode" title="Toggle theme" class="nav-icon-btn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
-    <a href="/notifications" id="notif-bell" aria-label="Notifications" title="Notifications" style="position:relative;color:var(--color-text-muted,#ced4da);display:flex;align-items:center;padding:6px;border-radius:4px;text-decoration:none">
+    <a href="/notifications" id="notif-bell" aria-label="Notifications" title="Notifications" class="nav-icon-btn nav-notif-bell">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span id="notif-count" style="display:none;position:absolute;top:2px;right:2px;background:var(--color-danger,#ef4444);color:#fff;border-radius:9999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px"></span>
     </a>
     <div class="nav-avatar" style="background:${avatarBg}" id="user-avatar" data-action="toggleUserMenu" data-pass-event title="${esc(user?.name || 'User')}" aria-label="User menu" role="button" tabindex="0">
       ${avatarInitial}
     </div>
-    <button class="nav-hamburger" data-action="toggleMobileNav" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer" style="background:none;border:none;color:var(--color-text-muted,#ced4da);cursor:pointer;padding:8px;border-radius:4px;align-items:center;justify-content:center;min-width:44px;min-height:44px">
+    <button class="nav-hamburger" data-action="toggleMobileNav" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
       ${hamburgerSvg}
     </button>
   </div>

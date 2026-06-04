@@ -183,6 +183,10 @@ export function renderSettings(user, config = {}) {
     { title: 'Workflow Configuration', items: [['Stage Transition Lockout', (t.workflow?.stage_transition_lockout_minutes || 5) + ' minutes'], ['Collaborator Default Expiry', (t.collaborator?.default_expiry_days || 7) + ' days'], ['Collaborator Max Expiry', (t.collaborator?.max_expiry_days || 30) + ' days']] },
   ]
   const cards = sections.map(s => `<div class="card-clean"><div class="card-clean-body"><h2 style="font-size:1rem;font-weight:600">${esc(s.title)}</h2><div class="space-y-4 mt-4">${s.items.map(([l, v]) => `<div class="flex justify-between py-2 border-b border-base-200"><span class="text-base-content/50 text-sm">${esc(l)}</span><span class="font-medium text-sm">${esc(v)}</span></div>`).join('')}</div></div></div>`).join('')
+  // These values are config-driven (read-only here). State the source so an admin
+  // who lands expecting to edit knows where to change them, rather than hitting a
+  // silent dead-end page with no affordance.
+  const notice = `<div class="card-clean" style="margin-bottom:1.5rem"><div class="card-clean-body" style="display:flex;gap:0.75rem;align-items:flex-start"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted,#64748b)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><p style="margin:0;font-size:0.875rem;color:var(--color-text-muted,#64748b)">These settings are read-only. They are defined in <code>thatcher.config.yml</code> and applied on server start; edit that file and restart to change them.</p></div></div>`
   return page(user, 'System Settings | Thatcher', [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }],
-    `<h1 class="text-2xl font-bold mb-6">System Settings</h1><div class="grid grid-cols-1 lg:grid-cols-2 gap-6">${cards}</div>`)
+    `<h1 class="text-2xl font-bold mb-6">System Settings</h1>${notice}<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">${cards}</div>`)
 }
