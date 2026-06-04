@@ -5,13 +5,27 @@ export function monitoringDashboardScript() {
 
       function showTab(name) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'))
-        document.getElementById('tab-' + name).classList.remove('hidden')
+        var panel = document.getElementById('tab-' + name)
+        if (panel) panel.classList.remove('hidden')
 
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active'))
-        event.target.classList.add('tab-active')
+        document.querySelectorAll('.tab').forEach(el => {
+          el.classList.remove('tab-active')
+          var args = el.getAttribute('data-args')
+          if (args && args.indexOf('"' + name + '"') >= 0) el.classList.add('tab-active')
+        })
 
         currentTab = name
       }
+      window.showTab = showTab
+
+      // This standalone page does not load the shared event-delegation script,
+      // so wire the data-action="showTab" tab buttons directly.
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-action="showTab"]')
+        if (!btn) return
+        e.preventDefault()
+        try { showTab(JSON.parse(btn.getAttribute('data-args') || '[]')[0]) } catch (_) {}
+      })
 
       async function fetchMetrics() {
         try {

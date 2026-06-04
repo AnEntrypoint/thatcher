@@ -147,8 +147,10 @@ export const commonHandlers = {
         timer = setTimeout(() => fn.apply(this, args), delay);
       };
     },
-    confirm(message) { return window.confirm(message); },
-    prompt(message, defaultValue = '') { return window.prompt(message, defaultValue); },
+    // Delegate to the styled, focus-managed gm* dialogs (native confirm/prompt are
+    // banned — blocking, unstyled, outside dialogFocus). Both return Promises.
+    confirm(message) { return window.gmConfirm({ title: 'Please confirm', message }); },
+    prompt(message, defaultValue = '') { return window.gmPrompt({ title: message, label: message, value: defaultValue }); },
     wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   }
 };

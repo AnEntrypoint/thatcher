@@ -3,8 +3,8 @@
  * Adapted from moonlanding/src/lib/auth-middleware.js
  */
 
-import { getUser, lucia } from '../engine.server.js'; // Will need to adapt
-import { getSpec } from './spec-helpers.js';
+import { getUser, getLucia } from '../engine.server.js';
+import { getSpec } from '../config/spec-helpers.js';
 import { can } from '../services/permission.service.js';
 import { UnauthorizedError, PermissionError, NotFoundError } from './error-handler.js';
 
@@ -26,6 +26,8 @@ const actionMap = {
 export function getSessionToken(req) {
   const cookieHeader = req?.headers?.cookie || '';
   if (!cookieHeader) return null;
+  let lucia = null;
+  try { lucia = getLucia(); } catch { /* auth not initialized yet */ }
   const cookieName = lucia?.sessionCookieName || 'thatcher_session';
   const match = cookieHeader.split(';').find(c => c.trim().startsWith(cookieName + '='));
   if (!match) return null;

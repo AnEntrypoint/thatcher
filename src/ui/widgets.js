@@ -87,7 +87,7 @@ export function infoBubble(text, position = 'top') {
 
 export function sortableList(items = [], containerId = 'sortable') {
   const lis = items.map((item, i) =>
-    `<li class="sortable-item" draggable="true" data-index="${i}"><span class="sortable-handle">&#9776;</span><span>${typeof item === 'string' ? item : item.label || item.name || ''}</span></li>`
+    `<li class="sortable-item" draggable="true" data-index="${i}"><span class="sortable-handle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></span><span>${typeof item === 'string' ? item : item.label || item.name || ''}</span></li>`
   ).join('')
   const script = `(function(){const c=document.getElementById('${containerId}');let dragged=null;c.addEventListener('dragstart',e=>{dragged=e.target.closest('.sortable-item');e.dataTransfer.effectAllowed='move'});c.addEventListener('dragover',e=>{e.preventDefault();const t=e.target.closest('.sortable-item');if(t&&t!==dragged)t.classList.add('drag-over')});c.addEventListener('dragleave',e=>{const t=e.target.closest('.sortable-item');if(t)t.classList.remove('drag-over')});c.addEventListener('drop',e=>{e.preventDefault();const t=e.target.closest('.sortable-item');if(t&&t!==dragged){t.classList.remove('drag-over');c.insertBefore(dragged,t.nextSibling);const order=[...c.querySelectorAll('.sortable-item')].map(el=>+el.dataset.index);c.dispatchEvent(new CustomEvent('sortable-reorder',{detail:{order}}))}});})();`
   return `<ul id="${containerId}" class="sortable-list">${lis}</ul><script>${script}</script>`
@@ -111,7 +111,7 @@ export function responseAttachment(file = {}) {
   const ext = name.split('.').pop().toLowerCase()
   const isImg = ['png','jpg','jpeg','gif','webp','svg'].includes(ext)
   const isPdf = ext === 'pdf'
-  const icon = isImg ? '&#128444;' : isPdf ? '&#128196;' : '&#128206;'
+  const icon = isImg ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>` : isPdf ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`
   const preview = isImg ? `<img src="${href}" alt="${name}" class="attachment-preview"/>` : isPdf ? `<iframe src="${href}" class="attachment-preview" style="width:100%;height:200px;border:none"></iframe>` : ''
   return `<div class="attachment-card"><span class="attachment-icon">${icon}</span><div class="attachment-info"><div class="attachment-name">${name}</div>${size ? `<div class="attachment-size">${size}</div>` : ''}${preview}</div><a href="${href}" download class="btn btn-ghost btn-xs">Download</a></div>`
 }

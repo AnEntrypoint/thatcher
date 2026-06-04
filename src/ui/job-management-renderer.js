@@ -11,11 +11,11 @@ function fmtDate(ts) {
 
 function jobStatusBadge(status) {
   const colors = {
-    running: { bg: '#dbeafe', text: '#1e40af', icon: '&#9654;' },
-    success: { bg: '#d1fae5', text: '#065f46', icon: '&#10003;' },
-    failed: { bg: '#fee2e2', text: '#991b1b', icon: '&#10007;' },
-    scheduled: { bg: '#fef3c7', text: '#92400e', icon: '&#9200;' },
-    disabled: { bg: '#f3f4f6', text: '#6b7280', icon: '&#9679;' },
+    running: { bg: '#dbeafe', text: '#1e40af', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>` },
+    success: { bg: '#d1fae5', text: '#065f46', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>' },
+    failed: { bg: '#fee2e2', text: '#991b1b', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>` },
+    scheduled: { bg: '#fef3c7', text: '#92400e', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` },
+    disabled: { bg: '#f3f4f6', text: '#6b7280', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>` },
   };
   const c = colors[status] || colors.scheduled;
   return `<span style="background:${c.bg};color:${c.text};padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500">${c.icon} ${(status || 'unknown').replace(/_/g, ' ')}</span>`;
@@ -55,7 +55,7 @@ export function renderJobManagement(user, jobs, recentLogs = []) {
 
   const content = `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Scheduled Jobs</h1>${canManage ? '<button class="btn btn-primary btn-sm" data-action="triggerAll">Run All Now</button>' : ''}</div>${statCards}${table}${logTable}`;
 
-  const jobScript = `window.triggerJob=async function(name){try{const r=await fetch('/api/admin/jobs/'+name+'/trigger',{method:'POST'});if(r.ok){location.reload()}else{alert('Trigger failed: '+(await r.text()))}}catch(e){alert(e.message)}};window.toggleJob=async function(name,enabled){try{const r=await fetch('/api/admin/jobs/'+name,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});if(r.ok)location.reload();else alert('Toggle failed')}catch(e){alert(e.message)}};window.triggerAll=async function(){if(!confirm('Run all jobs now?'))return;try{const r=await fetch('/api/admin/jobs/trigger-all',{method:'POST'});if(r.ok)location.reload();else alert('Failed')}catch(e){alert(e.message)}}`;
+  const jobScript = `window.triggerJob=async function(name){try{const r=await fetch('/api/admin/jobs/'+name+'/trigger',{method:'POST'});if(r.ok){location.reload()}else{showToast('Trigger failed: '+(await r.text()),'error')}}catch(e){showToast(e.message,'error')}};window.toggleJob=async function(name,enabled){try{const r=await fetch('/api/admin/jobs/'+name,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});if(r.ok)location.reload();else showToast('Toggle failed','error')}catch(e){showToast(e.message,'error')}};window.triggerAll=async function(){if(!(await window.gmConfirm({title:'Please confirm',message:'Run all jobs now?',danger:false,confirmLabel:'OK'})))return;try{const r=await fetch('/api/admin/jobs/trigger-all',{method:'POST'});if(r.ok)location.reload();else showToast('Failed','error')}catch(e){showToast(e.message,'error')}}`;
 
   return page(user, 'Scheduled Jobs | Moonlanding', [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }, { label: 'Jobs' }], content, [jobScript]);
 }

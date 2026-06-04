@@ -83,10 +83,14 @@ export function renderButton(label, opts = {}) {
 
   if (action) {
     const argsAttr = args ? ` data-args='${JSON.stringify(args)}'` : '';
-    return `<button data-action="${action}"${argsAttr} class="${btnClass}" ${disabled ? 'disabled' : ''} style="${extraStyle}">${label}</button>`;
+    return `<button type="button" data-action="${action}"${argsAttr} class="${btnClass}" ${disabled ? 'disabled' : ''} style="${extraStyle}">${label}</button>`;
   }
 
-  return `<button onclick="${onclick}" class="${btnClass}" ${disabled ? 'disabled' : ''} style="${extraStyle}">${label}</button>`;
+  // onclick is a legacy escape-hatch (no caller currently uses it). Prefer
+  // data-action; emit a plain type=button when neither is supplied so we never
+  // render onclick="undefined".
+  const onclickAttr = onclick ? ` data-action="${onclick}"` : '';
+  return `<button type="button"${onclickAttr} class="${btnClass}" ${disabled ? 'disabled' : ''} style="${extraStyle}">${label}</button>`;
 }
 
 export function renderProgress(value, max = 100, variant = 'success', marginTop = SPACING.md) {
@@ -149,7 +153,7 @@ export function renderResolutionBar(resolved, partial, total) {
 
 export function renderFilterBar(filters, activeKey = 'all') {
   return `<div class="review-filter-bar">${filters.map(f => {
-    const actionAttr = f.action ? `data-action="${f.action}"${f.args ? ` data-args='${JSON.stringify(f.args)}'` : ''}` : (f.onclick ? `onclick="${f.onclick}"` : '');
-    return `<button class="pill${f.key === activeKey ? ' pill-primary' : ' pill-neutral'}" data-thread-filter="${f.key}" ${actionAttr}>${f.label}${f.count !== undefined ? ` (${f.count})` : ''}</button>`;
+    const actionAttr = f.action ? `data-action="${f.action}"${f.args ? ` data-args='${JSON.stringify(f.args)}'` : ''}` : (f.onclick ? `data-action="${f.onclick}"` : '');
+    return `<button type="button" class="pill${f.key === activeKey ? ' pill-primary' : ' pill-neutral'}" data-thread-filter="${f.key}" ${actionAttr}>${f.label}${f.count !== undefined ? ` (${f.count})` : ''}</button>`;
   }).join('')}</div>`;
 }

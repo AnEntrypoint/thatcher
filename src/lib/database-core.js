@@ -6,6 +6,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { runMigrations } from './database-migrations.js';
 
 const SQL_TYPES = {
   id: 'TEXT PRIMARY KEY',
@@ -216,14 +217,10 @@ export function migrate(configEngine) {
  * @param {object} specs
  */
 function runCustomMigrations(dbInstance, specs) {
-  // Placeholder for custom migration logic
-  // Can be extended via plugins
+  // Delegate to the dedicated migrations module (ported from moonlanding):
+  // idempotent triggers, activity_log + notification tables, etc.
   try {
-    // Create triggers for updated_at timestamps
-    for (const entityName of Object.keys(specs)) {
-      const tableName = entityName === 'user' ? 'users' : entityName;
-      // Add timestamp triggers if needed
-    }
+    runMigrations(dbInstance);
   } catch (e) {
     console.error('[Database] Custom migrations failed:', e.message);
   }

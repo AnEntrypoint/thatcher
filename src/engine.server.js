@@ -7,8 +7,8 @@ import { Lucia } from 'lucia';
 import { BetterSqlite3Adapter } from '@lucia-auth/adapter-sqlite';
 import { Google } from 'arctic';
 import bcrypt from 'bcrypt';
-import { getDatabase } from './database-core.js';
-import { buildConfig, hasGoogleAuth } from '../config/env.js';
+import { getDatabase } from './lib/database-core.js';
+import { buildConfig, hasGoogleAuth } from './config/env.js';
 
 let _lucia = null;
 let _google = null;

@@ -1,4 +1,5 @@
 import { TOAST_SCRIPT, settingsPage, settingsBack, inlineTable } from '@/ui/settings-renderer.js';
+import { esc } from '@/ui/render-helpers.js';
 
 const RFI_PALETTE = ['#B0B0B0', '#44BBA4', '#FF4141', '#7F7EFF', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
 
@@ -52,7 +53,7 @@ function openEditTeam(id,name){document.getElementById('team-edit-id').value=id;
 function openAddTeam(){document.getElementById('team-edit-id').value='';document.getElementById('team-name-input').value='';document.getElementById('team-dialog-title').textContent='Add Team';document.getElementById('team-dialog').style.display='flex'}
 function closeTeamDialog(){document.getElementById('team-dialog').style.display='none'}
 async function saveTeam(){const id=document.getElementById('team-edit-id').value;const name=document.getElementById('team-name-input').value.trim();if(!name){showToast('Name is required','error');return}const url=id?'/api/team/'+id:'/api/team';const method=id?'PUT':'POST';try{const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(r.ok){showToast(id?'Team updated':'Team created','success');setTimeout(()=>location.reload(),500)}else{const d=await r.json();showToast(d.error||'Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}
-async function deleteTeam(id){if(!confirm('Delete this team?'))return;try{const r=await fetch('/api/team/'+id,{method:'DELETE'});if(r.ok){showToast('Team deleted','success');setTimeout(()=>location.reload(),500)}else showToast('Delete failed','error')}catch(e){showToast('Error','error')}}
+async function deleteTeam(id){if(!(await window.gmConfirm({title:'Please confirm',message:'Delete this team?',danger:true,confirmLabel:'OK'})))return;try{const r=await fetch('/api/team/'+id,{method:'DELETE'});if(r.ok){showToast('Team deleted','success');setTimeout(()=>location.reload(),500)}else showToast('Delete failed','error')}catch(e){showToast('Error','error')}}
 document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.team-edit-btn').forEach(b=>b.addEventListener('click',function(){const id=this.dataset.id;const name=this.dataset.name;openEditTeam(id,name)}));document.querySelectorAll('.team-delete-btn').forEach(b=>b.addEventListener('click',function(){const id=this.dataset.id;deleteTeam(id)}));document.querySelectorAll('.team-add-btn').forEach(b=>b.addEventListener('click',openAddTeam))});`;
 
   const content = `${settingsBack()}${editDialog}
@@ -65,15 +66,15 @@ document.addEventListener('DOMContentLoaded',function(){document.querySelectorAl
 }
 
 export function renderSettingsRfiSections(user, sections = []) {
-  const rows = sections.map((s, i) => `<tr class="hover rfi-section-row" data-id="${s.id}">
-    <td><span class="inline-block w-5 h-5 rounded" style="background:${s.color || '#B0B0B0'}"></span></td>
-    <td class="text-sm">${s.name || '-'}</td>
+  const rows = sections.map((s, i) => `<tr class="hover rfi-section-row" data-id="${esc(s.id)}">
+    <td><span class="inline-block w-5 h-5 rounded" style="background:${esc(s.color || '#B0B0B0')}"></span></td>
+    <td class="text-sm">${esc(s.name || '-')}</td>
     <td class="text-sm text-base-content/50">${s.order ?? i}</td>
     <td><div class="flex gap-1">
-      <button class="btn btn-ghost btn-xs rfi-move-btn" data-id="${s.id}" data-direction="up" ${i === 0 ? 'disabled' : ''}>&#9650;</button>
-      <button class="btn btn-ghost btn-xs rfi-move-btn" data-id="${s.id}" data-direction="down" ${i === sections.length - 1 ? 'disabled' : ''}>&#9660;</button>
-      <button class="btn btn-ghost btn-xs rfi-edit-btn" data-id="${s.id}" data-name="${(s.name || '').replace(/"/g,'&quot;')}" data-color="${s.color || '#B0B0B0'}">Edit</button>
-      <button class="btn btn-error btn-xs rfi-delete-btn" data-id="${s.id}">Delete</button>
+      <button class="btn btn-ghost btn-xs rfi-move-btn" data-id="${esc(s.id)}" data-direction="up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
+      <button class="btn btn-ghost btn-xs rfi-move-btn" data-id="${esc(s.id)}" data-direction="down" aria-label="Move down" ${i === sections.length - 1 ? 'disabled' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <button class="btn btn-ghost btn-xs rfi-edit-btn" data-id="${esc(s.id)}" data-name="${esc(s.name || '')}" data-color="${esc(s.color || '#B0B0B0')}">Edit</button>
+      <button class="btn btn-error btn-xs rfi-delete-btn" data-id="${esc(s.id)}">Delete</button>
     </div></td>
   </tr>`).join('');
 
@@ -103,7 +104,7 @@ function cancelForm(){document.getElementById('section-form').style.display='non
 function selectColor(c){document.getElementById('section-color').value=c;document.querySelectorAll('#color-palette div').forEach(el=>{el.style.borderColor=el.dataset.color===c?'#1a1a1a':'transparent'})}
 function editSection(id,name,color){document.getElementById('section-form').style.display='block';document.getElementById('edit-id').value=id;document.getElementById('section-name').value=name;selectColor(color)}
 async function saveSection(){const name=document.getElementById('section-name').value.trim();const color=document.getElementById('section-color').value;const id=document.getElementById('edit-id').value;if(!name){showToast('Name is required','error');return}const url=id?'/api/rfi_section/'+id:'/api/rfi_section';const method=id?'PUT':'POST';try{const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({name,color})});if(res.ok){showToast(id?'Updated':'Created','success');setTimeout(()=>location.reload(),500)}else{showToast('Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}
-async function deleteSection(id){if(!confirm('Delete this section?'))return;try{const res=await fetch('/api/rfi_section/'+id,{method:'DELETE'});if(res.ok){showToast('Deleted','success');setTimeout(()=>location.reload(),500)}else{showToast('Delete failed','error')}}catch(e){showToast('Error','error')}}
+async function deleteSection(id){if(!(await window.gmConfirm({title:'Please confirm',message:'Delete this section?',danger:true,confirmLabel:'OK'})))return;try{const res=await fetch('/api/rfi_section/'+id,{method:'DELETE'});if(res.ok){showToast('Deleted','success');setTimeout(()=>location.reload(),500)}else{showToast('Delete failed','error')}}catch(e){showToast('Error','error')}}
 async function moveSection(id,dir){try{const res=await fetch('/api/rfi_section/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reorder:dir})});if(res.ok){location.reload()}else{showToast('Reorder failed','error')}}catch(e){showToast('Error','error')}}
 selectColor('#B0B0B0');
 document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.rfi-add-btn').forEach(b=>b.addEventListener('click',function(e){e.preventDefault();toggleAddForm()}));document.querySelectorAll('.rfi-edit-btn').forEach(b=>b.addEventListener('click',function(e){e.preventDefault();editSection(this.dataset.id,this.dataset.name,this.dataset.color)}));document.querySelectorAll('.rfi-delete-btn').forEach(b=>b.addEventListener('click',function(e){e.preventDefault();deleteSection(this.dataset.id)}));document.querySelectorAll('.rfi-move-btn').forEach(b=>b.addEventListener('click',function(e){e.preventDefault();moveSection(this.dataset.id,this.dataset.direction)}))});`;

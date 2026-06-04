@@ -4,6 +4,7 @@
  */
 
 import http from 'http';
+import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import * as thatcherLib from '../index.js';
 
@@ -17,13 +18,24 @@ export function createServer(options) {
   let systemInitialized = false;
   const moduleCache = new Map();
 
-  // Debug registry
+  // Debug registry. expose/get/list MUST exist before any module that calls
+  // __debug__.expose() at load time (config-generator-engine, hook-engine,
+  // observability) is imported, or every request that loads them crashes.
+  const _debugExposed = new Map();
   globalThis.__debug__ = globalThis.__debug__ || {};
   globalThis.__debug__.moduleCache = { get size() { return moduleCache.size; }, entries: () => [...moduleCache.keys()] };
   globalThis.__debug__.activeRequests = { count: 0 };
+  globalThis.__debug__.configStats = { specCacheHits: 0, specCacheMisses: 0 };
   globalThis.__debug__.hooks = null;
   globalThis.__debug__.serverStart = SERVER_START;
   globalThis.__debug__.uptime = () => Date.now() - SERVER_START;
+  globalThis.__debug__.expose = globalThis.__debug__.expose || function (key, value, description = '') {
+    _debugExposed.set(key, { value, description, exposedAt: new Date().toISOString() });
+    if (!globalThis[key]) globalThis[key] = value;
+    return value;
+  };
+  globalThis.__debug__.get = globalThis.__debug__.get || function (key) { const e = _debugExposed.get(key); return e ? e.value : undefined; };
+  globalThis.__debug__.list = globalThis.__debug__.list || function () { return [..._debugExposed.entries()].map(([key, e]) => ({ key, description: e.description, exposedAt: e.exposedAt, type: typeof e.value })); };
 
   // Load module with caching
   const load = (p) => {
@@ -80,7 +92,7 @@ export function createServer(options) {
         }
 
         // Fall back to generic CRUD
-        return await handleGenericCrud(req, res, entity, id, action, thatcher);
+        return await handleGenericCrud(req, res, entity, id, action, thatcher, configEngine);
       }
 
       // Static file serving (simplified)
@@ -199,14 +211,21 @@ async function sendResponse(res, response) {
 /**
  * Generic CRUD handler
  */
-async function handleGenericCrud(req, res, entity, id, action, thatcher) {
+async function handleGenericCrud(req, res, entity, id, action, thatcher, configEngineArg) {
   // Simple auth: get from cookie or header
   let user = null;
   // In a real implementation, we'd decode session token
   // For now, default to system user for testing
   user = { id: 'system', role: 'admin' };
 
-  const { configEngine } = thatcher;
+  // Prefer the engine passed down from createServer options (guaranteed the
+  // same instance that was initialized at startup); fall back to thatcher /
+  // the module singleton only if it wasn't threaded through.
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
   let spec;
   try {
     spec = configEngine.generateEntitySpec(entity);

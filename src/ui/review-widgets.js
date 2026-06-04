@@ -1,5 +1,5 @@
 import { h } from '@/ui/webjsx.js'
-import { statusLabel, TOAST_SCRIPT } from '@/ui/render-helpers.js'
+import { statusLabel, TOAST_SCRIPT, esc } from '@/ui/render-helpers.js'
 import { teamAvatarGroup } from '@/ui/widgets.js'
 
 export function mobileReviewCard(review) {
@@ -8,8 +8,8 @@ export function mobileReviewCard(review) {
   const date = r.created_at ? `<span class="text-xs text-gray-500">${typeof r.created_at === 'number' ? new Date(r.created_at * 1000).toLocaleDateString() : r.created_at}</span>` : ''
   return `<div class="mobile-card mobile-review-card card-clean">
     <div class="card-clean-body">
-      <div class="flex justify-between items-center mb-2"><h3 class="font-medium text-sm">${r.name || r.title || 'Untitled Review'}</h3>${sts}</div>
-      <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">${r.engagement_name ? `<span>${r.engagement_name}</span>` : ''}${date}</div>
+      <div class="flex justify-between items-center mb-2"><h3 class="font-medium text-sm">${esc(r.name || r.title || 'Untitled Review')}</h3>${sts}</div>
+      <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">${r.engagement_name ? `<span>${esc(r.engagement_name)}</span>` : ''}${date}</div>
       ${r.highlights_count !== undefined ? `<div class="text-xs text-gray-500">${r.highlights_count} highlight${r.highlights_count !== 1 ? 's' : ''}</div>` : ''}
       <div class="flex gap-1 mt-2"><a href="/review/${r.id}" class="btn btn-xs btn-primary">View</a><a href="/review/${r.id}/edit" class="btn btn-xs btn-outline">Edit</a></div>
     </div></div>`
@@ -37,7 +37,7 @@ export function sidebarReviewDetails(review) {
 }
 
 export function archiveReviewDialog() {
-  return `<div id="archive-review-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="archive-review-dialog-title" aria-hidden="true">
+  return `<div id="archive-review-dialog" class="dialog-overlay" style="display:none" data-dialog-close="archive-review-dialog" role="dialog" aria-modal="true" aria-labelledby="archive-review-dialog-title" aria-hidden="true">
     <div class="dialog-panel">
       <div class="dialog-header"><span class="dialog-title" id="archive-review-dialog-title">Archive Review</span><button class="dialog-close" data-dialog-close="archive-review-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">
@@ -73,7 +73,7 @@ export function reviewPrivateToggle(reviewId, isPrivate) {
 }
 
 export function markAllHighlightsResolved(reviewId, unresolvedCount = 0) {
-  return `<div id="bulk-resolve-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="bulk-resolve-dialog-title" aria-hidden="true">
+  return `<div id="bulk-resolve-dialog" class="dialog-overlay" style="display:none" data-dialog-close="bulk-resolve-dialog" role="dialog" aria-modal="true" aria-labelledby="bulk-resolve-dialog-title" aria-hidden="true">
     <div class="dialog-panel" style="max-width:380px">
       <div class="dialog-header"><span class="dialog-title" id="bulk-resolve-dialog-title">Resolve All Highlights</span><button class="dialog-close" data-dialog-close="bulk-resolve-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">

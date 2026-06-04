@@ -76,5 +76,3 @@ export function error(message, status = HTTP.INTERNAL_ERROR, code = 'ERROR') {
 export function withMetadata(data, status, type = 'success') {
   return { ...data, _meta: { status, type, timestamp: Date.now() } };
 }
-
-import { HTTP } from '../config/constants.js';

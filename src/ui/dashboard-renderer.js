@@ -1,6 +1,6 @@
 import { page } from '@/ui/layout.js'
 import { getQuickActions } from '@/ui/permissions-ui.js'
-import { esc, stagePill, statusPill, TABLE_SCRIPT } from '@/ui/render-helpers.js'
+import { esc, stagePill, statusPill, TABLE_SCRIPT, emptyRow } from '@/ui/render-helpers.js'
 import { SPACING, renderCard } from '@/ui/spacing-system.js'
 
 export function renderDashboard(user, stats = {}) {
@@ -31,7 +31,7 @@ export function renderDashboard(user, stats = {}) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span><strong>${stats.overdueRfis.length} overdue RFI${stats.overdueRfis.length !== 1 ? 's' : ''}</strong> require attention</span>
         </div>
-        <a href="/rfi" class="btn-danger-clean" style="font-size:0.8125rem;padding:6px 14px;min-height:32px">View RFIs →</a>
+        <a href="/rfi" class="btn-danger-clean" style="font-size:0.8125rem;padding:6px 14px;min-height:32px">View RFIs</a>
       </div>` : '';
 
   const quickActions = getQuickActions(user);
@@ -96,7 +96,7 @@ export function renderAuditDashboard(user, auditData = {}) {
       <td data-col="user">${a.user_name||a.user_id||'-'}</td>
       <td data-col="reason" style="font-size:12px;color:var(--color-text-muted)">${a.reason||'-'}</td>
     </tr>`
-   ).join('') || `<tr><td colspan="6" style="text-align:center;padding:${SPACING.xl};color:var(--color-text-muted)">No audit records found</td></tr>`;
+   ).join('') || emptyRow(6, 'No audit records found');
 
   const statsHtml = `<div class="stats-row">${[
     { label: 'Total Actions (30d)', value: summary.total_actions || 0 },
@@ -125,7 +125,7 @@ export function renderSystemHealth(user, healthData = {}) {
   const { database = {}, server: srv = {}, entities = {} } = healthData;
   const entRows = Object.entries(entities).map(([n, c]) =>
     `<tr data-row><td data-col="entity">${n}</td><td data-col="count" style="text-align:right">${c}</td></tr>`
-   ).join('') || `<tr><td colspan="2" style="text-align:center;padding:${SPACING.xl};color:var(--color-text-muted)">No data</td></tr>`;
+   ).join('') || emptyRow(2, 'No data');
 
   const statsHtml = `<div class="stats-row">${[
     { label: 'Server Status', value: 'Online',                    sub: 'Port: '+(srv.port||3000) },

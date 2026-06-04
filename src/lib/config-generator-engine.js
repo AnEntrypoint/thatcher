@@ -13,6 +13,7 @@ export class ConfigGeneratorEngine {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
     this.masterConfig = deepFreeze(masterConfig);
     this.specCache = new LRUCache(100);
+    this.debugMode = false;
     this._plugins = new Map();
   }
 
@@ -362,6 +363,11 @@ export class ConfigGeneratorEngine {
       }
     }
 
+    // Entity variants (ported from moonlanding: passthrough additive spec field)
+    if (entityDef.variants) {
+      spec.variants = deepClone(entityDef.variants);
+    }
+
     // List options
     if (entityDef.list) {
       spec.list = {
@@ -406,6 +412,13 @@ export class ConfigGeneratorEngine {
 let _singleton = null;
 
 export function getConfigEngineSync() {
+  // tsx can instantiate this module twice (static import vs resolveModule file://
+  // URL), so _singleton set in one instance is invisible to the other. The bootstrap
+  // mirrors the engine onto globalThis.__thatcherConfigEngine; fall back to it so every
+  // module instance resolves the same engine.
+  if (!_singleton && globalThis.__thatcherConfigEngine) {
+    _singleton = globalThis.__thatcherConfigEngine;
+  }
   if (!_singleton) {
     throw new Error('ConfigEngine not initialized. Call initConfig() first.');
   }
@@ -434,6 +447,17 @@ export async function initConfig(configSource) {
   }
 
   _singleton = new ConfigGeneratorEngine(config);
+  return _singleton;
+}
+
+/**
+ * Set the singleton config engine directly (used by the bootstrap in index.js,
+ * which constructs the engine from an already-parsed config object). This is what
+ * makes getConfigEngineSync() resolve for the server/plugin/spec paths.
+ * @param {ConfigGeneratorEngine} engine
+ */
+export function setConfigEngine(engine) {
+  _singleton = engine;
   return _singleton;
 }
 

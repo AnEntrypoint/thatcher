@@ -43,6 +43,22 @@ function execGet(sql, params = [], context = {}) {
 }
 
 /**
+ * Execute a write statement (INSERT/UPDATE/DELETE) with error handling
+ * @param {string} sql
+ * @param {Array} params
+ * @param {object} context
+ * @returns {object} better-sqlite3 RunResult
+ */
+function execRun(sql, params = [], context = {}) {
+  try {
+    return db.prepare(sql).run(...params);
+  } catch (e) {
+    logger.error(`${context.operation || 'Run'} ${context.entity || ''}`, { sql, error: e.message });
+    throw new Error(`Database run failed: ${e.message}`);
+  }
+}
+
+/**
  * Get table name for entity (users vs user)
  * @param {object} spec
  * @returns {string}
@@ -346,6 +362,28 @@ export function getChildren(parentEntity, parentId, childDef) {
 }
 
 /**
+ * Batch-fetch children of a parent for several child definitions at once.
+ * Ported from moonlanding; uses thatcher's `list` + getChildren fk convention
+ * (`fk`, falling back to moon's `foreignKey`, then `${parentEntity}_id`).
+ * @param {string} parentEntity
+ * @param {string|number} parentId
+ * @param {object|Array} childSpecs - map of key->def, or array of entity names
+ * @returns {Promise<object>} map of key -> rows
+ */
+export function batchGetChildren(parentEntity, parentId, childSpecs) {
+  const childEntries = Array.isArray(childSpecs)
+    ? childSpecs.map(s => [s, { entity: s }])
+    : Object.entries(childSpecs);
+  const queries = childEntries.map(async ([key, def]) => {
+    const entity = def.entity || def;
+    const foreignKey = def.fk || def.foreignKey || `${parentEntity}_id`;
+    const results = list(entity, { [foreignKey]: parentId });
+    return [key, results];
+  });
+  return Promise.all(queries).then(results => Object.fromEntries(results));
+}
+
+/**
  * Get pagination config from system settings
  * @param {object} spec - Entity spec
  * @returns {{default_page_size: number, max_page_size: number}}
@@ -397,3 +435,12 @@ export async function withTransaction(callback) {
     throw e;
   }
 }
+
+// Re-export write operations so consumers can import all CRUD from a single
+// module (ported from moonlanding). Several thatcher modules already import
+// `create`/`update`/`remove` from './query-engine.js'; this wires them through
+// to the existing write implementation without changing those callers.
+export { create, update, remove } from './query-engine-write.js';
+
+// Expose low-level executors for callers that need raw SQL access.
+export { execQuery, execGet, execRun };

@@ -13,3 +13,4 @@ data/
 coverage/
 .npm/
 *.tgz
+.gm/

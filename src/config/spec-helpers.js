@@ -10,6 +10,12 @@
  * @returns {object|null} Entity specification or null if not found
  */
 export function getSpec(name, configEngine) {
+  // Callers across the framework invoke getSpec(name) without threading the engine
+  // (moon's getSpec self-resolved it). Fall back to the singleton when omitted.
+  if (!configEngine) {
+    const g = globalThis.__thatcherConfigEngine;
+    if (g) configEngine = g;
+  }
   try {
     return configEngine.generateEntitySpec(name);
   } catch (error) {

@@ -4,8 +4,8 @@
  */
 
 import { getCollaboratorRole, checkCollaboratorAccess } from '../services/collaborator-role.service.js';
-import { PermissionError } from './error-handler.js';
-import { getConfigEngineSync } from './config-generator-engine.js';
+import { PermissionError } from '../lib/error-handler.js';
+import { getConfigEngineSync } from '../lib/config-generator-engine.js';
 
 class PermissionService {
   /**
@@ -179,3 +179,7 @@ class PermissionService {
 
 export const permissionService = new PermissionService();
 export default permissionService;
+
+// Free-function wrappers over the singleton (parity with moonlanding's permission.service API).
+export function can(user, spec, action) { return permissionService.can(user, spec, action); }
+export function check(user, spec, action) { return permissionService.require(user, spec, action); }

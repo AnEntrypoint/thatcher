@@ -1,5 +1,5 @@
 import { h } from '@/ui/webjsx.js'
-import { STAGE_COLORS, statusLabel } from '@/ui/render-helpers.js'
+import { STAGE_COLORS, statusLabel, esc } from '@/ui/render-helpers.js'
 import { teamAvatarGroup } from '@/ui/widgets.js'
 import { canEdit } from '@/ui/permissions-ui.js'
 
@@ -12,13 +12,13 @@ export function engagementCard(engagement, user) {
   const team = e.team?.length ? `<div class="engagement-card-team">${teamAvatarGroup(e.team, 3)}</div>` : ''
   const dueDate = e.due_date ? `<span class="text-xs text-gray-500">${typeof e.due_date === 'number' ? new Date(e.due_date * 1000).toLocaleDateString() : e.due_date}</span>` : ''
   const clientName = e.client_name || e.client?.name || ''
-  return `<div class="engagement-card card-clean" data-navigate="/engagement/${e.id}" style="cursor:pointer">
+  return `<div class="engagement-card card-clean" data-navigate="/engagement/${esc(e.id)}" style="cursor:pointer">
     <div class="card-clean-body">
-      <div class="flex justify-between items-center mb-2">${clientName ? `<span class="text-xs text-gray-500">${clientName}</span>` : '<span></span>'}${sts}</div>
-      <h3 class="font-medium mb-2">${e.name || e.title || 'Untitled'}</h3>
+      <div class="flex justify-between items-center mb-2">${clientName ? `<span class="text-xs text-gray-500">${esc(clientName)}</span>` : '<span></span>'}${sts}</div>
+      <h3 class="font-medium mb-2">${esc(e.name || e.title || 'Untitled')}</h3>
       <div class="flex items-center gap-2 mb-2">${stageBadge}${dueDate}</div>
       ${progress}
-      <div class="flex justify-between items-center mt-2">${team}<div class="flex gap-1"><a href="/engagement/${e.id}" class="btn btn-xs btn-ghost" data-stop-propagation="true">View</a>${canEdit(user, 'engagement') ? `<a href="/engagement/${e.id}/edit" class="btn btn-xs btn-outline" data-stop-propagation="true">Edit</a>` : ''}</div></div>
+      <div class="flex justify-between items-center mt-2">${team}<div class="flex gap-1"><a href="/engagement/${esc(e.id)}" class="btn btn-xs btn-ghost" data-stop-propagation="true">View</a>${canEdit(user, 'engagement') ? `<a href="/engagement/${esc(e.id)}/edit" class="btn btn-xs btn-outline" data-stop-propagation="true">Edit</a>` : ''}</div></div>
     </div></div>`
 }
 
@@ -29,8 +29,8 @@ export function mobileEngagementCard(engagement) {
   const sts = e.status ? statusLabel(e.status) : ''
   return `<div class="mobile-card mobile-engagement-card card-clean">
     <div class="card-clean-body">
-      <div class="flex justify-between items-center mb-2"><h3 class="font-medium text-sm">${e.name || e.title || 'Untitled'}</h3>${sts}</div>
-      ${e.client_name ? `<div class="text-xs text-gray-500 mb-1">${e.client_name}</div>` : ''}
+      <div class="flex justify-between items-center mb-2"><h3 class="font-medium text-sm">${esc(e.name || e.title || 'Untitled')}</h3>${sts}</div>
+      ${e.client_name ? `<div class="text-xs text-gray-500 mb-1">${esc(e.client_name)}</div>` : ''}
       <div class="flex items-center gap-2 mb-2">${stageBadge}${e.due_date ? `<span class="text-xs text-gray-500">${typeof e.due_date === 'number' ? new Date(e.due_date * 1000).toLocaleDateString() : e.due_date}</span>` : ''}</div>
       <div class="flex gap-1 mt-2"><a href="/engagement/${e.id}" class="btn btn-xs btn-primary">View</a><a href="/engagement/${e.id}/edit" class="btn btn-xs btn-outline">Edit</a></div>
     </div></div>`
@@ -51,13 +51,13 @@ export function stagePipeline(currentStage, stages = null, clickable = false, on
 export function activityTimeline(activities = [], showAll = false) {
   const maxItems = showAll ? activities.length : 10
   const items = activities.slice(0, maxItems)
-  const iconMap = { created: '&#43;', updated: '&#9998;', status_changed: '&#9679;', commented: '&#128172;', assigned: '&#128100;', uploaded: '&#128206;' }
+  const iconMap = { created: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`, updated: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`, status_changed: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>`, commented: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`, assigned: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`, uploaded: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>` }
   const timelineItems = items.map(a => {
     const action = a.action || 'updated'
-    const icon = iconMap[action] || '&#9679;'
+    const icon = iconMap[action] || `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>`
     const ts = a.timestamp || a.created_at
     const timeStr = ts ? (typeof ts === 'number' && ts > 1e9 ? new Date(ts * 1000).toLocaleString() : new Date(ts).toLocaleString()) : ''
-    return `<div class="act-tl-item"><div class="act-tl-icon act-tl-${action}">${icon}</div><div class="act-tl-content"><div class="act-tl-header"><span class="act-tl-desc">${a.description || a.action || ''}</span></div><div class="act-tl-time">${timeStr}${a.user_name ? ' by ' + a.user_name : ''}</div></div></div>`
+    return `<div class="act-tl-item"><div class="act-tl-icon act-tl-${action}">${icon}</div><div class="act-tl-content"><div class="act-tl-header"><span class="act-tl-desc">${esc(a.description || a.action || '')}</span></div><div class="act-tl-time">${timeStr}${a.user_name ? ' by ' + esc(a.user_name) : ''}</div></div></div>`
   }).join('')
   const moreBtn = !showAll && activities.length > maxItems ? `<div class="act-tl-more"><button class="btn btn-ghost btn-sm" data-action="showAllActivity" aria-label="Show ${activities.length - maxItems} more activities">Show ${activities.length - maxItems} more</button></div>` : ''
   return `<div class="act-timeline">${timelineItems}</div>${moreBtn}`

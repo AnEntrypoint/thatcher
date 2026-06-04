@@ -80,5 +80,83 @@ export function createErrorLogger(context = '') {
     warn: (msg, meta = {}) => {
       console.warn(`[${context}] ${msg}`, meta);
     },
+    info: (_msg, _meta = {}) => {},
+    debug: (msg, meta = {}) => {
+      if (process.env.DEBUG) {
+        console.debug(`[${context}] Debug:`, msg, meta);
+      }
+    },
   };
+}
+
+/**
+ * Normalize an arbitrary thrown value into one of thatcher's AppError-class
+ * instances. AppError instances (and anything already shaped like one — a
+ * numeric `status` + a `code`) pass through untouched; common low-level
+ * errors are mapped to the appropriate thatcher error class.
+ *
+ * (Ported from moonlanding, adapted to thatcher's class-based hierarchy and
+ * its `status`/`code`/`details` shape. Kept import-free so the module stays
+ * loadable under the plain-node test runner.)
+ * @param {unknown} error
+ * @returns {AppError}
+ */
+export function normalizeError(error) {
+  if (error instanceof AppError) {
+    return error;
+  }
+
+  if (error && typeof error === 'object' && typeof error.status === 'number' && error.code) {
+    return error;
+  }
+
+  if (error instanceof SyntaxError) {
+    return new BadRequestError('Invalid request format');
+  }
+
+  if (error instanceof TypeError) {
+    return new AppError('Invalid operation', 'TYPE_ERROR', 400, { originalMessage: error.message });
+  }
+
+  const message = error && error.message ? String(error.message) : '';
+
+  if (message.includes('database is locked')) {
+    return new DatabaseError('operation', error);
+  }
+
+  if (message.includes('UNIQUE constraint failed')) {
+    const field = message.match(/UNIQUE constraint failed: (.+)/)?.[1] || 'record';
+    return new ConflictError(`${field} already exists`);
+  }
+
+  return new AppError(message || 'An unexpected error occurred', 'INTERNAL_ERROR', 500, {
+    originalMessage: message,
+    stack: error && error.stack ? error.stack.split('\n').slice(0, 3).join('\n') : undefined,
+  });
+}
+
+/**
+ * Build a JSON-serializable error response body from any thrown value.
+ * (Ported from moonlanding, adapted to thatcher's error shape.)
+ * @param {unknown} error
+ * @param {boolean} [includeStack=false]
+ * @returns {object}
+ */
+export function formatErrorResponse(error, includeStack = false) {
+  const normalized = normalizeError(error);
+  const response = {
+    status: 'error',
+    message: normalized.message,
+    code: normalized.code,
+    statusCode: normalized.status,
+  };
+
+  if (normalized.details) response.details = normalized.details;
+  if (normalized.errors) response.errors = normalized.errors;
+
+  if (includeStack && error && error.stack) {
+    response.stack = error.stack.split('\n').slice(0, 5);
+  }
+
+  return response;
 }

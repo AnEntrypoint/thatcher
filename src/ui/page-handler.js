@@ -141,6 +141,15 @@ export async function handlePage(pathname, req, res) {
 
   if (normalized === '/engagements') return handleEngagementList(user, req);
   if (normalized === '/search') return handleSearch(user, req);
+  if (normalized === '/monitoring') {
+    if (!isPartner(user)) return renderAccessDenied(user, 'monitoring', 'view');
+    const { renderMonitoringDashboard } = await lazyRenderer('monitoring-dashboard.js');
+    return renderMonitoringDashboard();
+  }
+  if (normalized === '/flexup') {
+    const { renderFlexUpView } = await lazyRenderer('flexup-view-renderer.js');
+    return renderFlexUpView(user);
+  }
   if (normalized === '/ml-console') {
     const db = getDatabase();
     let candidates = []; let reviewMap = {};

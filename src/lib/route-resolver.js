@@ -62,6 +62,16 @@ export function buildNestedRoutePath(baseDir, domain, parentEntity, childParts) 
     () => buildSegments('[id]', () => `[${singularize(childParts[0])}Id]`),
   ];
 
+  // Also try a "leaf-action" shape with no further id after the child segment.
+  // Routes like /mwr/review/[id]/export-pdf/route.js (parent + id + leaf action)
+  // were missed by the segment-pair variants above.
+  if (childParts.length === 1) {
+    const leaf = path.join(baseDir, 'src/app/api', domain, parentEntity, '[id]', childParts[0], 'route.js');
+    if (fs.existsSync(leaf)) return leaf;
+    const leafByEntity = path.join(baseDir, 'src/app/api', domain, parentEntity, `[${parentEntity}Id]`, childParts[0], 'route.js');
+    if (fs.existsSync(leafByEntity)) return leafByEntity;
+  }
+
   for (const variant of variants) {
     const candidate = variant();
     if (fs.existsSync(candidate)) return candidate;

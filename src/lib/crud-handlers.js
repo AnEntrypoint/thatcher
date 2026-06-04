@@ -15,6 +15,7 @@ import { permissionService } from '../services/permission.service.js';
 import { parse as parseQuery } from './query-string-adapter.js';
 import { now } from './database-core.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
+import { logAction } from './audit-logger.js';
 
 /**
  * Build a complete set of CRUD handlers for an entity
@@ -112,6 +113,9 @@ export function createCrudHandlers(entityName, spec) {
       const sanitized = sanitizeData(entityName, rawData, spec);
       const record = create(entityName, sanitized, user);
 
+      // Audit log (ported from moon)
+      logAction(entityName, record.id, 'create', user?.id, null, record);
+
       // Execute hooks
       executeHook(`create:${entityName}:after`, {
         entity: entityName,
@@ -150,6 +154,9 @@ export function createCrudHandlers(entityName, spec) {
       const sanitized = sanitizeData(entityName, rawData, spec, existing);
       const record = update(entityName, id, sanitized, user);
 
+      // Audit log (ported from moon)
+      logAction(entityName, id, 'update', user?.id, existing, record);
+
       executeHook(`update:${entityName}:after`, {
         entity: entityName,
         id,
@@ -178,7 +185,20 @@ export function createCrudHandlers(entityName, spec) {
         throw new AppError('Access denied', 'FORBIDDEN', HTTP.FORBIDDEN);
       }
 
-      const result = remove(entityName, id);
+      // Delete strategy (ported from moon): immutable entities are archived,
+      // entities with a status field are soft-deleted, otherwise hard-removed.
+      let result;
+      if (spec.immutable === true && spec.immutable_strategy === 'move_to_archive') {
+        const archiveData = { archived: true, archived_at: now(), archived_by: user?.id };
+        result = update(entityName, id, archiveData, user);
+        logAction(entityName, id, 'archive', user?.id, existing, archiveData);
+      } else if (spec.fields?.status) {
+        result = update(entityName, id, { status: 'deleted' }, user);
+        logAction(entityName, id, 'delete', user?.id, existing, { status: 'deleted' });
+      } else {
+        result = remove(entityName, id);
+        logAction(entityName, id, 'delete', user?.id, existing, null);
+      }
 
       executeHook(`delete:${entityName}:after`, {
         entity: entityName,

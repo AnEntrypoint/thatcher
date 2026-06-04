@@ -131,7 +131,7 @@ export function renderHighlightThreading(user, review, highlights, responseMap) 
     </div>`;
 
   const threadScript = `
-    window.showToast=window.showToast||function(m,t){alert(m)};
+    if(!window.showToast)window.showToast=function(m,t){var c=document.getElementById('toast-container');if(!c){c=document.createElement('div');c.id='toast-container';c.className='toast-container';c.setAttribute('role','status');c.setAttribute('aria-live','polite');c.setAttribute('aria-atomic','true');document.body.appendChild(c)}var d=document.createElement('div');d.className='toast toast-'+(t||'info');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove()},300)},3000)};
     window.filterThreads=function(f){
       document.querySelectorAll('[data-thread-filter]').forEach(b=>{
         b.className=b.dataset.threadFilter===f?'pill pill-primary':'pill pill-neutral';
@@ -146,12 +146,12 @@ export function renderHighlightThreading(user, review, highlights, responseMap) 
     };
     window.submitResponse=async function(hid){
       const ta=document.getElementById('reply-'+hid);
-      if(!ta||!ta.value.trim()){alert('Please enter a response');return}
+      if(!ta||!ta.value.trim()){showToast('Please enter a response','error');return}
       try{
         const res=await fetch('/api/mwr/review/highlight/'+hid+'/responses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:ta.value.trim()})});
         if(res.ok){ta.value='';showToast('Response submitted','success');setTimeout(()=>location.reload(),500)}
-        else{const err=await res.json().then(d=>d.error||d.message||'Failed').catch(()=>'Failed');alert('Error: '+err)}
-      }catch(e){alert('Error: '+e.message)}
+        else{const err=await res.json().then(d=>d.error||d.message||'Failed').catch(()=>'Failed');showToast('Error: '+err,'error')}
+      }catch(e){showToast('Error: '+e.message,'error')}
     };
     window.updateResolution=async function(hid){
       const sel=document.getElementById('resolve-status-'+hid);
@@ -159,16 +159,16 @@ export function renderHighlightThreading(user, review, highlights, responseMap) 
       try{
         const res=await fetch('/api/mwr/review/highlight/'+hid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:sel.value})});
         if(res.ok){showToast('Status updated','success');setTimeout(()=>location.reload(),500)}
-        else{alert('Failed to update')}
-      }catch(e){alert('Error: '+e.message)}
+        else{showToast('Failed to update','error')}
+      }catch(e){showToast('Error: '+e.message,'error')}
     };
     window.bulkResolve=async function(){
-      if(!confirm('Resolve all highlights in this review?'))return;
+      if(!(await window.gmConfirm({title:'Please confirm',message:'Resolve all highlights in this review?',danger:false,confirmLabel:'OK'})))return;
       try{
         const res=await fetch('/api/mwr/review/${review.id}?action=resolve-all',{method:'POST'});
         if(res.ok){showToast('All highlights resolved','success');setTimeout(()=>location.reload(),500)}
-        else{alert('Failed to resolve all')}
-      }catch(e){alert('Error: '+e.message)}
+        else{showToast('Failed to resolve all','error')}
+      }catch(e){showToast('Error: '+e.message,'error')}
     };`;
 
   const bc = [{ href: '/', label: 'Home' }, { href: '/review', label: 'Reviews' }, { href: `/review/${review.id}`, label: review.name || 'Review' }, { label: 'Highlights' }];

@@ -12,7 +12,6 @@
  */
 
 import { startThatcher, Thatcher } from './index.js';
-import { command } from 'commander'; // We'll use simple args parsing
 import * as readline from 'readline';
 
 const args = process.argv.slice(2);

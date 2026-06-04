@@ -1,5 +1,5 @@
 import { page } from '@/ui/layout.js';
-import { esc, TOAST_SCRIPT } from '@/ui/render-helpers.js';
+import { esc, TOAST_SCRIPT, emptyRow } from '@/ui/render-helpers.js';
 
 function fmtDate(ts) {
   if (!ts) return '-';
@@ -18,18 +18,17 @@ function notifRow(n) {
     <td class="text-xs"><span class="badge badge-flat-secondary">${esc(typeLabel)}</span></td>
     <td class="text-sm max-w-md">${esc(n.message || '-')}</td>
     <td>${entityLink}</td>
-    <td>${isRead ? '<span class="text-xs text-base-content/30">Read</span>' : `<button onclick="markRead('${esc(n.id)}')" class="btn btn-ghost btn-xs">Mark read</button>`}</td>
+    <td>${isRead ? '<span class="text-xs text-base-content/30">Read</span>' : `<button data-action="markRead" data-args='["${esc(n.id)}"]' class="btn btn-ghost btn-xs">Mark read</button>`}</td>
   </tr>`;
 }
 
 export function renderNotificationsPage(user, notifs = []) {
-  const rows = notifs.map(notifRow).join('') ||
-    `<tr><td colspan="5" class="text-center py-8 text-base-content/40 text-sm">No notifications</td></tr>`;
+  const rows = notifs.map(notifRow).join('') || emptyRow(5, 'No notifications');
 
   const content = `
     <div class="page-header">
       <h1 class="page-title">Notifications</h1>
-      <button onclick="markAllRead()" class="btn btn-ghost btn-sm">Mark All Read</button>
+      <button data-action="markAllRead" class="btn btn-ghost btn-sm">Mark All Read</button>
     </div>
     <div class="card-clean">
       <div class="card-clean-body">
@@ -44,8 +43,8 @@ export function renderNotificationsPage(user, notifs = []) {
   `;
 
   const script = `${TOAST_SCRIPT}
-async function markRead(id){try{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({id})});var row=document.querySelector('[data-notif-id="'+id+'"]');if(row){row.classList.add('opacity-60');var btn=row.querySelector('button');if(btn)btn.replaceWith(document.createTextNode('Read'))}var count=document.getElementById('notif-count');if(count){var c=parseInt(count.textContent||'0',10)-1;if(c<=0)count.style.display='none';else count.textContent=c}}catch(e){showToast('Error','error')}}
-async function markAllRead(){try{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});document.querySelectorAll('[data-notif-id]').forEach(function(row){row.classList.add('opacity-60');var btn=row.querySelector('button');if(btn)btn.replaceWith(document.createTextNode('Read'))});var count=document.getElementById('notif-count');if(count)count.style.display='none';showToast('All marked read','success')}catch(e){showToast('Error','error')}}`;
+window.markRead=async function(id){try{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({id})});var row=document.querySelector('[data-notif-id="'+id+'"]');if(row){row.classList.add('opacity-60');var btn=row.querySelector('button');if(btn)btn.replaceWith(document.createTextNode('Read'))}var count=document.getElementById('notif-count');if(count){var c=parseInt(count.textContent||'0',10)-1;if(c<=0)count.style.display='none';else count.textContent=c}}catch(e){showToast('Error','error')}};
+window.markAllRead=async function(){try{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});document.querySelectorAll('[data-notif-id]').forEach(function(row){row.classList.add('opacity-60');var btn=row.querySelector('button');if(btn)btn.replaceWith(document.createTextNode('Read'))});var count=document.getElementById('notif-count');if(count)count.style.display='none';showToast('All marked read','success')}catch(e){showToast('Error','error')}};`;
 
   return page(user, 'Notifications | Moonlanding', null, content, [script]);
 }

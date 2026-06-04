@@ -116,9 +116,19 @@ export class Thatcher {
       throw new Error('No configuration provided. Supply config path or object.');
     }
 
-    // Init config engine
-    const { ConfigGeneratorEngine } = await import(resolveModule('./src/lib/config-generator-engine.js'));
+    // Init config engine AND set the module-level singleton that getConfigEngineSync()
+    // returns. The server, plugin loader, and generateEntitySpec all read the singleton
+    // via getConfigEngineSync(), so a locally-newed engine alone leaves them uninitialized.
+    const engineMod = await import(resolveModule('./lib/config-generator-engine.js'));
+    const { ConfigGeneratorEngine, setConfigEngine } = engineMod;
     _configEngine = new ConfigGeneratorEngine(masterConfig);
+    setConfigEngine(_configEngine);
+    this.configEngine = _configEngine;
+    // Cross-module-instance bridge: tsx can load config-generator-engine.js as two
+    // distinct module instances (static import vs resolveModule file:// URL), so the
+    // module-level singleton set above is not always visible to server.js. globalThis
+    // is the one registry both instances share.
+    globalThis.__thatcherConfigEngine = _configEngine;
 
     // Debug exposure
     if (globalThis.__debug__) {
@@ -220,7 +230,7 @@ export class Thatcher {
     const port = opts.port || this.options.server.port;
     const host = opts.host || this.options.server.host;
 
-    const { createServer } = await import(resolveModule('./src/server/server.js'));
+    const { createServer } = await import(resolveModule('./server/server.js'));
     _server = createServer({
       thatcher: this,
       config: this.config,
@@ -280,44 +290,44 @@ export class Thatcher {
   // === CRUD operations ===
 
   async list(entity, where = {}, opts = {}) {
-    const { list } = await import(resolveModule('./src/lib/query-engine.js'));
+    const { list } = await import(resolveModule('./lib/query-engine.js'));
     return list(entity, where, opts);
   }
 
   async get(entity, id) {
-    const { get } = await import(resolveModule('./src/lib/query-engine.js'));
+    const { get } = await import(resolveModule('./lib/query-engine.js'));
     return get(entity, id);
   }
 
   async create(entity, data, user) {
-    const { create } = await import(resolveModule('./src/lib/query-engine-write.js'));
+    const { create } = await import(resolveModule('./lib/query-engine-write.js'));
     return create(entity, data, user);
   }
 
   async update(entity, id, data, user) {
-    const { update } = await import(resolveModule('./src/lib/query-engine-write.js'));
+    const { update } = await import(resolveModule('./lib/query-engine-write.js'));
     return update(entity, id, data, user);
   }
 
   async delete(entity, id) {
-    const { remove } = await import(resolveModule('./src/lib/query-engine-write.js'));
+    const { remove } = await import(resolveModule('./lib/query-engine-write.js'));
     return remove(entity, id);
   }
 
   async search(entity, query, where = {}, opts = {}) {
-    const { search } = await import(resolveModule('./src/lib/query-engine.js'));
+    const { search } = await import(resolveModule('./lib/query-engine.js'));
     return search(entity, query, where, opts);
   }
 
   // === Workflow ===
 
   async transition(entityType, entityId, workflowName, toState, user, reason = '') {
-    const { transition } = await import(resolveModule('./src/lib/workflow-engine.js'));
+    const { transition } = await import(resolveModule('./lib/workflow-engine.js'));
     return transition(entityType, entityId, workflowName, toState, user, reason);
   }
 
   async getAvailableTransitions(workflowName, currentState, user, record = null) {
-    const { getAvailableTransitions } = await import(resolveModule('./src/lib/workflow-engine.js'));
+    const { getAvailableTransitions } = await import(resolveModule('./lib/workflow-engine.js'));
     return getAvailableTransitions(workflowName, currentState, user, record);
   }
 

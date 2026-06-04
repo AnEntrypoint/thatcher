@@ -1,8 +1,11 @@
 import { page } from '@/ui/layout.js';
 import { reviewZoneNav } from '@/ui/review-zone-nav.js';
 import { SPACING, renderCard, renderButton, renderProgress, renderEmptyState, renderStatsRow, renderPageHeader } from '@/ui/spacing-system.js';
+import { icon, esc } from '@/ui/format-helpers.js';
+import { TOAST_SCRIPT } from '@/ui/render-helpers.js';
 
-const TOAST_SCRIPT = `window.showToast=(m,t='info')=>{let c=document.getElementById('toast-container');if(!c){c=document.createElement('div');c.id='toast-container';c.className='toast-container';c.setAttribute('role','status');c.setAttribute('aria-live','polite');c.setAttribute('aria-atomic','true');document.body.appendChild(c)}const d=document.createElement('div');d.className='toast toast-'+t;d.textContent=m;c.appendChild(d);setTimeout(()=>{d.style.opacity='0';setTimeout(()=>d.remove(),300)},3000)};`;
+// Star icon with fill toggle for priority on/off state.
+const starIcon = (on) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
 
 function fmtDate(ts) {
   if (!ts) return '-';
@@ -41,29 +44,29 @@ export function renderMwrHome(user, stats) {
   </nav>`;
 
   function listItem(r) {
-    const star = r.priority || r.starred ? '★' : '☆';
+    const isPri = !!(r.priority || r.starred);
     const archiveLabel = r.status === 'archived' ? 'Unarchive' : 'Archive';
     const archiveAct = r.status === 'archived' ? 'unarchive' : 'archive';
     return `<div class="list-item-row" data-review-id="${r.id}">
-      <button class="row-action row-action-star" data-action="toggleReviewStar" data-args='["${r.id}"]' aria-label="Toggle priority" title="Star/Priority">${star}</button>
-      <span class="list-item-name" data-action="openReview" data-args='["${r.id}"]' style="cursor:pointer;flex:1">${r.name || 'Untitled'}</span>
+      <button type="button" class="row-action row-action-star${isPri ? ' is-priority' : ''}" data-action="toggleReviewStar" data-args='["${esc(r.id)}"]' aria-label="Toggle priority" aria-pressed="${isPri}" title="Star/Priority">${starIcon(isPri)}</button>
+      <span class="list-item-name" data-action="openReview" data-args='["${esc(r.id)}"]' style="cursor:pointer;flex:1">${esc(r.name || 'Untitled')}</span>
       <div class="list-item-meta">${statusBadge(r.status)}<span style="font-size:12px;color:var(--color-text-light)">${fmtDate(r.updated_at || r.created_at)}</span></div>
-      <button class="row-action row-action-flag" data-action="toggleReviewFlag" data-args='["${r.id}"]' aria-label="Flag" title="Flag">⚑</button>
-      <button class="row-action row-action-tag" data-action="openReviewTag" data-args='["${r.id}"]' aria-label="Tag" title="Tag">#</button>
-      <button class="row-action row-action-archive" data-action="toggleReviewArchive" data-args='["${r.id}","${archiveAct}"]' aria-label="${archiveLabel}" title="${archiveLabel}">${r.status === 'archived' ? '↶' : '🗄'}</button>
-      <button class="row-action row-action-open" data-action="openReview" data-args='["${r.id}"]' aria-label="Open" title="Open">↗</button>
+      <button class="row-action row-action-flag" data-action="toggleReviewFlag" data-args='["${r.id}"]' aria-label="Flag" title="Flag">${icon('flag', 16)}</button>
+      <button class="row-action row-action-tag" data-action="openReviewTag" data-args='["${r.id}"]' aria-label="Tag" title="Tag">${icon('tag', 16)}</button>
+      <button class="row-action row-action-archive" data-action="toggleReviewArchive" data-args='["${r.id}","${archiveAct}"]' aria-label="${archiveLabel}" title="${archiveLabel}">${r.status === 'archived' ? icon('undo', 16) : icon('archive', 16)}</button>
+      <button class="row-action row-action-open" data-action="openReview" data-args='["${r.id}"]' aria-label="Open" title="Open">${icon('external', 16)}</button>
     </div>`;
   }
 
   const activeList = active.length ? active.map(listItem).join('') : renderEmptyState('No active reviews');
   const priorityList = priority.length ? priority.map(listItem).join('') : renderEmptyState('No priority reviews');
   const archiveList = archive.length ? archive.map(listItem).join('') : renderEmptyState('No archived reviews');
-  const historyList = history.length ? history.slice(0, 50).map(a => `<div class="activity-item-row"><span class="activity-item-date">${fmtDate(a.created_at)}</span><span class="activity-item-desc">${a.description || a.action || '-'}</span></div>`).join('') : renderEmptyState('No recent activity');
+  const historyList = history.length ? history.slice(0, 50).map(a => `<div class="activity-item-row"><span class="activity-item-date">${fmtDate(a.created_at)}</span><span class="activity-item-desc">${esc(a.description || a.action || '-')}</span></div>`).join('') : renderEmptyState('No recent activity');
 
   const panels = `<div id="home-panel-active">${activeList}</div><div id="home-panel-priority" style="display:none">${priorityList}</div><div id="home-panel-history" style="display:none">${historyList}</div><div id="home-panel-archive" style="display:none">${archiveList}</div>`;
 
   const content = `${renderPageHeader('MWR Home', `Welcome back, ${user?.name || 'User'}`)}${statsHtml}${tabBar}${renderCard(panels, { padding: 0 })}`;
-  const script = `${TOAST_SCRIPT}window.switchHomeTab=(key)=>{document.querySelectorAll('.tab-btn[data-tab]').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));document.querySelectorAll('[id^="home-panel-"]').forEach(p=>p.style.display='none');const el=document.getElementById('home-panel-'+key);if(el)el.style.display='block'};window.openReview=(id)=>{location.href='/review/'+id};window.toggleReviewStar=async(id)=>{try{const r=await fetch('/api/mwr/review/star',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:id})});if(r.ok)location.reload();else window.showToast('Star failed','error')}catch(e){window.showToast('Star failed','error')}};window.toggleReviewFlag=async(id)=>{try{const r=await fetch('/api/mwr/review/flag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:id})});if(r.ok)location.reload();else window.showToast('Flag failed','error')}catch(e){window.showToast('Flag failed','error')}};window.openReviewTag=(id)=>{const t=prompt('Tag:');if(t)fetch('/api/mwr/review/tag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:id,tag:t})}).then(r=>{if(r.ok)window.showToast('Tagged');else window.showToast('Tag failed','error')})};window.toggleReviewArchive=async(id,act)=>{try{const r=await fetch('/api/mwr/review/archive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_ids:[id],action:act})});if(r.ok)location.reload();else window.showToast('Archive failed','error')}catch(e){window.showToast('Archive failed','error')}};`;
+  const script = `${TOAST_SCRIPT}window.switchHomeTab=(key)=>{document.querySelectorAll('.tab-btn[data-tab]').forEach(t=>t.classList.toggle('active',t.dataset.tab===key));document.querySelectorAll('[id^="home-panel-"]').forEach(p=>p.style.display='none');const el=document.getElementById('home-panel-'+key);if(el)el.style.display='block'};window.openReview=(id)=>{location.href='/review/'+id};window.toggleReviewStar=async(id)=>{try{const r=await fetch('/api/mwr/review/star',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:id})});if(r.ok)location.reload();else window.showToast('Star failed','error')}catch(e){window.showToast('Star failed','error')}};window.toggleReviewFlag=async(id)=>{try{const r=await fetch('/api/mwr/review/flag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:id})});if(r.ok)location.reload();else window.showToast('Flag failed','error')}catch(e){window.showToast('Flag failed','error')}};window.openReviewTag=async(id)=>{const t=await window.gmPrompt({title:'Tag Review',label:'Tag',placeholder:'Enter a tag',confirmLabel:'Add Tag'});if(t)fetch('/api/mwr/review/tag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:id,tag:t})}).then(r=>{if(r.ok)window.showToast('Tagged');else window.showToast('Tag failed','error')})};window.toggleReviewArchive=async(id,act)=>{try{const r=await fetch('/api/mwr/review/archive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_ids:[id],action:act})});if(r.ok)location.reload();else window.showToast('Archive failed','error')}catch(e){window.showToast('Archive failed','error')}};`;
   const bc = [{ href: '/', label: 'Dashboard' }, { label: 'MWR Home' }];
   return page(user, 'MWR Home | Moonlanding', bc, content, [script]);
 }

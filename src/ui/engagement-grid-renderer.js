@@ -9,9 +9,12 @@ function engRow(e) {
   const year = esc(e.year || '-');
   const team = esc(e.team_name || e.team_id_display || e.team_id || '-');
   const deadline = e.deadline ? new Date(e.deadline).toLocaleDateString() : '-';
-  const stageLbl = STAGE_CONFIG.find(s => s.key === e.stage)?.label || (e.stage || '-');
-  return `<tr data-row data-navigate="/engagement/${esc(e.id)}" style="cursor:pointer">
-    <td data-col="name"><strong>${name}</strong></td>
+  const stageCfg = STAGE_CONFIG.find(s => s.key === e.stage);
+  const stageLbl = stageCfg?.label || (e.stage || '-');
+  // 247420 indicator-rail: 3px left edge tinted by stage color (replaces border)
+  const railColor = stageCfg?.color || (e.color || 'var(--panel-border,#eee5d3)');
+  return `<tr data-row data-navigate="/engagement/${esc(e.id)}" style="cursor:pointer" data-stage="${esc(e.stage || '')}">
+    <td data-col="name" style="box-shadow:inset 3px 0 0 ${railColor}"><strong>${name}</strong></td>
     <td data-col="client">${client}</td>
     <td data-col="type" class="eng-col-type">${type}</td>
     <td data-col="year" class="eng-col-year">${year}</td>
@@ -64,19 +67,19 @@ export function renderEngagementGrid(user, engagements, options = {}) {
 
   const emailReceiveDialog = `<div id="email-receive-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true">
     <div class="dialog-panel" style="max-width:540px">
-      <div class="dialog-header"><span class="dialog-title">Receive Email</span><button class="dialog-close" onclick="document.getElementById('email-receive-dialog').style.display='none'">&times;</button></div>
+      <div class="dialog-header"><span class="dialog-title">Receive Email</span><button class="dialog-close" aria-label="Close dialog" data-dialog-close="email-receive-dialog">&times;</button></div>
       <div class="dialog-body">
         <div class="modal-form-group"><label>Email Content</label><textarea id="email-receive-content" class="form-input" rows="8" placeholder="Paste raw email content here..."></textarea></div>
         <div id="email-receive-result" style="display:none;margin-top:8px"></div>
       </div>
       <div class="dialog-footer">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('email-receive-dialog').style.display='none'">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="submitEmailReceive()">Process Email</button>
+        <button class="btn btn-ghost btn-sm" data-dialog-close="email-receive-dialog">Cancel</button>
+        <button class="btn btn-primary btn-sm" data-action="submitEmailReceive">Process Email</button>
       </div>
     </div>
   </div>`;
 
-  const emailReceiveScript = `async function submitEmailReceive(){var content=document.getElementById('email-receive-content').value.trim();var res=document.getElementById('email-receive-result');if(!content){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">Email content required.</div>';return}res.style.display='block';res.innerHTML='<div style="font-size:13px">Processing...</div>';try{var r=await fetch('/api/email/receive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content})});var d=await r.json();if(r.ok&&d.success){res.innerHTML='<div style="color:var(--color-success);font-size:13px">Email processed successfully.'+(d.engagement_id?' Matched engagement: '+d.engagement_id:'')+(d.message?' '+d.message:'')+'</div>'}else{res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||d.message||'Failed to process email')+'</div>'}}catch(e){res.innerHTML='<div style="color:var(--color-danger);font-size:13px">Error: '+e.message+'</div>'}}`;
+  const emailReceiveScript = `window.submitEmailReceive=async function(){var content=document.getElementById('email-receive-content').value.trim();var res=document.getElementById('email-receive-result');if(!content){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">Email content required.</div>';return}res.style.display='block';res.innerHTML='<div style="font-size:13px">Processing...</div>';try{var r=await fetch('/api/email/receive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content})});var d=await r.json();if(r.ok&&d.success){res.innerHTML='<div style="color:var(--color-success);font-size:13px">Email processed successfully.'+(d.engagement_id?' Matched engagement: '+d.engagement_id:'')+(d.message?' '+d.message:'')+'</div>'}else{res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||d.message||'Failed to process email')+'</div>'}}catch(e){res.innerHTML='<div style="color:var(--color-danger);font-size:13px">Error: '+e.message+'</div>'}};`;
 
   const content = `<div class="page-header">
         <div><h1 class="page-title">Engagements</h1><p class="page-subtitle">${engagements.length} total engagements</p></div>
@@ -89,7 +92,7 @@ export function renderEngagementGrid(user, engagements, options = {}) {
           ${stageOpts ? `<div class="table-filter"><select data-filter="stage-raw" id="filter-stage"><option value="">All Stages</option>${stageOpts}</select></div>` : ''}
           ${teamOpts ? `<div class="table-filter"><select data-filter="team" id="filter-team"><option value="">All Teams</option>${teamOpts}</select></div>` : ''}
           ${yearOpts ? `<div class="table-filter"><select data-filter="year" id="filter-year"><option value="">All Years</option>${yearOpts}</select></div>` : ''}
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('email-receive-dialog').style.display='flex'">Receive Email</button>
+          <button class="btn btn-ghost btn-sm" data-action="openDialog" data-args='["email-receive-dialog"]'>Receive Email</button>
           <span class="table-count" id="row-count">${engagements.length} items</span>
         </div>
         <table class="data-table">

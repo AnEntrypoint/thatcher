@@ -3,6 +3,10 @@
  * Adapted from moonlanding/src/lib/query-string-adapter.js
  */
 
+// Thatcher uses a fixed default page size (no async config-engine lookup);
+// keeps QueryAdapter helpers synchronous to match existing call sites.
+const DEFAULT_PAGE_SIZE = 50;
+
 /**
  * Parse query string from URL
  * @param {object} request - Fetch Request or NextRequest-like
@@ -67,9 +71,100 @@ function coerceValue(value) {
 export function getDefault(key) {
   const defaults = {
     page: 1,
-    pageSize: 50,
+    pageSize: DEFAULT_PAGE_SIZE,
     q: null,
     filters: {},
+    sortDir: 'asc',
+    limit: null,
+    offset: null,
   };
-  return defaults[key];
+  return defaults[key] ?? null;
 }
+
+/**
+ * QueryAdapter - static helpers for parsing and building query strings.
+ * Ported from moonlanding; methods kept synchronous to match thatcher call sites
+ * (e.g. api.js destructures QueryAdapter.fromSearchParams(...) without await).
+ */
+export class QueryAdapter {
+  /**
+   * Parse a Request-like object. Delegates to thatcher's parseQuery so the
+   * returned shape ({ q, page, pageSize, filters, sort }) stays consistent.
+   */
+  static parse(request) {
+    return parseQuery(request);
+  }
+
+  /**
+   * Extract non-reserved filter params from a URLSearchParams instance.
+   */
+  static extractFilters(searchParams) {
+    const filters = {};
+    const reserved = new Set(['q', 'page', 'pageSize', 'page_size', 'action', 'limit', 'offset', 'sort', 'sortBy', 'dir', 'direction', 'sortDir', 'domain']);
+    for (const [key, value] of searchParams) {
+      if (!reserved.has(key) && value) {
+        filters[key] = value;
+      }
+    }
+    return filters;
+  }
+
+  /**
+   * Build a URLSearchParams from a params object, dropping empty values.
+   */
+  static build(params = {}) {
+    const query = new URLSearchParams();
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .forEach(([k, v]) => query.append(k, v));
+    return query;
+  }
+
+  /**
+   * Build a full URL from a base and params object.
+   */
+  static buildUrl(baseUrl, params = {}) {
+    const queryString = QueryAdapter.build(params).toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }
+
+  /**
+   * Get a default value for a config key (synchronous; delegates to getDefault).
+   */
+  static getDefault(key) {
+    return getDefault(key);
+  }
+
+  /**
+   * Parse pagination params from a URLSearchParams instance OR a plain object.
+   * Synchronous so callers can destructure the result directly.
+   */
+  static fromSearchParams(searchParams, spec = null) {
+    const get = (key) => {
+      if (searchParams && typeof searchParams.get === 'function') {
+        return searchParams.get(key);
+      }
+      return searchParams ? searchParams[key] : undefined;
+    };
+    const pageSizeParam = get('pageSize') || get('limit') || String(spec?.list?.pageSize || DEFAULT_PAGE_SIZE);
+    return {
+      q: get('q') || null,
+      page: Math.max(1, parseInt(get('page') || '1', 10)),
+      pageSize: parseInt(pageSizeParam, 10),
+    };
+  }
+
+  /**
+   * Serialize a params object to a query string.
+   */
+  static toQueryString(params = {}) {
+    return QueryAdapter.build(params).toString();
+  }
+}
+
+// Named exports matching moonlanding's surface, so consumers importing
+// `parse`, `build`, `buildUrl`, `fromSearchParams` resolve correctly.
+export const parse = (request) => QueryAdapter.parse(request);
+export const build = (params) => QueryAdapter.build(params);
+export const buildUrl = (baseUrl, params) => QueryAdapter.buildUrl(baseUrl, params);
+export const fromSearchParams = (searchParams, spec) => QueryAdapter.fromSearchParams(searchParams, spec);

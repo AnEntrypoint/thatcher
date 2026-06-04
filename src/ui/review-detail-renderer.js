@@ -2,7 +2,7 @@ import { page } from '@/ui/layout.js';
 import { reviewZoneNav } from '@/ui/review-zone-nav.js';
 export { reviewZoneNav };
 import { canEdit } from '@/ui/permissions-ui.js';
-import { esc, statusBadge, TOAST_SCRIPT } from '@/ui/render-helpers.js';
+import { esc, statusBadge, TOAST_SCRIPT, icon } from '@/ui/render-helpers.js';
 import { reviewDetailScript } from '@/ui/review-detail-script.js';
 import { highlightRow, collaboratorRow, addCollaboratorDialog } from '@/ui/review-detail-panels.js';
 import { tenderPanelHtml, tenderDialog, linksPanelHtml, linkDialog, sectionsPanelHtml, compareDialogHtml } from '@/ui/review-detail-panels-extra.js';
@@ -91,7 +91,7 @@ export function renderReviewDetail(user, review, highlights = [], collaborators 
   const flaggedCount = highlights.filter(h => { try { return (JSON.parse(h.flags||'[]')||[]).includes('flagged'); } catch { return false; } }).length;
   const hRows = highlights.map(h => highlightRow(h)).join('');
   const highlightsPanel = tablePanel('highlights', 'Highlights', totalH,
-    `<span style="font-size:13px;color:var(--color-text-muted)">${resolvedH} resolved, ${openH} open</span><button id="btn-filter-flagged" data-action="filterByFlag" style="font-size:12px;padding:4px 10px;border:1px solid ${flaggedCount > 0 ? '#f59e0b' : 'var(--color-border,#e5e7eb)'};background:${flaggedCount > 0 ? '#fffbeb' : 'transparent'};color:${flaggedCount > 0 ? '#92400e' : 'var(--color-text-muted)'};border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px">⚑ Flagged${flaggedCount > 0 ? ` (${flaggedCount})` : ''}</button>${renderButton('Open PDF', { variant: 'primary', size: 'sm', href: `/review/${esc(r.id)}/pdf` })}`,
+    `<span style="font-size:13px;color:var(--color-text-muted)">${resolvedH} resolved, ${openH} open</span><button id="btn-filter-flagged" data-action="filterByFlag" style="font-size:12px;padding:4px 10px;border:1px solid ${flaggedCount > 0 ? '#f59e0b' : 'var(--color-border,#e5e7eb)'};background:${flaggedCount > 0 ? '#fffbeb' : 'transparent'};color:${flaggedCount > 0 ? '#92400e' : 'var(--color-text-muted)'};border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px">${icon('flag', 14)} Flagged${flaggedCount > 0 ? ` (${flaggedCount})` : ''}</button>${renderButton('Open PDF', { variant: 'primary', size: 'sm', href: `/review/${esc(r.id)}/pdf` })}`,
     ['Highlight', 'Page', 'Status', 'Tags', 'By', 'Actions'], hRows,
     `<a href="/review/${esc(r.id)}/pdf" style="color:var(--color-primary);font-weight:500;text-decoration:none">Open the PDF</a> to start adding highlights`);
 
@@ -109,7 +109,7 @@ export function renderReviewDetail(user, review, highlights = [], collaborators 
     ['Name', 'Items', 'Progress', ''], clRows, 'No checklists attached');
 
   const checklistPickerDialog = `<div id="checklist-picker-dialog" class="dialog-backdrop" style="display:none" data-dialog-close="checklist-picker-dialog">
-    <div class="dialog" style="max-width:520px" onclick="event.stopPropagation()">
+    <div class="dialog" style="max-width:520px">
       <div class="dialog-header"><h2 style="font-size:17px;font-weight:600;margin:0">Attach Checklist</h2><button class="dialog-close" data-dialog-close="checklist-picker-dialog" aria-label="Close">&times;</button></div>
       <div class="dialog-body" style="padding:16px 20px">
         <label style="font-size:13px;font-weight:500;color:var(--color-text-muted);display:block;margin-bottom:6px">Choose a template</label>
@@ -144,7 +144,7 @@ export function renderReviewDetail(user, review, highlights = [], collaborators 
   const overviewPanel = `<div id="rvpanel-overview" class="rv-panel">${detailsCard}</div>`;
   const sectionsPanel = sectionsPanelHtml(r.id, sections, SPACING, renderTable, renderButton);
   const notifyDialog = `<div id="notify-collab-dialog" class="dialog-backdrop" style="display:none" data-dialog-close="notify-collab-dialog">
-    <div class="dialog" style="max-width:480px" onclick="event.stopPropagation()">
+    <div class="dialog" style="max-width:480px">
       <div class="dialog-header"><h2 style="font-size:17px;font-weight:600;margin:0">Notify Collaborators</h2><button class="dialog-close" data-dialog-close="notify-collab-dialog">&times;</button></div>
       <div class="dialog-body" style="padding:16px 20px">
         <label style="font-size:13px;font-weight:500;color:var(--color-text-muted);display:block;margin-bottom:6px">Recipients</label>
@@ -154,13 +154,13 @@ export function renderReviewDetail(user, review, highlights = [], collaborators 
       </div>
       <div class="dialog-footer" style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--color-border,#e5e7eb)">
         <button class="btn-ghost-clean" data-dialog-close="notify-collab-dialog">Cancel</button>
-        <button class="btn-primary-clean" id="notify-send-btn" onclick="sendCollabNotify('${esc(r.id)}')">Send Notification</button>
+        <button class="btn-primary-clean" id="notify-send-btn" data-action="sendCollabNotify" data-args='["${esc(r.id)}"]'>Send Notification</button>
       </div>
     </div>
   </div>`;
 
   const notifyScript = `<script>
-async function sendCollabNotify(reviewId){var msg=document.getElementById('notify-message').value.trim();if(!msg){showToast('Enter a message','error');return;}var checked=Array.from(document.querySelectorAll('#notify-recipients input[name="notify_user"]:checked')).map(function(i){return i.value;});if(!checked.length){showToast('Select at least one recipient','error');return;}var btn=document.getElementById('notify-send-btn');if(btn){btn.disabled=true;btn.textContent='Sending...';}try{var r=await fetch('/api/mwr/review/'+reviewId+'/notify',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({user_ids:checked,message:msg})});if(r.ok){showToast('Notification sent','success');document.getElementById('notify-collab-dialog').style.display='none';document.getElementById('notify-message').value='';}else{var d=await r.json();showToast(d.error||'Failed','error');}}catch(e){showToast('Error: '+e.message,'error');}finally{if(btn){btn.disabled=false;btn.textContent='Send Notification';}}}
+window.sendCollabNotify=async function(reviewId){var msg=document.getElementById('notify-message').value.trim();if(!msg){showToast('Enter a message','error');return;}var checked=Array.from(document.querySelectorAll('#notify-recipients input[name="notify_user"]:checked')).map(function(i){return i.value;});if(!checked.length){showToast('Select at least one recipient','error');return;}var btn=document.getElementById('notify-send-btn');if(btn){btn.disabled=true;btn.textContent='Sending...';}try{var r=await fetch('/api/mwr/review/'+reviewId+'/notify',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({user_ids:checked,message:msg})});if(r.ok){showToast('Notification sent','success');document.getElementById('notify-collab-dialog').style.display='none';document.getElementById('notify-message').value='';}else{var d=await r.json();showToast(d.error||'Failed','error');}}catch(e){showToast('Error: '+e.message,'error');}finally{if(btn){btn.disabled=false;btn.textContent='Send Notification';}}}
 </script>`;
 
   const content = `${pageHeader}${reviewZoneNav(r.id, 'overview')}${tabBar}

@@ -1,6 +1,6 @@
 import { statusLabel } from '@/ui/renderer.js';
 import { page } from '@/ui/layout.js';
-import { fmtDate } from '@/ui/render-helpers.js';
+import { fmtDate, esc } from '@/ui/render-helpers.js';
 
 function resultCard(item, entityType) {
   const sts = item.status ? statusLabel(item.status) : '';
@@ -8,11 +8,11 @@ function resultCard(item, entityType) {
   const subtitle = item.client_name || item.engagement_name || item.email || '';
   const date = fmtDate(item.created_at);
   const typeLabel = entityType.charAt(0).toUpperCase() + entityType.slice(1);
-  return `<div class="card-clean" style="margin-bottom:8px;cursor:pointer" data-navigate="/${entityType}/${item.id}"><div class="card-clean-body" style="padding:0.75rem"><div class="flex items-start justify-between"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="badge badge-sm bg-gray-100 text-gray-600">${typeLabel}</span>${sts}</div><div class="font-medium">${title}</div>${subtitle ? `<div class="text-xs text-gray-500 mt-0.5">${subtitle}</div>` : ''}</div><div class="text-xs text-gray-400">${date}</div></div></div></div>`;
+  return `<div class="card-clean" style="margin-bottom:8px;cursor:pointer" data-navigate="/${entityType}/${item.id}"><div class="card-clean-body" style="padding:0.75rem"><div class="flex items-start justify-between"><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="badge badge-sm bg-gray-100 text-gray-600">${typeLabel}</span>${sts}</div><div class="font-medium">${esc(title)}</div>${subtitle ? `<div class="text-xs text-gray-500 mt-0.5">${esc(subtitle)}</div>` : ''}</div><div class="text-xs text-gray-400">${date}</div></div></div></div>`;
 }
 
 function filterPanel(teams, stages) {
-  const teamOpts = teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  const teamOpts = teams.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('');
   const stageOpts = stages.map(s => `<option value="${s}">${s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>`).join('');
   return `<div class="card-clean" style="margin-bottom:1.5rem"><div class="card-clean-body"><div class="grid grid-cols-1 md:grid-cols-4 gap-3"><div><label class="text-xs font-medium text-gray-600 block mb-1" for="search-query">Search</label><input type="text"  id="search-query" class="input input-bordered input-sm w-full" placeholder="Search across all entities..."/></div><div><label class="text-xs font-medium text-gray-600 block mb-1" for="filter-entity">Entity Type</label><select id="filter-entity" class="select select-bordered select-sm w-full"><option value="">All Types</option><option value="engagement">Engagements</option><option value="client">Clients</option><option value="rfi">RFIs</option><option value="review">Reviews</option><option value="user">Users</option></select></div><div><label class="text-xs font-medium text-gray-600 block mb-1" for="filter-status">Status</label><select id="filter-status" class="select select-bordered select-sm w-full"><option value="">All Statuses</option><option value="active">Active</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="archived">Archived</option></select></div><div><label class="text-xs font-medium text-gray-600 block mb-1" for="filter-stage">Stage</label><select id="filter-stage" class="select select-bordered select-sm w-full"><option value="">All Stages</option>${stageOpts}</select></div></div><div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3"><div><label class="text-xs font-medium text-gray-600 block mb-1" for="filter-team">Team</label><select id="filter-team" class="select select-bordered select-sm w-full"><option value="">All Teams</option>${teamOpts}</select></div><div><label class="text-xs font-medium text-gray-600 block mb-1" for="filter-from">Date From</label><input type="date"  id="filter-from" class="input input-bordered input-sm w-full"/></div><div><label class="text-xs font-medium text-gray-600 block mb-1" for="filter-to">Date To</label><input type="date"  id="filter-to" class="input input-bordered input-sm w-full"/></div><div class="flex items-end"><button class="btn btn-primary btn-sm w-full" data-action="doSearch">Search</button></div></div></div></div>`;
 }

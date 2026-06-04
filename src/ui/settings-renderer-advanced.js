@@ -54,9 +54,9 @@ loadAuditLogs();`;
 }
 
 const INTEGRATIONS = [
-  { id: 'google_drive', icon: '&#128194;', name: 'Google Drive', desc: 'Document storage and collaboration' },
-  { id: 'gmail', icon: '&#9993;', name: 'Gmail', desc: 'Email integration for notifications' },
-  { id: 'firebase', icon: '&#128293;', name: 'Firebase (Legacy)', desc: 'Legacy data source for migration' },
+  { id: 'google_drive', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>`, name: 'Google Drive', desc: 'Document storage and collaboration' },
+  { id: 'gmail', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>`, name: 'Gmail', desc: 'Email integration for notifications' },
+  { id: 'firebase', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`, name: 'Firebase (Legacy)', desc: 'Legacy data source for migration' },
 ];
 
 export function renderSettingsIntegrations(user, integrations = {}) {
@@ -87,8 +87,8 @@ export function renderSettingsIntegrations(user, integrations = {}) {
       <label class="label"><span class="label-text font-semibold">My Review Private Key</span></label>
       <div class="flex gap-2 items-center">
         <input type="text" id="mwr-private-key" class="input input-solid flex-1" readonly value="${esc(private_key)}" placeholder="No key generated"/>
-        <button class="btn btn-ghost btn-sm" onclick="copyPrivateKey()">Copy</button>
-        <button class="btn btn-primary btn-sm" onclick="generatePrivateKey()">Generate New Key</button>
+        <button class="btn btn-ghost btn-sm" data-action="copyPrivateKey">Copy</button>
+        <button class="btn btn-primary btn-sm" data-action="generatePrivateKey">Generate New Key</button>
       </div>
       <div class="text-xs text-base-content/50 mt-1">This key links Friday and My Review. Keep it confidential — anyone with access can import data.</div>
     </div>
@@ -97,7 +97,7 @@ export function renderSettingsIntegrations(user, integrations = {}) {
       <input type="text" id="mwr-api-key" class="input input-solid w-full" value="${esc(mwr_api_key)}" placeholder="Paste the key from My Review Integrations settings"/>
       <div class="text-xs text-base-content/50 mt-1">Enter the private key generated in the My Review settings to enable cross-app access.</div>
     </div>
-    <button class="btn btn-primary btn-sm" onclick="saveApiKeys()">Save API Keys</button>
+    <button class="btn btn-primary btn-sm" data-action="saveApiKeys">Save API Keys</button>
   </div></div>`;
   const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">Integrations</h1>${apiKeysCard}${cards}`;
   const script = `${TOAST_SCRIPT}
@@ -122,7 +122,7 @@ export function renderSettingsNotifications(user, config = {}) {
     { id: 'new_messages', label: 'New Messages', desc: 'Notify when new messages are received', checked: true },
     { id: 'weekly_reports', label: 'Weekly Reports', desc: 'Send weekly summary reports', checked: true },
   ];
-  const triggerDialog = `<div id="notif-trigger-dialog" class="modal" style="display:none" data-dialog-close-overlay="true">
+  const triggerDialog = `<div id="notif-trigger-dialog" class="modal" style="display:none" >
     <div class="modal-overlay" data-dialog-close="notif-trigger-dialog"></div>
     <div class="modal-content rounded-box max-w-md p-6">
       <h3 class="text-lg font-semibold mb-4">Add Notification Trigger</h3>
@@ -159,18 +159,18 @@ document.getElementById('notif-form').addEventListener('submit',async(e)=>{e.pre
 async function loadTriggers(){const tbody=document.getElementById('triggers-tbody');try{const r=await fetch('/api/friday/engagement/notifications');const d=await r.json();const rows=d.data||[];tbody.innerHTML=rows.length?rows.map(function(t){return'<tr><td class="text-sm">'+t.trigger_type+'</td><td class="text-sm">'+t.trigger_days+' days</td><td class="text-sm">'+t.trigger_reference+'</td><td class="text-sm">'+t.recipient_type+'</td><td>'+(t.active?'<span class="badge badge-flat-success text-xs">Active</span>':'<span class="badge badge-flat-secondary text-xs">Inactive</span>')+'</td><td><button class="btn btn-ghost btn-xs" data-action="deleteNotifTrigger" data-args=\\'["\\'+t.id+\\'"]\\'>Delete</button></td></tr>'}).join(''):'<tr><td colspan="6" class="text-center py-8 text-base-content/40 text-sm">No triggers configured</td></tr>'}catch(e){tbody.innerHTML='<tr><td colspan="6" class="text-center py-4 text-error text-sm">Failed to load</td></tr>'}}
 function openNotifTriggerDialog(){document.getElementById('notif-trigger-dialog').style.display='flex'}
 async function saveNotifTrigger(){const type=document.getElementById('ntd-type').value;const days=Number(document.getElementById('ntd-days').value);const ref=document.getElementById('ntd-ref').value;const recipient=document.getElementById('ntd-recipient').value;const active=document.getElementById('ntd-active').checked;if(!days&&days!==0){showToast('Enter number of days','error');return}try{const r=await fetch('/api/friday/engagement/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trigger_type:type,trigger_days:days,trigger_reference:ref,recipient_type:recipient,active})});if(r.ok){showToast('Trigger added','success');document.getElementById('notif-trigger-dialog').style.display='none';loadTriggers()}else{const d=await r.json();showToast(d.message||'Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}
-async function deleteNotifTrigger(id){if(!confirm('Delete this trigger?'))return;try{const r=await fetch('/api/friday/engagement/notifications',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});if(r.ok){showToast('Deleted','success');loadTriggers()}else showToast('Delete failed','error')}catch(e){showToast('Error','error')}}
+async function deleteNotifTrigger(id){if(!(await window.gmConfirm({title:'Please confirm',message:'Delete this trigger?',danger:true,confirmLabel:'OK'})))return;try{const r=await fetch('/api/friday/engagement/notifications',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});if(r.ok){showToast('Deleted','success');loadTriggers()}else showToast('Delete failed','error')}catch(e){showToast('Error','error')}}
 loadTriggers();`;
   return settingsPage(user, 'Notifications - Settings', bc('Notifications'), content, [script]);
 }
 
 function renderTypeList(user, items, entityKey, title) {
   const rows = items.map(t => `<tr class="hover">
-    <td class="font-medium text-sm">${t.name || '-'}</td>
+    <td class="font-medium text-sm">${esc(t.name || '-')}</td>
     <td class="text-xs text-base-content/50">${t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>
     <td><div class="flex gap-2">
-      <button class="btn btn-ghost btn-xs type-edit-btn" data-id="${t.id}" data-name="${(t.name||'').replace(/"/g,'&quot;')}">Edit</button>
-      <button class="btn btn-error btn-xs type-del-btn" data-id="${t.id}">Delete</button>
+      <button type="button" class="btn btn-ghost btn-xs type-edit-btn" data-id="${esc(t.id)}" data-name="${esc(t.name||'')}">Edit</button>
+      <button type="button" class="btn btn-error btn-xs type-del-btn" data-id="${esc(t.id)}">Delete</button>
     </div></td>
   </tr>`).join('');
   const script = `${TOAST_SCRIPT}
@@ -179,9 +179,9 @@ function openAdd(){_eid='';document.getElementById('type-name').value='';documen
 function openEdit(id,name){_eid=id;document.getElementById('type-name').value=name;document.getElementById('type-form').style.display='block'}
 function cancelForm(){document.getElementById('type-form').style.display='none'}
 async function saveType(){const name=document.getElementById('type-name').value.trim();if(!name){showToast('Name required','error');return}const url=_eid?'/api/${entityKey}/'+_eid:'/api/${entityKey}';const method=_eid?'PUT':'POST';try{const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(r.ok){showToast(_eid?'Updated':'Created','success');setTimeout(()=>location.reload(),400)}else showToast('Failed','error')}catch(e){showToast('Error','error')}}
-async function delType(id){if(!confirm('Delete?'))return;try{const r=await fetch('/api/${entityKey}/'+id,{method:'DELETE'});if(r.ok){showToast('Deleted','success');setTimeout(()=>location.reload(),400)}else showToast('Failed','error')}catch(e){showToast('Error','error')}}
+async function delType(id){if(!(await window.gmConfirm({title:'Please confirm',message:'Delete?',danger:true,confirmLabel:'OK'})))return;try{const r=await fetch('/api/${entityKey}/'+id,{method:'DELETE'});if(r.ok){showToast('Deleted','success');setTimeout(()=>location.reload(),400)}else showToast('Failed','error')}catch(e){showToast('Error','error')}}
 document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.type-edit-btn').forEach(b=>b.addEventListener('click',function(){openEdit(this.dataset.id,this.dataset.name)}));document.querySelectorAll('.type-del-btn').forEach(b=>b.addEventListener('click',function(){delType(this.dataset.id)}));document.querySelectorAll('.type-add-btn').forEach(b=>b.addEventListener('click',openAdd))});`;
-  const formHtml = `<div id="type-form" class="card-clean mb-4" style="display:none"><div class="card-clean-body"><div class="flex gap-2 items-end"><div class="form-group"><label class="label"><span class="label-text font-medium">Name</span></label><input id="type-name" type="text" class="input input-solid" style="max-width:240px" placeholder="Name"/></div><button data-action="saveType" class="btn btn-primary btn-sm" onclick="saveType()">Save</button><button class="btn btn-ghost btn-sm" onclick="cancelForm()">Cancel</button></div></div></div>`;
+  const formHtml = `<div id="type-form" class="card-clean mb-4" style="display:none"><div class="card-clean-body"><div class="flex gap-2 items-end"><div class="form-group"><label class="label"><span class="label-text font-medium">Name</span></label><input id="type-name" type="text" class="input input-solid" style="max-width:240px" placeholder="Name"/></div><button data-action="saveType" class="btn btn-primary btn-sm">Save</button><button data-action="cancelForm" class="btn btn-ghost btn-sm">Cancel</button></div></div></div>`;
   const content = `${settingsBack()}<div class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold">${title}</h1><button class="btn btn-primary btn-sm type-add-btn">Add</button></div>${formHtml}<div class="card-clean"><div class="card-clean-body" style="padding:0">${inlineTable(['Name','Created','Actions'],rows,'No items found.')}</div></div>`;
   return settingsPage(user, `${title} - Settings`, bc(title), content, [script]);
 }

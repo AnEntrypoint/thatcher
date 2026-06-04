@@ -2,7 +2,7 @@
  * Config Field Helpers - Field definition processing and validation
  */
 
-import { getSpec } from './spec-helpers.js';
+import { getSpec } from '../config/spec-helpers.js';
 
 /**
  * Generate fields from field overrides

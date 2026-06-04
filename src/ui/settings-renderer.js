@@ -1,5 +1,6 @@
 import { page } from '@/ui/layout.js';
-import { TOAST_SCRIPT, TABLE_SCRIPT, statusBadge as _statusBadge } from '@/ui/render-helpers.js';
+import { TOAST_SCRIPT, TABLE_SCRIPT, statusBadge as _statusBadge, esc } from '@/ui/render-helpers.js';
+import { icon } from '@/ui/format-helpers.js';
 import { SPACING, renderCard } from '@/ui/spacing-system.js';
 
 export { TOAST_SCRIPT } from '@/ui/render-helpers.js';
@@ -9,7 +10,7 @@ export function settingsPage(user, title, bc, content, scripts = []) {
 }
 
 export function settingsBack() {
-  return `<a href="/admin/settings" class="btn btn-ghost btn-sm gap-1 mb-4">&#8592; Back to Settings</a>`;
+  return `<a href="/admin/settings" class="btn btn-ghost btn-sm gap-1 mb-4">Back to Settings</a>`;
 }
 
 export function inlineTable(headers, rows, emptyMsg) {
@@ -31,19 +32,19 @@ export function roleBadge(role) {
 function statusBadge(status) { return _statusBadge(status); }
 
 const SETTINGS_CARDS = [
-  { key: 'system', icon: '&#9881;', title: 'System Info', desc: 'Database, server, cache configuration', href: '/admin/settings/system' },
-  { key: 'users', icon: '&#128100;', title: 'Users', desc: 'Manage user accounts and roles', href: '/admin/settings/users', countKey: 'users' },
-  { key: 'teams', icon: '&#128101;', title: 'Teams', desc: 'Manage audit teams', href: '/admin/settings/teams', countKey: 'teams' },
-  { key: 'rfi-sections', icon: '&#128193;', title: 'RFI Sections', desc: 'Manage RFI section categories and colors', href: '/admin/settings/rfi-sections', countKey: 'rfiSections' },
-  { key: 'templates', icon: '&#128196;', title: 'Templates', desc: 'Review templates and sections', href: '/admin/settings/templates', countKey: 'templates' },
-  { key: 'notifications', icon: '&#128276;', title: 'Notifications', desc: 'Configure alerts, reminders, and reports', href: '/admin/settings/notifications' },
-  { key: 'integrations', icon: '&#128279;', title: 'Integrations', desc: 'Google Drive, Gmail, and external services', href: '/admin/settings/integrations' },
-  { key: 'checklists', icon: '&#9745;', title: 'Checklists', desc: 'Manage checklist definitions', href: '/admin/settings/checklists', countKey: 'checklists' },
-  { key: 'rfi-templates', icon: '&#128203;', title: 'RFI Templates', desc: 'Manage RFI template definitions', href: '/admin/settings/rfi-templates', countKey: 'rfiTemplates' },
-  { key: 'recreation', icon: '&#128203;', title: 'Audit Logs', desc: 'Audit trail, recreation history and event log', href: '/admin/settings/recreation' },
-  { key: 'entity-types', icon: '&#127970;', title: 'Entity Types', desc: 'Manage client entity type definitions', href: '/admin/settings/entity-types', countKey: 'entityTypes' },
-  { key: 'engagement-types', icon: '&#128196;', title: 'Engagement Types', desc: 'Manage engagement type definitions', href: '/admin/settings/engagement-types', countKey: 'engagementTypes' },
-  { key: 'permissions', icon: '&#128274;', title: 'Permissions', desc: 'MWR permissions and access control', href: '/admin/settings/permissions' },
+  { key: 'system', icon: 'gear', title: 'System Info', desc: 'Database, server, cache configuration', href: '/admin/settings/system' },
+  { key: 'users', icon: 'user', title: 'Users', desc: 'Manage user accounts and roles', href: '/admin/settings/users', countKey: 'users' },
+  { key: 'teams', icon: 'users', title: 'Teams', desc: 'Manage audit teams', href: '/admin/settings/teams', countKey: 'teams' },
+  { key: 'rfi-sections', icon: 'folder', title: 'RFI Sections', desc: 'Manage RFI section categories and colors', href: '/admin/settings/rfi-sections', countKey: 'rfiSections' },
+  { key: 'templates', icon: 'document', title: 'Templates', desc: 'Review templates and sections', href: '/admin/settings/templates', countKey: 'templates' },
+  { key: 'notifications', icon: 'bell', title: 'Notifications', desc: 'Configure alerts, reminders, and reports', href: '/admin/settings/notifications' },
+  { key: 'integrations', icon: 'link', title: 'Integrations', desc: 'Google Drive, Gmail, and external services', href: '/admin/settings/integrations' },
+  { key: 'checklists', icon: 'clipboard', title: 'Checklists', desc: 'Manage checklist definitions', href: '/admin/settings/checklists', countKey: 'checklists' },
+  { key: 'rfi-templates', icon: 'list', title: 'RFI Templates', desc: 'Manage RFI template definitions', href: '/admin/settings/rfi-templates', countKey: 'rfiTemplates' },
+  { key: 'recreation', icon: 'list', title: 'Audit Logs', desc: 'Audit trail, recreation history and event log', href: '/admin/settings/recreation' },
+  { key: 'entity-types', icon: 'building', title: 'Entity Types', desc: 'Manage client entity type definitions', href: '/admin/settings/entity-types', countKey: 'entityTypes' },
+  { key: 'engagement-types', icon: 'document', title: 'Engagement Types', desc: 'Manage engagement type definitions', href: '/admin/settings/engagement-types', countKey: 'engagementTypes' },
+  { key: 'permissions', icon: 'lock', title: 'Permissions', desc: 'MWR permissions and access control', href: '/admin/settings/permissions' },
 ];
 
 export function renderSettingsHome(user, config = {}, counts = {}) {
@@ -53,7 +54,7 @@ export function renderSettingsHome(user, config = {}, counts = {}) {
     return `<a href="${c.href}" class="card-clean" style="text-decoration:none;border:1px solid var(--color-border);transition:box-shadow 0.15s">
       <div class="card-clean-body" style="padding:${SPACING.md}">
         <div style="display:flex;align-items:flex-start;gap:${SPACING.md}">
-          <div style="font-size:1.25rem;width:2.25rem;height:2.25rem;display:flex;align-items:center;justify-content:center;background:var(--color-base-200);border-radius:8px;flex-shrink:0">${c.icon}</div>
+          <div style="width:2.25rem;height:2.25rem;display:flex;align-items:center;justify-content:center;background:var(--color-base-200);border-radius:8px;flex-shrink:0;color:var(--ds-accent,#247420)">${icon(c.icon, 20)}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:0.875rem;color:var(--color-base-content)">${c.title}</div>
             <div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:${SPACING.xs};line-height:1.4">${c.desc}</div>
@@ -75,14 +76,14 @@ export function renderSettingsHome(user, config = {}, counts = {}) {
 export function renderSettingsSystem(user, config = {}) {
   const t = config.thresholds || {};
   const sections = [
-    { icon: '🗄️', title: 'System Information', items: [['Database Type', config.database?.type || 'SQLite'], ['Server Port', config.server?.port || 3004], ['Session TTL', (t.cache?.session_ttl_seconds || 3600) + 's'], ['Page Size (Default)', t.system?.default_page_size || 50], ['Page Size (Max)', t.system?.max_page_size || 500]] },
-    { icon: '📋', title: 'RFI Configuration', items: [['Max Days Outstanding', (t.rfi?.max_days_outstanding || 90) + ' days'], ['Escalation Delay', (t.rfi?.escalation_delay_hours || 24) + ' hours'], ['Notification Days', (t.rfi?.notification_days || [7, 3, 1, 0]).join(', ')]] },
-    { icon: '✉️', title: 'Email Configuration', items: [['Batch Size', t.email?.send_batch_size || 10], ['Max Retries', t.email?.send_max_retries || 3], ['Rate Limit Delay', (t.email?.rate_limit_delay_ms || 6000) + 'ms']] },
-    { icon: '⚙️', title: 'Workflow Configuration', items: [['Stage Transition Lockout', (t.workflow?.stage_transition_lockout_minutes || 5) + ' min'], ['Collaborator Default Expiry', (t.collaborator?.default_expiry_days || 7) + ' days'], ['Collaborator Max Expiry', (t.collaborator?.max_expiry_days || 30) + ' days']] },
+    { icon: 'database', title: 'System Information', items: [['Database Type', config.database?.type || 'SQLite'], ['Server Port', config.server?.port || 3004], ['Session TTL', (t.cache?.session_ttl_seconds || 3600) + 's'], ['Page Size (Default)', t.system?.default_page_size || 50], ['Page Size (Max)', t.system?.max_page_size || 500]] },
+    { icon: 'clipboard', title: 'RFI Configuration', items: [['Max Days Outstanding', (t.rfi?.max_days_outstanding || 90) + ' days'], ['Escalation Delay', (t.rfi?.escalation_delay_hours || 24) + ' hours'], ['Notification Days', (t.rfi?.notification_days || [7, 3, 1, 0]).join(', ')]] },
+    { icon: 'mail', title: 'Email Configuration', items: [['Batch Size', t.email?.send_batch_size || 10], ['Max Retries', t.email?.send_max_retries || 3], ['Rate Limit Delay', (t.email?.rate_limit_delay_ms || 6000) + 'ms']] },
+    { icon: 'gear', title: 'Workflow Configuration', items: [['Stage Transition Lockout', (t.workflow?.stage_transition_lockout_minutes || 5) + ' min'], ['Collaborator Default Expiry', (t.collaborator?.default_expiry_days || 7) + ' days'], ['Collaborator Max Expiry', (t.collaborator?.max_expiry_days || 30) + ' days']] },
   ];
   const cards = sections.map(s => `<div class="card-clean">
     <div class="card-clean-body" style="padding:1rem">
-      <h2 class="font-semibold text-sm flex items-center gap-2 mb-3"><span>${s.icon}</span> ${s.title}</h2>
+      <h2 class="font-semibold text-sm flex items-center gap-2 mb-3"><span style="color:var(--ds-accent,#247420);display:inline-flex">${icon(s.icon, 18)}</span> ${s.title}</h2>
       ${s.items.map(([l, v]) => `<div class="flex justify-between items-center py-2 border-b border-base-200 last:border-0">
         <span class="text-sm text-base-content/60">${l}</span>
         <span class="text-sm font-semibold font-mono bg-base-200 px-2 py-0.5 rounded">${v}</span>
@@ -103,10 +104,10 @@ export function renderSettingsUsers(user, users = []) {
   const rows = users.map(u => `<tr class="hover cursor-pointer" data-row data-navigate="/user/${u.id}">
     <td data-col="name">
       <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">${(u.name||'?').charAt(0).toUpperCase()}</div>
+        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">${esc((u.name||'?').charAt(0).toUpperCase())}</div>
         <div>
-          <div class="text-sm font-medium">${u.name || '-'}</div>
-          <div class="text-xs text-base-content/50">${u.email || ''}</div>
+          <div class="text-sm font-medium">${esc(u.name || '-')}</div>
+          <div class="text-xs text-base-content/50">${esc(u.email || '')}</div>
         </div>
       </div>
     </td>

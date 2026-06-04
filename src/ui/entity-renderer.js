@@ -63,7 +63,7 @@ function formatFieldValue(k, v, entityName) {
     return `<span class="pill ${cls}">${v ? v.charAt(0).toUpperCase() + v.slice(1) : '-'}</span>`
   }
   if (entityName === 'user' && k === 'email' && v) return `<a href="mailto:${v}" class="text-primary hover:underline">${v}</a>`
-  if (k === 'photo_url' && v && v.startsWith('http')) return `<img src="${v}" style="width:2.5rem;height:2.5rem;border-radius:50%;object-fit:cover" alt="avatar" onerror="this.style.display='none'/>`
+  if (k === 'photo_url' && v && v.startsWith('http')) return `<img src="${v}" style="width:2.5rem;height:2.5rem;border-radius:50%;object-fit:cover" alt="avatar" onerror="this.style.display='none'"/>`
   return fmtVal(v, k)
 }
 
@@ -125,9 +125,11 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
   const fields = spec?.fields || {}
   const lbl = (k, f, req) => `<label class="form-label" for="field-${k}">${f.label||k}${req ? '<span class="req">*</span>' : ''}</label>`
   const formFields = Object.entries(fields).filter(([k, f]) => k !== 'id' && !f.auto && !f.readOnly && !f.auto_generate && k !== 'password_hash').map(([k, f]) => {
-    const val = item?.[k] ?? f.default ?? ''
+    let val = item?.[k] ?? f.default ?? ''
     const req = f.required ? 'required' : ''
     const type = f.type === 'number' || f.type === 'int' || f.type === 'decimal' ? 'number' : f.type === 'email' ? 'email' : f.type === 'timestamp' || f.type === 'date' ? 'date' : f.type === 'bool' ? 'checkbox' : 'text'
+    // <input type=date> only populates from a strict YYYY-MM-DD; coerce a stored timestamp/ISO value so the existing date pre-fills (else it renders blank and saves empty).
+    if (type === 'date' && val) { const d = new Date(val); if (!isNaN(d)) val = d.toISOString().slice(0, 10) }
     const placeholder = `placeholder="Enter ${(f.label||k).toLowerCase()}"`
     if (entityName === 'user' && k === 'role') {
       const opts = ['partner','manager','clerk','client_admin','client_user'].map(o => `<option value="${o}" ${val===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1).replace('_',' ')}</option>`).join('')
