@@ -104,6 +104,8 @@ export function renderMlConsole(user, candidates, reviewMap) {
           }
         } catch (e) {
           document.getElementById('ml-ask-result').textContent = 'Network error: ' + e.message;
+          if (window.showToast) window.showToast(e.message || 'Request failed', 'error');
+          console.error(e);
         }
       };
     })();

@@ -5,7 +5,7 @@ const DIALOG_COLORS = ['#B0B0B0','#44BBA4','#FF4141','#7F7EFF','#3b82f6','#f59e0
 
 export function colorPickerDialog(id = 'cpd', selected = '#B0B0B0', onSelect = '') {
   const swatches = DIALOG_COLORS.map(c =>
-    `<div class="cpd-swatch${c === selected ? ' cpd-selected' : ''}" style="background:${c}" data-color="${c}" role="option" tabindex="0" aria-label="Color ${c}" aria-selected="${c === selected}" data-action="cpdSelect" data-args='["${id}","${c}",${onSelect ? "true" : "false"}]' onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();cpdSelect('${id}','${c}',${onSelect ? 'true' : 'false'})}"></div>`
+    `<div class="cpd-swatch${c === selected ? ' cpd-selected' : ''}" style="background:${c}" data-color="${c}" role="option" tabindex="0" aria-label="Color ${c}" aria-selected="${c === selected}" data-action="cpdSelect" data-args='["${id}","${c}",${onSelect ? "true" : "false"}]'></div>`
   ).join('')
   return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close-overlay="true" onkeydown="if(event.key==='Escape')this.style.display='none'" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
     <div class="dialog-panel" style="max-width:360px">

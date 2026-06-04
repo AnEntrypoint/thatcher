@@ -1,4 +1,5 @@
 import { h } from '@/ui/webjsx.js'
+import { SPACING } from './spacing-system.js'
 
 export const STAGE_COLORS = {
   info_gathering: { bg: '#dbeafe', text: '#1e40af', label: 'Info Gathering', bgDark: '#1e3a8a', textDark: '#60a5fa' },
@@ -84,7 +85,7 @@ export function statusBadge(status) {
 export function progressBar(pct) {
   if (typeof pct !== 'number') return '-'
   const p = Math.min(100, Math.max(0, Math.round(pct)))
-  return `<div style="display:flex;align-items:center;gap:8px;min-width:100px"><div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="height:100%;width:${p}%;background:var(--color-primary);border-radius:3px"></div></div><span style="font-size:12px;color:var(--color-text-muted);min-width:28px">${p}%</span></div>`
+  return `<div style="display:flex;align-items:center;gap:${SPACING.sm};min-width:100px"><div style="flex:1;height:6px;background:var(--color-border-light,#e2e8f0);border-radius:3px;overflow:hidden"><div style="height:100%;width:${p}%;background:var(--color-primary);border-radius:3px"></div></div><span style="font-size:12px;color:var(--color-text-muted);min-width:28px">${p}%</span></div>`
 }
 
 export function fmtVal(value, fieldKey, item = {}) {

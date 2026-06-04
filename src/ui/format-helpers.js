@@ -1,3 +1,5 @@
+import { STAGE_COLORS, STATUS_COLORS } from './render-helpers.js';
+
 export function formatDate(ts, opts) {
   if (!ts) return '—';
   const d = typeof ts === 'number' ? new Date(ts < 1e10 ? ts * 1000 : ts) : new Date(ts);
@@ -32,28 +34,21 @@ export function formatPercent(val) {
 }
 
 export function stagePill(stage, stageConfig) {
-  const STAGES = stageConfig || {
-    info_gathering:  { label: 'Info Gathering',  color: '#e53935', bg: '#ffebee' },
-    commencement:    { label: 'Commencement',    color: '#e65100', bg: '#fff3e0' },
-    team_execution:  { label: 'Team Execution',  color: '#1565c0', bg: '#e3f2fd' },
-    partner_review:  { label: 'Partner Review',  color: '#283593', bg: '#e8eaf6' },
-    finalization:    { label: 'Finalization',    color: '#2e7d32', bg: '#e8f5e9' },
-    closeout:        { label: 'Close Out',       color: '#33691e', bg: '#f1f8e9' },
-  };
-  const cfg = STAGES[stage];
+  const STAGES = stageConfig || STAGE_COLORS;
+  const raw = STAGES[stage];
+  // Normalize both the local {color,bg,label} shape and the shared
+  // STAGE_COLORS {text,bg,label} shape into {color,bg,label}.
+  const cfg = raw ? { label: raw.label, bg: raw.bg, color: raw.color || raw.text } : null;
   if (!cfg) return stage ? `<span style="background:var(--color-bg,#f5f5f5);color:var(--color-text-muted,#555);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700">${stage}</span>` : '—';
   return `<span style="background:${cfg.bg};color:${cfg.color};padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:700;white-space:nowrap;border:1px solid ${cfg.color}44">${cfg.label}</span>`;
 }
 
-const STATUS_MAP = {
-  active:    ['#2e7d32', '#e8f5e9'],
+// Role/extra status keys not present in the shared STATUS_COLORS table.
+// Shared statuses (active, pending, draft, closed, overdue, responded, …)
+// are sourced from STATUS_COLORS so the token set stays single-source.
+const EXTRA_STATUS_MAP = {
   inactive:  ['#555',    '#f5f5f5'],
-  pending:   ['#e65100', '#fff3e0'],
-  draft:     ['#888',    '#f5f5f5'],
   sent:      ['#e65100', '#fff3e0'],
-  responded: ['#2e7d32', '#e8f5e9'],
-  closed:    ['#555',    '#eeeeee'],
-  overdue:   ['#c62828', '#ffebee'],
   deleted:   ['#c62828', '#fdecea'],
   admin:     ['#6a1b9a', '#f3e5f5'],
   partner:   ['#1565c0', '#e3f2fd'],
@@ -65,7 +60,10 @@ const STATUS_MAP = {
 
 export function statusBadge(status, labelOverride) {
   const s = (status || '').toLowerCase();
-  const [color, bg] = STATUS_MAP[s] || ['#888', '#f5f5f5'];
+  const shared = STATUS_COLORS[s];
+  const [color, bg] = shared
+    ? [shared.text, shared.bg]
+    : (EXTRA_STATUS_MAP[s] || ['#888', '#f5f5f5']);
   const label = labelOverride || (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
   return `<span style="background:${bg};color:${color};padding:2px 9px;border-radius:10px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap">${label}</span>`;
 }

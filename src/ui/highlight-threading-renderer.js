@@ -12,11 +12,11 @@ function fmtDate(ts) {
 }
 
 const RESOLUTION_STATES = {
-  unresolved: { label: 'Unresolved', color: '#ef4444', pill: 'pill pill-danger' },
-  partial_resolved: { label: 'Partial', color: '#f59e0b', pill: 'pill pill-warning' },
-  manager_resolved: { label: 'Manager', color: '#3b82f6', pill: 'pill pill-info' },
-  partner_resolved: { label: 'Partner', color: '#8b5cf6', pill: 'pill pill-primary' },
-  resolved: { label: 'Resolved', color: '#22c55e', pill: 'pill pill-success' },
+  unresolved: { label: 'Unresolved', color: 'var(--color-danger,#ef4444)', pill: 'pill pill-danger' },
+  partial_resolved: { label: 'Partial', color: 'var(--color-warning,#f59e0b)', pill: 'pill pill-warning' },
+  manager_resolved: { label: 'Manager', color: 'var(--color-info,#3b82f6)', pill: 'pill pill-info' },
+  partner_resolved: { label: 'Partner', color: 'var(--color-primary,#8b5cf6)', pill: 'pill pill-primary' },
+  resolved: { label: 'Resolved', color: 'var(--color-success,#22c55e)', pill: 'pill pill-success' },
 };
 
 function resolutionBadge(status) {
@@ -47,14 +47,14 @@ function responseItem(response) {
 function highlightThread(highlight, responses, canResolve, idx) {
   const status = highlight.status || 'unresolved';
   const badge = resolutionBadge(status);
-  const color = RESOLUTION_STATES[status]?.color || '#ef4444';
+  const color = RESOLUTION_STATES[status]?.color || 'var(--color-danger,#ef4444)';
 
   const threadItems = responses.map(r => responseItem(r)).join('');
   const sectionTag = highlight.section_name ? `<span class="review-meta-tag">${esc(highlight.section_name)}</span>` : '';
 
   const resolveSelect = canResolve ? `<div class="thread-card-actions">
     <label style="font-size:12px;color:var(--color-text-muted)">Mark as:</label>
-    <select id="resolve-status-${highlight.id}" class="form-input" style="width:auto;padding:4px 8px;font-size:13px;min-height:auto" aria-label="Resolution status" onchange="updateResolution('${highlight.id}')">
+    <select id="resolve-status-${highlight.id}" class="form-input" style="width:auto;padding:${SPACING.xs} ${SPACING.sm};font-size:13px;min-height:auto" aria-label="Resolution status" onchange="updateResolution('${highlight.id}')">
       <option value="unresolved" ${status === 'unresolved' ? 'selected' : ''}>Unresolved</option>
       <option value="partial_resolved" ${status === 'partial_resolved' ? 'selected' : ''}>Partial</option>
       <option value="manager_resolved" ${status === 'manager_resolved' ? 'selected' : ''}>Manager</option>
@@ -65,7 +65,7 @@ function highlightThread(highlight, responses, canResolve, idx) {
 
   const replyForm = `<div class="thread-reply">
     <textarea id="reply-${highlight.id}" class="form-input" style="resize:vertical;min-height:60px" rows="2" placeholder="Add a response..."></textarea>
-    <button class="btn-primary-clean" style="align-self:flex-start;padding:8px 16px" data-action="submitResponse" data-args='["${highlight.id}"]'>Reply</button>
+    <button class="btn-primary-clean" style="align-self:flex-start;padding:${SPACING.sm} ${SPACING.md}" data-action="submitResponse" data-args='["${highlight.id}"]'>Reply</button>
   </div>`;
 
   return `<div class="thread-card" id="thread-${highlight.id}" data-thread-status="${status}">

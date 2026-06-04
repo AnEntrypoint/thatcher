@@ -12,8 +12,8 @@ function reviewSummaryPanel(review, highlights, side) {
 function highlightDiffRow(leftH, rightH, idx) {
   const renderSide = (h) => {
     if (!h) return '<td class="p-2 bg-gray-50 text-center text-xs text-gray-400">-</td>';
-    const colors = { resolved: '#22c55e', partial_resolved: '#f59e0b' };
-    const color = colors[h.status] || '#ef4444';
+    const colors = { resolved: 'var(--color-success)', partial_resolved: 'var(--color-warning)' };
+    const color = colors[h.status] || 'var(--color-danger)';
     return `<td class="p-2 border-b border-gray-50"><div class="flex items-center gap-1"><span style="width:6px;height:6px;border-radius:50%;background:${color};display:inline-block"></span><span class="text-xs">${h.text || h.content || 'Area'}</span></div><div class="text-xs text-gray-400">p.${h.page_number || '?'}</div></td>`;
   };
   const match = leftH && rightH && leftH.text === rightH?.text ? 'bg-green-50' : leftH && rightH ? 'bg-yellow-50' : 'bg-red-50';

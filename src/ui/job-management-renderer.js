@@ -1,6 +1,7 @@
 import { statusLabel } from '@/ui/renderer.js';
 import { page } from '@/ui/layout.js';
 import { isPartner } from '@/ui/permissions-ui.js';
+import { STATUS_COLORS } from '@/ui/render-helpers.js';
 
 function fmtDate(ts) {
   if (!ts) return '-';
@@ -11,11 +12,11 @@ function fmtDate(ts) {
 
 function jobStatusBadge(status) {
   const colors = {
-    running: { bg: '#dbeafe', text: '#1e40af', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>` },
-    success: { bg: '#d1fae5', text: '#065f46', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>' },
-    failed: { bg: '#fee2e2', text: '#991b1b', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>` },
-    scheduled: { bg: '#fef3c7', text: '#92400e', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` },
-    disabled: { bg: '#f3f4f6', text: '#6b7280', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>` },
+    running: { ...STATUS_COLORS.active, icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>` },
+    success: { ...STATUS_COLORS.completed, icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>' },
+    failed: { ...STATUS_COLORS.rejected, icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>` },
+    scheduled: { ...STATUS_COLORS.pending, icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>` },
+    disabled: { ...STATUS_COLORS.draft, icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>` },
   };
   const c = colors[status] || colors.scheduled;
   return `<span style="background:${c.bg};color:${c.text};padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500">${c.icon} ${(status || 'unknown').replace(/_/g, ' ')}</span>`;

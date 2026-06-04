@@ -81,7 +81,7 @@ export function getIdleLogoutScript(config = {}) {
     stayBtn.style.cssText = \`
       flex: 1;
       padding: 0.75rem;
-      background: #007bff;
+      background: var(--color-primary, #007bff);
       color: white;
       border: none;
       border-radius: 4px;
@@ -98,7 +98,7 @@ export function getIdleLogoutScript(config = {}) {
     logoutBtn.style.cssText = \`
       flex: 1;
       padding: 0.75rem;
-      background: #6c757d;
+      background: var(--color-secondary, #6c757d);
       color: white;
       border: none;
       border-radius: 4px;
