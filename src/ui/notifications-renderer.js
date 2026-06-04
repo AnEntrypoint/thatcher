@@ -46,5 +46,5 @@ export function renderNotificationsPage(user, notifs = []) {
 window.markRead=async function(id){try{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({id})});var row=document.querySelector('[data-notif-id="'+id+'"]');if(row){row.style.color='var(--color-text-light)';var btn=row.querySelector('button');if(btn)btn.replaceWith(document.createTextNode('Read'))}var count=document.getElementById('notif-count');if(count){var c=parseInt(count.textContent||'0',10)-1;if(c<=0)count.style.display='none';else count.textContent=c}}catch(e){showToast('Error','error')}};
 window.markAllRead=async function(){try{await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({})});document.querySelectorAll('[data-notif-id]').forEach(function(row){row.style.color='var(--color-text-light)';var btn=row.querySelector('button');if(btn)btn.replaceWith(document.createTextNode('Read'))});var count=document.getElementById('notif-count');if(count)count.style.display='none';showToast('All marked read','success')}catch(e){showToast('Error','error')}};`;
 
-  return page(user, 'Notifications | Moonlanding', null, content, [script]);
+  return page(user, 'Notifications | Thatcher', null, content, [script]);
 }

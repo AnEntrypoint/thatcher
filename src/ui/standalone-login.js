@@ -4,7 +4,7 @@ export function renderStandaloneLogin(showGoogleAuth = false) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In | Moonlanding</title>
+  <title>Sign In | Thatcher</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{--bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--text:#0f172a;--text-muted:#64748b;--primary:#04141f;--primary-hover:#0a2535;--accent:#2563eb;--danger:#dc2626;--danger-bg:#fee2e2;--danger-border:#fca5a5;--radius:10px;--shadow:0 4px 24px rgba(0,0,0,0.09)}
@@ -45,7 +45,7 @@ export function renderStandaloneLogin(showGoogleAuth = false) {
   <div class="wrap">
     <div class="logo">
       <div class="logo-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
-      <span class="logo-text">Moonlanding</span>
+      <span class="logo-text">Thatcher</span>
       <div class="logo-sub">Sign in to your account</div>
     </div>
     <div class="card">

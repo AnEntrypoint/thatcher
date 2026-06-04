@@ -41,7 +41,7 @@ export const POST = withErrorHandler(async (request) => {
 
   const user = getBy('user', 'email', email.toLowerCase().trim());
   if (!user) {
-    return new Response(JSON.stringify({ error: 'User not found in Moonlanding' }), {
+    return new Response(JSON.stringify({ error: 'User not found' }), {
       status: 404, headers: { 'Content-Type': 'application/json' }
     });
   }

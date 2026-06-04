@@ -168,7 +168,7 @@ export function renderFlexupReport(user, engagement, client, rfis, reviews, high
     <table><thead><tr><th>When</th><th>Action</th><th>By</th></tr></thead><tbody>${activityRows}</tbody></table>
   </div>
   <div class="foot">
-    Generated ${new Date().toLocaleString('en-ZA')} by ${esc(user?.email || user?.name || 'system')} &middot; Moonlanding
+    Generated ${new Date().toLocaleString('en-ZA')} by ${esc(user?.email || user?.name || 'system')} - Thatcher
   </div>
 </div>
 </body></html>`;

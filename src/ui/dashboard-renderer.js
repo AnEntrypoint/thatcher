@@ -82,7 +82,7 @@ export function renderDashboard(user, stats = {}) {
     </div>
     ${statsHtml}${overdueAlert}${actionsHtml}${emptyEngHtml}${recentHtml}`;
 
-  return page(user, 'Dashboard | Moonlanding', [], content, [TABLE_SCRIPT]);
+  return page(user, 'Dashboard | Thatcher', [], content, [TABLE_SCRIPT]);
 }
 
 export function renderAuditDashboard(user, auditData = {}) {
@@ -118,7 +118,7 @@ export function renderAuditDashboard(user, auditData = {}) {
       </table>
     </div>`;
 
-  return page(user, 'Audit Dashboard | MOONLANDING', [{ href: '/', label: 'Dashboard' }, { href: '/admin/audit', label: 'Audit' }], content, [TABLE_SCRIPT]);
+  return page(user, 'Audit Dashboard | Thatcher', [{ href: '/', label: 'Dashboard' }, { href: '/admin/audit', label: 'Audit' }], content, [TABLE_SCRIPT]);
 }
 
 export function renderSystemHealth(user, healthData = {}) {
@@ -146,5 +146,5 @@ export function renderSystemHealth(user, healthData = {}) {
       </table>
     </div>`;
 
-  return page(user, 'System Health | MOONLANDING', [{ href: '/', label: 'Dashboard' }, { href: '/admin/health', label: 'Health' }], content, [TABLE_SCRIPT]);
+  return page(user, 'System Health | Thatcher', [{ href: '/', label: 'Dashboard' }, { href: '/admin/health', label: 'Health' }], content, [TABLE_SCRIPT]);
 }

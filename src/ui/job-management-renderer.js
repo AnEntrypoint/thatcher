@@ -58,5 +58,5 @@ export function renderJobManagement(user, jobs, recentLogs = []) {
 
   const jobScript = `window.triggerJob=async function(name){try{const r=await fetch('/api/admin/jobs/'+name+'/trigger',{method:'POST'});if(r.ok){location.reload()}else{showToast('Trigger failed: '+(await r.text()),'error')}}catch(e){showToast(e.message,'error')}};window.toggleJob=async function(name,enabled){try{const r=await fetch('/api/admin/jobs/'+name,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});if(r.ok)location.reload();else showToast('Toggle failed','error')}catch(e){showToast(e.message,'error')}};window.triggerAll=async function(){if(!(await window.gmConfirm({title:'Please confirm',message:'Run all jobs now?',danger:false,confirmLabel:'OK'})))return;try{const r=await fetch('/api/admin/jobs/trigger-all',{method:'POST'});if(r.ok)location.reload();else showToast('Failed','error')}catch(e){showToast(e.message,'error')}}`;
 
-  return page(user, 'Scheduled Jobs | Moonlanding', [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }, { label: 'Jobs' }], content, [jobScript]);
+  return page(user, 'Scheduled Jobs | Thatcher', [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }, { label: 'Jobs' }], content, [jobScript]);
 }

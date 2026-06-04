@@ -1,5 +1,5 @@
 import { h } from '@/ui/webjsx.js'
-import { STAGE_COLORS, AVATAR_COLORS, AVATAR_SIZES, nameHash, getInitials } from '@/ui/render-helpers.js'
+import { STAGE_COLORS, AVATAR_COLORS, AVATAR_SIZES, nameHash, getInitials, esc } from '@/ui/render-helpers.js'
 
 export function linearProgress(value = 0, max = 100, label = '', variant = 'medium') {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
@@ -19,7 +19,7 @@ export function circularProgress(value = 0, max = 100, label = '') {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
   const color = pct < 30 ? '#ef4444' : pct < 70 ? '#f59e0b' : '#22c55e'
   const r = 40, circ = 2 * Math.PI * r, offset = circ - (pct / 100) * circ
-  const ariaLabel = label || 'Progress'
+  const ariaLabel = esc(label || 'Progress')
   return `<div class="circular-progress" style="width:100px;height:100px" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${ariaLabel}">
     <svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
       <circle cx="50" cy="50" r="${r}" fill="none" stroke="#e5e7eb" stroke-width="8"/>
@@ -28,7 +28,7 @@ export function circularProgress(value = 0, max = 100, label = '') {
     </svg>
     <div class="circular-progress-text" aria-hidden="true">
       <span class="circular-progress-pct">${pct}%</span>
-      ${label ? `<span class="circular-progress-label">${label}</span>` : ''}
+      ${label ? `<span class="circular-progress-label">${esc(label)}</span>` : ''}
     </div>
   </div>`
 }
@@ -46,10 +46,12 @@ export function engagementProgress(stage, stages = null) {
 
 export function emptyState(icon = '', title = '', message = '', actionHref = '', actionLabel = '') {
   const btn = actionHref && actionLabel ? h('a', { href: actionHref, className: 'btn btn-primary btn-sm' }, actionLabel) : ''
+  // icon is a trusted inline-SVG/markup fragment from the caller; title/message are
+  // text and must be escaped (webjsx h() does NOT escape string children).
   return h('div', { className: 'empty-state' },
-    h('div', { className: 'empty-state-icon' }, icon),
-    h('div', { className: 'empty-state-title' }, title),
-    h('div', { className: 'empty-state-msg' }, message),
+    h('div', { className: 'empty-state-icon', innerHTML: icon }),
+    h('div', { className: 'empty-state-title' }, esc(title)),
+    h('div', { className: 'empty-state-msg' }, esc(message)),
     btn
   )
 }
@@ -69,7 +71,8 @@ export function userAvatar(user, size = 'md', showStatus = false) {
   const color = AVATAR_COLORS[nameHash(name) % AVATAR_COLORS.length]
   const fontSize = Math.round(px * 0.4)
   const statusDot = showStatus ? `<span class="avatar-status avatar-status-${user?.status === 'active' || user?.online ? 'online' : 'offline'}" style="width:${Math.round(px * 0.3)}px;height:${Math.round(px * 0.3)}px"></span>` : ''
-  return `<span class="user-avatar user-avatar-${size}" style="width:${px}px;height:${px}px;background:${color};font-size:${fontSize}px" title="${name}" aria-label="${name}" role="img"><span aria-hidden="true">${initials}</span>${statusDot}</span>`
+  const safeName = esc(name)
+  return `<span class="user-avatar user-avatar-${size}" style="width:${px}px;height:${px}px;background:${color};font-size:${fontSize}px" title="${safeName}" aria-label="${safeName}" role="img"><span aria-hidden="true">${esc(initials)}</span>${statusDot}</span>`
 }
 
 export function teamAvatarGroup(users = [], maxShow = 3) {
@@ -82,12 +85,12 @@ export function teamAvatarGroup(users = [], maxShow = 3) {
 }
 
 export function infoBubble(text, position = 'top') {
-  return `<span class="info-bubble info-bubble-${position}" data-tooltip="${text.replace(/"/g, '&quot;')}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><text x="8" y="12" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">i</text></svg></span>`
+  return `<span class="info-bubble info-bubble-${position}" data-tooltip="${esc(text)}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><text x="8" y="12" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">i</text></svg></span>`
 }
 
 export function sortableList(items = [], containerId = 'sortable') {
   const lis = items.map((item, i) =>
-    `<li class="sortable-item" draggable="true" data-index="${i}"><span class="sortable-handle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></span><span>${typeof item === 'string' ? item : item.label || item.name || ''}</span></li>`
+    `<li class="sortable-item" draggable="true" data-index="${i}"><span class="sortable-handle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></span><span>${esc(typeof item === 'string' ? item : item.label || item.name || '')}</span></li>`
   ).join('')
   const script = `(function(){const c=document.getElementById('${containerId}');let dragged=null;c.addEventListener('dragstart',e=>{dragged=e.target.closest('.sortable-item');e.dataTransfer.effectAllowed='move'});c.addEventListener('dragover',e=>{e.preventDefault();const t=e.target.closest('.sortable-item');if(t&&t!==dragged)t.classList.add('drag-over')});c.addEventListener('dragleave',e=>{const t=e.target.closest('.sortable-item');if(t)t.classList.remove('drag-over')});c.addEventListener('drop',e=>{e.preventDefault();const t=e.target.closest('.sortable-item');if(t&&t!==dragged){t.classList.remove('drag-over');c.insertBefore(dragged,t.nextSibling);const order=[...c.querySelectorAll('.sortable-item')].map(el=>+el.dataset.index);c.dispatchEvent(new CustomEvent('sortable-reorder',{detail:{order}}))}});})();`
   return `<ul id="${containerId}" class="sortable-list">${lis}</ul><script>${script}</script>`
@@ -99,7 +102,7 @@ export function responseChoiceBox(name, options = [], selected = null, type = 'r
     const val = typeof opt === 'string' ? opt : opt.value || opt
     const lbl = typeof opt === 'string' ? opt : opt.label || opt.value || opt
     const checked = sel.includes(val) ? 'checked' : ''
-    return `<label class="choice-option"><input type="${type}" name="${name}" value="${val}" ${checked}/><span class="choice-label">${lbl}</span></label>`
+    return `<label class="choice-option"><input type="${esc(type)}" name="${esc(name)}" value="${esc(val)}" ${checked}/><span class="choice-label">${esc(lbl)}</span></label>`
   }).join('')
   return `<div class="choice-group">${items}</div>`
 }
@@ -112,8 +115,9 @@ export function responseAttachment(file = {}) {
   const isImg = ['png','jpg','jpeg','gif','webp','svg'].includes(ext)
   const isPdf = ext === 'pdf'
   const icon = isImg ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>` : isPdf ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`
-  const preview = isImg ? `<img src="${href}" alt="${name}" class="attachment-preview"/>` : isPdf ? `<iframe src="${href}" class="attachment-preview" style="width:100%;height:200px;border:none"></iframe>` : ''
-  return `<div class="attachment-card"><span class="attachment-icon">${icon}</span><div class="attachment-info"><div class="attachment-name">${name}</div>${size ? `<div class="attachment-size">${size}</div>` : ''}${preview}</div><a href="${href}" download class="btn btn-ghost btn-xs">Download</a></div>`
+  const safeHref = esc(href), safeName = esc(name), safeSize = esc(size)
+  const preview = isImg ? `<img src="${safeHref}" alt="${safeName}" class="attachment-preview"/>` : isPdf ? `<iframe src="${safeHref}" class="attachment-preview" style="width:100%;height:200px;border:none"></iframe>` : ''
+  return `<div class="attachment-card"><span class="attachment-icon">${icon}</span><div class="attachment-info"><div class="attachment-name">${safeName}</div>${size ? `<div class="attachment-size">${safeSize}</div>` : ''}${preview}</div><a href="${safeHref}" download class="btn btn-ghost btn-xs">Download</a></div>`
 }
 
 export function accordion(items) {
@@ -121,8 +125,9 @@ export function accordion(items) {
   return h('div', { className: 'accordion' },
     items.map(item =>
       h('details', { className: 'accordion-item' },
-        h('summary', { className: 'accordion-summary' }, item.title),
-        h('div', { className: 'accordion-content' }, item.content)
+        h('summary', { className: 'accordion-summary' }, esc(item.title)),
+        // content is a caller-provided HTML fragment by contract.
+        h('div', { className: 'accordion-content', innerHTML: item.content })
       )
     ).join('')
   )
@@ -130,7 +135,7 @@ export function accordion(items) {
 
 export function divider(label) {
   if (!label) return '<hr class="divider"/>'
-  return `<div class="divider-labeled"><hr class="divider-line"/><span class="divider-text">${label}</span><hr class="divider-line"/></div>`
+  return `<div class="divider-labeled"><hr class="divider-line"/><span class="divider-text">${esc(label)}</span><hr class="divider-line"/></div>`
 }
 
 export function responsiveClass(breakpoint) {

@@ -38,7 +38,7 @@ form.addEventListener('submit',async function(e){
     else{var el=document.createElement('div');el.className='auth-err';el.setAttribute('role','alert');el.textContent=data.error||'Login failed. Please check your credentials.';errArea.innerHTML='';errArea.appendChild(el);btn.textContent='Sign In';btn.disabled=false;}
   }catch(err){errArea.innerHTML='<div class="auth-err" role="alert">Network error. Please try again.</div>';btn.textContent='Sign In';btn.disabled=false;}
 });`
-  return generateHtml('Sign In | Moonlanding', body, [script])
+  return generateHtml('Sign In | Thatcher', body, [script])
 }
 
 export function renderPasswordReset() {
@@ -66,7 +66,7 @@ form.addEventListener('submit',async function(e){
     else{var d=await res.json().catch(function(){return{};});var el=document.createElement('div');el.className='auth-err';el.setAttribute('role','alert');el.textContent=d.error||'Request failed. Please try again.';errArea.innerHTML='';errArea.appendChild(el);btn.textContent='Send Reset Link';btn.disabled=false;}
   }catch(err){errArea.innerHTML='<div class="auth-err" role="alert">Network error. Please try again.</div>';btn.textContent='Send Reset Link';btn.disabled=false;}
 });`
-  return generateHtml('Reset Password | Moonlanding', body, [script])
+  return generateHtml('Reset Password | Thatcher', body, [script])
 }
 
 export function renderPasswordResetConfirm(token) {
@@ -100,16 +100,16 @@ form.addEventListener('submit',async function(e){
     else{var el=document.createElement('div');el.className='auth-err';el.setAttribute('role','alert');el.textContent=data.error||'Reset failed. Please try again.';errArea.innerHTML='';errArea.appendChild(el);btn.textContent='Update Password';btn.disabled=false;}
   }catch(err){errArea.innerHTML='<div class="auth-err" role="alert">Network error. Please try again.</div>';btn.textContent='Update Password';btn.disabled=false;}
 });`
-  return generateHtml('Set New Password | Moonlanding', body, [script])
+  return generateHtml('Set New Password | Thatcher', body, [script])
 }
 
 export function renderAccessDenied(user, entityName, action) {
   const txt = { list: 'view this list', view: 'view this item', create: 'create items here', edit: 'edit this item', delete: 'delete this item' }
   const body = `<div class="min-h-screen">${navFn(user)}<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px">
-    <div style="font-size:48px;margin-bottom:16px" aria-hidden="true">&#128274;</div>
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted,#64748b)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     <h1 style="font-size:24px;font-weight:700;color:var(--color-text,#0f172a);margin:0 0 8px">Access Denied</h1>
     <p style="color:var(--color-text-muted,#64748b);margin:0 0 24px;max-width:400px">You do not have permission to ${esc(txt[action] || action)} in ${esc(entityName)}.</p>
     <a href="/" class="btn-primary-clean">Return to Dashboard</a>
   </div></div>`
-  return generateHtml('Access Denied | Moonlanding', body)
+  return generateHtml('Access Denied | Thatcher', body)
 }

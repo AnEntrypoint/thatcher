@@ -166,5 +166,5 @@ window.sendCollabNotify=async function(reviewId){var msg=document.getElementById
   const content = `${pageHeader}${reviewZoneNav(r.id, 'overview')}${tabBar}
     <div>${overviewPanel}${highlightsPanel}${collabPanel}${checklistPanel}${sectionsPanel}${tenderPanelHtml(r.id, tenders, canEditReview, tablePanel)}${linksPanelHtml(r.id, parsedLinks, canEditReview, tablePanel)}${historyPanel}${addCollaboratorDialog(r.id)}${checklistPickerDialog}${tenderDialog(r.id)}${linkDialog(r.id)}${compareDialogHtml(r.id)}${notifyDialog}${notifyScript}${retryHighlightDialog(esc(r.id))}${reviewTemplateChoiceDialog()}</div>`;
 
-  return page(user, `${esc(r.name || 'Review')} | Moonlanding`, bc, content, [reviewDetailScript(r.id)]);
+  return page(user, `${esc(r.name || 'Review')} | Thatcher`, bc, content, [reviewDetailScript(r.id)]);
 }

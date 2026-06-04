@@ -76,8 +76,8 @@ export function breadcrumb(items) {
   if (!items?.length) return ''
   return `<nav ${aria.label('Breadcrumb')} class="breadcrumb-clean">${items.map((item, i) =>
     i === items.length - 1
-      ? `<span ${aria.current('page')}>${item.label}</span>`
-      : `<a href="${item.href}">${item.label}</a><span class="breadcrumb-sep" aria-hidden="true">/</span>`
+      ? `<span ${aria.current('page')}>${esc(item.label)}</span>`
+      : `<a href="${esc(item.href)}">${esc(item.label)}</a><span class="breadcrumb-sep" aria-hidden="true">/</span>`
   ).join('')}</nav>`
 }
 

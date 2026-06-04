@@ -51,6 +51,6 @@ export function renderRfiReport(user, rfi, engagement, questions, responses) {
   <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
 </div>
 <div>${qRows || '<div style="color:#94a3b8;text-align:center;padding:24px">No questions found</div>'}</div>
-<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:0.7rem;color:#94a3b8;text-align:center">Generated ${new Date().toLocaleString('en-ZA')} &bull; Moonlanding</div>
+<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:0.7rem;color:#94a3b8;text-align:center">Generated ${new Date().toLocaleString('en-ZA')} - Thatcher</div>
 </body></html>`;
 }

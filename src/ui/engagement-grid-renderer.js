@@ -108,5 +108,5 @@ export function renderEngagementGrid(user, engagements, options = {}) {
 
   const stageFilterScript = `var _activeStage='';function filterByStage(stage){_activeStage=_activeStage===stage?'':stage;document.querySelectorAll('[id^="stage-card-"]').forEach(c=>{const s=c.id.replace('stage-card-','');c.style.outline=_activeStage===s?'2px solid var(--color-primary)':'none'});window.filterTable();}var _origFilter=window.filterTable||function(){};window.filterTable=function(){_origFilter();if(!_activeStage)return;const stageLabels=${JSON.stringify(Object.fromEntries(STAGE_CONFIG.map(s=>[s.key,s.label])))};document.querySelectorAll('tbody tr[data-row]').forEach(row=>{const stageCell=row.querySelector('[data-col="stage"]');if(stageCell&&!stageCell.textContent.toLowerCase().includes((stageLabels[_activeStage]||_activeStage||'').toLowerCase())){row.style.display='none';}})};function switchTab(tab){document.querySelectorAll('[id^="tab-"]').forEach(b=>b.classList.toggle('active',b.id==='tab-'+tab))}`;
 
-  return page(user, 'Engagements | Moonlanding', null, content, [TABLE_SCRIPT, stageFilterScript, emailReceiveScript]);
+  return page(user, 'Engagements | Thatcher', null, content, [TABLE_SCRIPT, stageFilterScript, emailReceiveScript]);
 }

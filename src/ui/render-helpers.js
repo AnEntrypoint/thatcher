@@ -104,7 +104,10 @@ export function fmtVal(value, fieldKey, item = {}) {
     return h('span', { className: 'badge-status', style: `background:${s.bg};color:${s.text}` }, value.charAt(0).toUpperCase() + value.slice(1))
   }
   if (item[`${fieldKey}_display`]) return item[`${fieldKey}_display`]
-  return String(value)
+  // Default path returns raw DB/user data into table cells and detail values —
+  // escape it so a stored value cannot inject markup (the _display override above
+  // is a caller-controlled HTML escape hatch by convention).
+  return esc(String(value))
 }
 
 export function statusLabel(status) {

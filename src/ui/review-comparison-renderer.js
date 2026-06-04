@@ -42,7 +42,7 @@ export function renderReviewComparison(user, leftReview, rightReview, leftHighli
 
   const content = `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Review Comparison</h1><a href="/reviews" class="btn btn-ghost btn-sm">Back to Reviews</a></div>${diffSummary}${comparisonTable}`;
 
-  return page(user, 'Review Comparison | Moonlanding', [
+  return page(user, 'Review Comparison | Thatcher', [
     { href: '/', label: 'Dashboard' },
     { href: '/reviews', label: 'Reviews' },
     { label: 'Comparison' }
@@ -55,5 +55,5 @@ export function renderComparisonPicker(user, reviews) {
 
   const script = `window.startComparison=function(){const l=document.getElementById('left-review')?.value;const r=document.getElementById('right-review')?.value;if(!l||!r)return showToast('Select both reviews','error');if(l===r)return showToast('Select different reviews','error');window.location='/reviews/compare?left='+l+'&right='+r}`;
 
-  return page(user, 'Compare Reviews | Moonlanding', [{ href: '/', label: 'Dashboard' }, { href: '/reviews', label: 'Reviews' }, { label: 'Compare' }], content, [script]);
+  return page(user, 'Compare Reviews | Thatcher', [{ href: '/', label: 'Dashboard' }, { href: '/reviews', label: 'Reviews' }, { label: 'Compare' }], content, [script]);
 }

@@ -4,7 +4,7 @@ export function generateTestPage() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Test | MOONLANDING</title>
+  <title>System Test | Thatcher</title>
   <style>
     body { font-family: monospace; padding: 2rem; background: #04141f; color: #ced4da; }
     h1 { color: #3b82f6; }
@@ -13,9 +13,9 @@ export function generateTestPage() {
   </style>
 </head>
 <body>
-  <h1>MOONLANDING System Test</h1>
-  <p class="check">✓ Server is running</p>
-  <p class="check">✓ Page handler is operational</p>
+  <h1>Thatcher System Test</h1>
+  <p class="check">[x] Server is running</p>
+  <p class="check">[x] Page handler is operational</p>
   <p class="info">Timestamp: ${new Date().toISOString()}</p>
   <p class="info">Environment: ${process.env.NODE_ENV || 'development'}</p>
 </body>

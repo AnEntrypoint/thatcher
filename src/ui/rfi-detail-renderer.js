@@ -129,6 +129,7 @@ async function saveSection(rfiId){var name=document.getElementById('sec-name').v
 async function sendReminder(rfiId){try{var r=await fetch('/api/friday/rfi/reminder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rfi_id:rfiId})});if(r.ok)showToast('Reminder sent','success');else showToast('Failed','error')}catch(e){showToast('Error','error')}}`;
 
   const assignScript = clientId ? `
+function rdEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 var _assignClientId=${JSON.stringify(clientId)};
 window.openAssignQuestion=async function(qId){
   var dlg=document.getElementById('assign-q-dialog');
@@ -140,7 +141,7 @@ window.openAssignQuestion=async function(qId){
     var r=await fetch('/api/users?client_id='+_assignClientId+'&pageSize=100',{credentials:'include'});
     var d=await r.json();
     var users=(d.data||d||[]).filter(function(u){return !u.deleted_at});
-    sel.innerHTML='<option value="">Select client user...</option>'+users.map(function(u){return'<option value="'+u.id+'">'+(u.name||u.email)+'</option>'}).join('');
+    sel.innerHTML='<option value="">Select client user...</option>'+users.map(function(u){return'<option value="'+rdEsc(u.id)+'">'+rdEsc(u.name||u.email)+'</option>'}).join('');
   }catch(e){sel.innerHTML='<option value="">Error loading users</option>'}
 };
 window.saveAssignQuestion=async function(){
@@ -187,5 +188,5 @@ window.submitResponse=async function(){
   finally{if(btn){btn.disabled=false;btn.textContent='Submit'}}
 };` : '';
 
-  return page(user, `${esc(rfi.name||'RFI')} | Moonlanding`, null, content, [script, assignScript, viewRespScript, respondScript]);
+  return page(user, `${esc(rfi.name||'RFI')} | Thatcher`, null, content, [script, assignScript, viewRespScript, respondScript]);
 }

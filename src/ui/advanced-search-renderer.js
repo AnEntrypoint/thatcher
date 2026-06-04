@@ -39,5 +39,5 @@ export function renderAdvancedSearch(user, results = {}, options = {}) {
 
   const searchScript = `window.doSearch=async function(){const q=document.getElementById('search-query')?.value||'';const entity=document.getElementById('filter-entity')?.value||'';const status=document.getElementById('filter-status')?.value||'';const stage=document.getElementById('filter-stage')?.value||'';const team=document.getElementById('filter-team')?.value||'';const from=document.getElementById('filter-from')?.value||'';const to=document.getElementById('filter-to')?.value||'';const params=new URLSearchParams();if(q)params.set('q',q);if(entity)params.set('entity',entity);if(status)params.set('status',status);if(stage)params.set('stage',stage);if(team)params.set('team',team);if(from)params.set('from',from);if(to)params.set('to',to);window.location='/search?'+params.toString()};document.getElementById('search-query')?.addEventListener('keydown',function(e){if(e.key==='Enter')doSearch()})`;
 
-  return page(user, 'Search | Moonlanding', [{ href: '/', label: 'Dashboard' }, { label: 'Search' }], content, [searchScript]);
+  return page(user, 'Search | Thatcher', [{ href: '/', label: 'Dashboard' }, { label: 'Search' }], content, [searchScript]);
 }

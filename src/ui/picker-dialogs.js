@@ -3,6 +3,9 @@ import { STAGE_COLORS, TOAST_SCRIPT } from '@/ui/render-helpers.js'
 
 const DIALOG_COLORS = ['#B0B0B0','#44BBA4','#FF4141','#7F7EFF','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#ef4444','#22c55e','#06b6d4','#f97316','#84cc16','#e11d48','#14b8a6','#6366f1']
 
+// Inline client-side HTML-escape for innerHTML sinks (user name/email/team name are user-sourced).
+const PD_ESC = `function pdEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}`;
+
 export function colorPickerDialog(id = 'cpd', selected = '#B0B0B0', onSelect = '') {
   const swatches = DIALOG_COLORS.map(c =>
     `<div class="cpd-swatch${c === selected ? ' cpd-selected' : ''}" style="background:${c}" data-color="${c}" role="option" tabindex="0" aria-label="Color ${c}" aria-selected="${c === selected}" data-action="cpdSelect" data-args='["${id}","${c}",${onSelect ? "true" : "false"}]'></div>`
@@ -75,9 +78,10 @@ export function teamAssignmentDialog(id = 'tad') {
       <div class="dialog-footer"><button class="btn btn-ghost btn-sm" data-dialog-close="${id}-dialog">Cancel</button><button class="btn btn-primary btn-sm" data-action="tadConfirm" data-args='["${id}"]'>Assign</button></div>
     </div></div>
   <script>${TOAST_SCRIPT}
+  ${PD_ESC}
   window._tad=window._tad||{};
   window.showTeamAssignment=function(id,users,selected,cb){window._tad[id]={users:users,selected:new Set(selected||[]),cb:cb};document.getElementById(id+'-dialog').style.display='flex';tadRender(id)};
-  function tadRender(id){var d=window._tad[id];var c=document.getElementById(id+'-list');c.innerHTML='';d.users.forEach(function(u){var row=document.createElement('div');row.className='tad-row';row.dataset.name=(u.name||'').toLowerCase();row.dataset.email=(u.email||'').toLowerCase();var checked=d.selected.has(u.id)?'checked':'';row.innerHTML='<input type="checkbox" '+checked+' onchange="tadToggle(\\''+id+'\\',\\''+u.id+'\\') " aria-label="Select '+(u.name||'Unknown').replace(/"/g,'&quot;')+'">'+'<div><div class="tad-name">'+(u.name||'Unknown')+'</div><div class="tad-email">'+(u.email||'')+'</div></div>';c.appendChild(row)})}
+  function tadRender(id){var d=window._tad[id];var c=document.getElementById(id+'-list');c.innerHTML='';d.users.forEach(function(u){var row=document.createElement('div');row.className='tad-row';row.dataset.name=(u.name||'').toLowerCase();row.dataset.email=(u.email||'').toLowerCase();var checked=d.selected.has(u.id)?'checked':'';row.innerHTML='<input type="checkbox" '+checked+' onchange="tadToggle(\\''+id+'\\',\\''+u.id+'\\') " aria-label="Select '+(u.name||'Unknown').replace(/"/g,'&quot;')+'">'+'<div><div class="tad-name">'+pdEsc(u.name||'Unknown')+'</div><div class="tad-email">'+pdEsc(u.email||'')+'</div></div>';c.appendChild(row)})}
   window.tadFilter=function(id){var q=document.getElementById(id+'-search').value.toLowerCase();document.querySelectorAll('#'+id+'-list .tad-row').forEach(function(r){r.style.display=(r.dataset.name.includes(q)||r.dataset.email.includes(q))?'':'none'})};
   window.tadToggle=function(id,uid){var d=window._tad[id];if(d.selected.has(uid))d.selected.delete(uid);else d.selected.add(uid)};
   window.tadConfirm=function(id){var d=window._tad[id];document.getElementById(id+'-dialog').style.display='none';if(d.cb)d.cb(Array.from(d.selected))};</script>`
@@ -93,10 +97,11 @@ export function teamSelector(id = 'ts', teams = []) {
     <div id="${id}-dropdown" class="ts-dropdown" role="listbox" aria-label="Teams">${items}</div>
     <input type="hidden" id="${id}-value" name="team_id" value=""/>
   </div>
-  <script>window._ts=window._ts||{};window._ts['${id}']=[];
+  <script>${PD_ESC}
+  window._ts=window._ts||{};window._ts['${id}']=[];
   window.tsFilter=function(id){var q=document.getElementById(id+'-search').value.toLowerCase();document.querySelectorAll('#'+id+'-dropdown .tad-row').forEach(function(r){r.style.display=r.dataset.name.includes(q)?'':'none'})};
   window.tsSelect=function(id,tid,name){window._ts[id].push({id:tid,name:name});tsRender(id);document.getElementById(id+'-dropdown').classList.remove('ts-open');document.getElementById(id+'-search').setAttribute('aria-expanded','false');document.getElementById(id+'-search').value=''};
-  function tsRender(id){var b=document.getElementById(id+'-badges');b.innerHTML='';window._ts[id].forEach(function(t,i){b.innerHTML+='<span class="ts-badge">'+t.name+' <span class="ts-badge-x" data-action="tsRemove" data-args=\\'["'+id+'",'+i+']\\' >&times;</span></span>'});document.getElementById(id+'-value').value=window._ts[id].map(function(t){return t.id}).join(',')}
+  function tsRender(id){var b=document.getElementById(id+'-badges');b.innerHTML='';window._ts[id].forEach(function(t,i){b.innerHTML+='<span class="ts-badge">'+pdEsc(t.name)+' <span class="ts-badge-x" data-action="tsRemove" data-args=\\'["'+id+'",'+i+']\\' >&times;</span></span>'});document.getElementById(id+'-value').value=window._ts[id].map(function(t){return t.id}).join(',')}
   window.tsRemove=function(id,idx){window._ts[id].splice(idx,1);tsRender(id)};
   document.addEventListener('click',function(e){if(!document.getElementById('${id}-wrap').contains(e.target)){document.getElementById('${id}-dropdown').classList.remove('ts-open');document.getElementById('${id}-search').setAttribute('aria-expanded','false')}});</script>`
 }

@@ -10,7 +10,7 @@ export function renderPasswordResetPage(params = {}) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} | Moonlanding</title>
+  <title>${title} | Thatcher</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     :root{--bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--text:#0f172a;--text-muted:#64748b;--primary:#04141f;--accent:#2563eb;--danger:#b91c1c;--danger-bg:#fee2e2;--danger-border:#fca5a5;--success-bg:#dcfce7;--success:#15803d;--success-border:#86efac;--info-bg:#dbeafe;--info:#1d4ed8;--info-border:#93c5fd}
@@ -52,7 +52,7 @@ export function renderPasswordResetPage(params = {}) {
       <div class="logo-mark">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m4.24-4.24l4.24-4.24"/></svg>
       </div>
-      <span class="logo-name">MOONLANDING</span>
+      <span class="logo-name">Thatcher</span>
       <div class="logo-sub">${subtitle}</div>
     </div>
     <div class="card">

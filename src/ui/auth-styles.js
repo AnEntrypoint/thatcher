@@ -48,6 +48,6 @@ export const LOGO_SVG = `<svg width="26" height="26" viewBox="0 0 24 24" fill="n
 export const authLogoHtml = (subtitle) => `
   <div class="auth-logo">
     <div class="auth-logo-mark">${LOGO_SVG}</div>
-    <span class="auth-logo-name">MOONLANDING</span>
+    <span class="auth-logo-name">Thatcher</span>
     <div class="auth-logo-sub">${subtitle}</div>
   </div>`;

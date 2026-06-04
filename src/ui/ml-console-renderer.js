@@ -112,5 +112,5 @@ export function renderMlConsole(user, candidates, reviewMap) {
     </script>`;
 
     const bc = [{ href: '/', label: 'Home' }, { href: '/review', label: 'Reviews' }, { label: 'ML Console' }];
-    return page(user, 'AI / ML Query Console | Moonlanding', bc, content);
+    return page(user, 'AI / ML Query Console | Thatcher', bc, content);
 }

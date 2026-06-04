@@ -127,7 +127,7 @@ export function renderReviewListTabbed(user, reviews) {
     });
   })()`;
 
-  return page(user, 'Reviews | Moonlanding', bc, content, [TOAST_SCRIPT, tabScript, ctxScript, searchScript, priorityScript]);
+  return page(user, 'Reviews | Thatcher', bc, content, [TOAST_SCRIPT, tabScript, ctxScript, searchScript, priorityScript]);
 }
 
 export function reviewSearchField() {
