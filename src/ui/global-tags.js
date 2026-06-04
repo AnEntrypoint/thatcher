@@ -99,7 +99,7 @@ function showToast(msg, type = 'info') {
 window.gtsOpenDialog = (mode = 'create', tagId = null) => showDialog(mode, tagId);
 window.gtsEditTag = (tagId) => gtsOpenDialog('edit', tagId);
 window.gtsDeleteTag = async (tagId) => {
-  if (confirm(`Delete "${esc(tagsStore[tagId].name)}"?`)) {
+  if (await window.gmConfirm({ title: 'Please confirm', message: `Delete "${tagsStore[tagId].name}"?`, confirmLabel: 'Delete', danger: true })) {
     await deleteTag(tagId);
     refreshTagsList();
   }

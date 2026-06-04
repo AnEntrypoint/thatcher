@@ -13,8 +13,8 @@ import { SPACING, renderCard, renderTable, renderButton, renderInfoGrid } from '
 function fmtDate(ts) {
   if (!ts) return '-';
   const n = Number(ts);
-  if (!isNaN(n) && n > 1e9 && n < 3e9) return new Date(n * 1000).toLocaleDateString();
-  try { return new Date(ts).toLocaleDateString(); } catch { return String(ts); }
+  if (!isNaN(n) && n > 1e9 && n < 3e9) return new Date(n * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
+  try { return new Date(ts).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}); } catch { return String(ts); }
 }
 
 export function renderReviewDetail(user, review, highlights = [], collaborators = [], checklists = [], sections = [], tenders = []) {

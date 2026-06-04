@@ -42,7 +42,7 @@ export function renderDashboard(user, stats = {}) {
       </div></div>` : '';
 
   const recentRows = (stats.recentEngagements || []).map(e => {
-    const updated = e.updated_at ? new Date(typeof e.updated_at === 'number' ? e.updated_at * 1000 : e.updated_at).toLocaleDateString() : '-';
+    const updated = e.updated_at ? new Date(typeof e.updated_at === 'number' ? e.updated_at * 1000 : e.updated_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : '-';
     return `<tr data-row data-navigate="/engagement/${esc(e.id)}" style="cursor:pointer">
       <td data-col="name"><strong>${esc(e.name || e.client_name || 'Untitled')}</strong></td>
       <td data-col="client">${esc(e.client_id_display || e.client_name || '-')}</td>
@@ -89,7 +89,7 @@ export function renderAuditDashboard(user, auditData = {}) {
   const { summary = {}, recentActivity = [] } = auditData;
   const actRows = recentActivity.slice(0, 20).map(a =>
     `<tr data-row>
-      <td data-col="time">${new Date((a.timestamp||a.created_at)*1000).toLocaleString()}</td>
+      <td data-col="time">${new Date((a.timestamp||a.created_at)*1000).toLocaleString('en-ZA')}</td>
       <td data-col="action"><span class="pill pill-info">${a.action||'-'}</span></td>
       <td data-col="entity">${a.entity_type||'-'}</td>
       <td data-col="id" style="font-size:12px">${a.entity_id||'-'}</td>

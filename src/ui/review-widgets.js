@@ -5,7 +5,7 @@ import { teamAvatarGroup } from '@/ui/widgets.js'
 export function mobileReviewCard(review) {
   const r = review || {}
   const sts = r.status ? statusLabel(r.status) : ''
-  const date = r.created_at ? `<span class="text-xs text-gray-500">${typeof r.created_at === 'number' ? new Date(r.created_at * 1000).toLocaleDateString() : r.created_at}</span>` : ''
+  const date = r.created_at ? `<span class="text-xs text-gray-500">${typeof r.created_at === 'number' ? new Date(r.created_at * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : r.created_at}</span>` : ''
   return `<div class="mobile-card mobile-review-card card-clean">
     <div class="card-clean-body">
       <div class="flex justify-between items-center mb-2"><h3 class="font-medium text-sm">${esc(r.name || r.title || 'Untitled Review')}</h3>${sts}</div>
@@ -19,8 +19,8 @@ export function sidebarReviewDetails(review) {
   const r = review || {}
   const sts = r.status ? statusLabel(r.status) : ''
   const meta = [
-    r.created_at ? ['Created', typeof r.created_at === 'number' ? new Date(r.created_at * 1000).toLocaleDateString() : r.created_at] : null,
-    r.updated_at ? ['Updated', typeof r.updated_at === 'number' ? new Date(r.updated_at * 1000).toLocaleDateString() : r.updated_at] : null,
+    r.created_at ? ['Created', typeof r.created_at === 'number' ? new Date(r.created_at * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : r.created_at] : null,
+    r.updated_at ? ['Updated', typeof r.updated_at === 'number' ? new Date(r.updated_at * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : r.updated_at] : null,
     r.creator_name ? ['Creator', r.creator_name] : null,
     r.manager_name ? ['Manager', r.manager_name] : null,
   ].filter(Boolean).map(([l, v]) => `<div class="sidebar-meta-row"><span class="text-gray-500 text-xs">${l}</span><span class="text-sm font-medium">${v}</span></div>`).join('')

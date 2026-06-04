@@ -8,7 +8,7 @@ function engRow(e) {
   const type = esc(e.type || e.engagement_type || e.repeat_interval || '-');
   const year = esc(e.year || '-');
   const team = esc(e.team_name || e.team_id_display || e.team_id || '-');
-  const deadline = e.deadline ? new Date(e.deadline).toLocaleDateString() : '-';
+  const deadline = e.deadline ? new Date(e.deadline).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : '-';
   const stageCfg = STAGE_CONFIG.find(s => s.key === e.stage);
   const stageLbl = stageCfg?.label || (e.stage || '-');
   // 247420 indicator-rail: 3px left edge tinted by stage color (replaces border)

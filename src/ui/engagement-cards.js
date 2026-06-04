@@ -10,7 +10,7 @@ export function engagementCard(engagement, user) {
   const sts = e.status ? statusLabel(e.status) : ''
   const progress = typeof e.progress === 'number' ? `<div class="engagement-card-progress"><div class="engagement-card-progress-bar" style="width:${Math.min(100, Math.max(0, e.progress))}%"></div></div>` : ''
   const team = e.team?.length ? `<div class="engagement-card-team">${teamAvatarGroup(e.team, 3)}</div>` : ''
-  const dueDate = e.due_date ? `<span class="text-xs text-gray-500">${typeof e.due_date === 'number' ? new Date(e.due_date * 1000).toLocaleDateString() : e.due_date}</span>` : ''
+  const dueDate = e.due_date ? `<span class="text-xs text-gray-500">${typeof e.due_date === 'number' ? new Date(e.due_date * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : e.due_date}</span>` : ''
   const clientName = e.client_name || e.client?.name || ''
   return `<div class="engagement-card card-clean" data-navigate="/engagement/${esc(e.id)}" style="cursor:pointer">
     <div class="card-clean-body">
@@ -31,7 +31,7 @@ export function mobileEngagementCard(engagement) {
     <div class="card-clean-body">
       <div class="flex justify-between items-center mb-2"><h3 class="font-medium text-sm">${esc(e.name || e.title || 'Untitled')}</h3>${sts}</div>
       ${e.client_name ? `<div class="text-xs text-gray-500 mb-1">${esc(e.client_name)}</div>` : ''}
-      <div class="flex items-center gap-2 mb-2">${stageBadge}${e.due_date ? `<span class="text-xs text-gray-500">${typeof e.due_date === 'number' ? new Date(e.due_date * 1000).toLocaleDateString() : e.due_date}</span>` : ''}</div>
+      <div class="flex items-center gap-2 mb-2">${stageBadge}${e.due_date ? `<span class="text-xs text-gray-500">${typeof e.due_date === 'number' ? new Date(e.due_date * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : e.due_date}</span>` : ''}</div>
       <div class="flex gap-1 mt-2"><a href="/engagement/${e.id}" class="btn btn-xs btn-primary">View</a><a href="/engagement/${e.id}/edit" class="btn btn-xs btn-outline">Edit</a></div>
     </div></div>`
 }
@@ -56,7 +56,7 @@ export function activityTimeline(activities = [], showAll = false) {
     const action = a.action || 'updated'
     const actIcon = icon(iconMap[action] || 'list', 13)
     const ts = a.timestamp || a.created_at
-    const timeStr = ts ? (typeof ts === 'number' && ts > 1e9 ? new Date(ts * 1000).toLocaleString() : new Date(ts).toLocaleString()) : ''
+    const timeStr = ts ? (typeof ts === 'number' && ts > 1e9 ? new Date(ts * 1000).toLocaleString('en-ZA') : new Date(ts).toLocaleString('en-ZA')) : ''
     return `<div class="act-tl-item"><div class="act-tl-icon act-tl-${action}">${actIcon}</div><div class="act-tl-content"><div class="act-tl-header"><span class="act-tl-desc">${esc(a.description || a.action || '')}</span></div><div class="act-tl-time">${timeStr}${a.user_name ? ' by ' + esc(a.user_name) : ''}</div></div></div>`
   }).join('')
   const moreBtn = !showAll && activities.length > maxItems ? `<div class="act-tl-more"><button class="btn btn-ghost btn-sm" data-action="showAllActivity" aria-label="Show ${activities.length - maxItems} more activities">Show ${activities.length - maxItems} more</button></div>` : ''

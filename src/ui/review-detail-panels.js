@@ -40,7 +40,7 @@ export function collaboratorRow(c) {
       </div>
     </td>
     <td><span class="pill pill-info" style="text-transform:capitalize">${esc(c.role||'viewer')}</span></td>
-    <td style="font-size:13px;color:var(--color-text-muted)">${c.expires_at?new Date(typeof c.expires_at==='number'?c.expires_at*1000:c.expires_at).toLocaleDateString():'-'}</td>
+    <td style="font-size:13px;color:var(--color-text-muted)">${c.expires_at?new Date(typeof c.expires_at==='number'?c.expires_at*1000:c.expires_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td>
     <td style="text-align:right"><button data-action="removeCollaborator" data-args='["${esc(c.id)}"]' class="btn-danger-clean" style="font-size:12px;padding:4px 10px;min-height:28px">Remove</button></td>
   </tr>`;
 }

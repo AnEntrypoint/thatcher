@@ -23,7 +23,7 @@ export function renderSettingsChecklists(user, checklists = []) {
   const rows = checklists.map(c => `<tr ${trClick('/checklist/'+c.id)}>
     <td class="text-sm font-medium">${esc(c.name||'-')}</td>
     <td class="text-sm">${esc(c.type||'-')}</td>
-    <td class="text-sm text-base-content/50">${esc(c.review_id||'-')}</td>
+    <td class="text-sm text-base-content/70">${esc(c.review_id||'-')}</td>
     <td>${editBtn('/checklist/'+c.id+'/edit')}</td>
   </tr>`).join('');
   return settingsPage(user, 'Checklists - Settings', bc('Checklists'), hdr('Checklists', '/checklist/new', '+ Add Checklist') + inlineTable(['Name', 'Type', 'Review', 'Actions'], rows, 'No checklists found'));
@@ -43,12 +43,12 @@ export function renderSettingsRecreation(user, _logs = [], _users = []) {
     <div class="card-clean"><div class="card-clean-body" style="padding:0">
       <div class="table-wrap"><table class="data-table">
         <thead><tr><th>Timestamp</th><th>Operation</th><th>Entity</th><th>Entity ID</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
-        <tbody id="audit-tbody"><tr><td colspan="7" class="text-center py-8 text-base-content/40 text-sm">Loading...</td></tr></tbody>
+        <tbody id="audit-tbody"><tr><td colspan="7" class="text-center py-8 text-base-content/70 text-sm">Loading...</td></tr></tbody>
       </table></div>
     </div></div>`;
   const script = `${TOAST_SCRIPT}
 function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-async function loadAuditLogs(params){const tbody=document.getElementById('audit-tbody');try{const q=params?'?'+new URLSearchParams(params):'';const r=await fetch('/api/audit/logs'+q);const d=await r.json();const rows=d.data||[];tbody.innerHTML=rows.length?rows.map(function(l){const ts=l.timestamp;const date=ts?window.fmtDateTime(ts):'-';const details=l.details?JSON.stringify(l.details).substring(0,60)+'...':'-';return'<tr><td class="text-xs text-base-content/50">'+_esc(date)+'</td><td><span class="badge badge-flat-primary text-xs">'+_esc(l.operation||'-')+'</span></td><td class="text-sm">'+_esc(l.entity_type||'-')+'</td><td class="text-xs text-base-content/50">'+_esc(l.entity_id||'-')+'</td><td class="text-sm">'+_esc(l.user_id||'-')+'</td><td class="text-sm">'+_esc(l.action||'-')+'</td><td class="text-xs text-base-content/40">'+_esc(details)+'</td></tr>'}).join(''):'<tr><td colspan="7" class="text-center py-8 text-base-content/40 text-sm">No audit logs found</td></tr>'}catch(e){tbody.innerHTML='<tr><td colspan="7" class="text-center py-4 text-error text-sm">Failed to load: '+_esc(e.message)+'</td></tr>'}}
+async function loadAuditLogs(params){const tbody=document.getElementById('audit-tbody');try{const q=params?'?'+new URLSearchParams(params):'';const r=await fetch('/api/audit/logs'+q);const d=await r.json();const rows=d.data||[];tbody.innerHTML=rows.length?rows.map(function(l){const ts=l.timestamp;const date=ts?window.fmtDateTime(ts):'-';const details=l.details?JSON.stringify(l.details).substring(0,60)+'...':'-';return'<tr><td class="text-xs text-base-content/70">'+_esc(date)+'</td><td><span class="badge badge-flat-primary text-xs">'+_esc(l.operation||'-')+'</span></td><td class="text-sm">'+_esc(l.entity_type||'-')+'</td><td class="text-xs text-base-content/70">'+_esc(l.entity_id||'-')+'</td><td class="text-sm">'+_esc(l.user_id||'-')+'</td><td class="text-sm">'+_esc(l.action||'-')+'</td><td class="text-xs text-base-content/70">'+_esc(details)+'</td></tr>'}).join(''):'<tr><td colspan="7" class="text-center py-8 text-base-content/70 text-sm">No audit logs found</td></tr>'}catch(e){tbody.innerHTML='<tr><td colspan="7" class="text-center py-4 text-error text-sm">Failed to load: '+_esc(e.message)+'</td></tr>'}}
 function applyAuditFilters(){const level=document.getElementById('filter-level').value;const entity=document.getElementById('filter-entity').value;const start=document.getElementById('filter-start').value;const end=document.getElementById('filter-end').value;const p={};if(level)p.level=level;if(entity)p.entityType=entity;if(start)p.from=new Date(start).toISOString();if(end)p.to=new Date(end+'T23:59:59').toISOString();loadAuditLogs(p)}
 loadAuditLogs();`;
   return settingsPage(user, 'Audit Logs - Settings', bc('Audit Logs'), content, [script]);
@@ -68,7 +68,7 @@ export function renderSettingsIntegrations(user, integrations = {}) {
     return `<div class="card-clean" style="margin-bottom:1rem"><div class="card-clean-body">
       <div class="flex items-center gap-4">
         <div class="text-2xl">${integ.icon}</div>
-        <div class="flex-1"><div class="font-semibold">${integ.name}</div><div class="text-xs text-base-content/50">${integ.desc}</div></div>
+        <div class="flex-1"><div class="font-semibold">${integ.name}</div><div class="text-xs text-base-content/70">${integ.desc}</div></div>
         <div class="flex flex-col items-end gap-2">
           <span class="badge ${connected ? 'badge-success badge-flat-success' : 'badge-flat-secondary'} text-xs">${connected ? 'Connected' : 'Disconnected'}</span>
           <button data-action="toggleConfig" data-args='["${integ.id}"]' class="btn btn-ghost btn-xs">Configure</button>
@@ -76,7 +76,7 @@ export function renderSettingsIntegrations(user, integrations = {}) {
       </div>
       <div id="config-${integ.id}" class="hidden mt-4 pt-4 border-t border-base-200">
         <div class="flex gap-3 items-end flex-wrap">
-          <div class="form-group flex-1 min-w-48"><label class="label"><span class="label-text font-semibold">API Key / Credentials</span></label><input type="password" id="key-${integ.id}" class="input input-solid max-w-full" placeholder="Enter credentials"/></div>
+          <div class="form-group flex-1 min-w-48"><label class="label"><span class="label-text font-semibold">API Key / Credentials</span></label><input type="password" id="key-${integ.id}" class="input input-solid max-w-full" placeholder="Paste the API key or credentials"/></div>
           <div class="flex gap-2"><button data-action="saveIntegration" data-args='["${integ.id}"]' class="btn btn-primary btn-sm">Save</button><button data-action="testIntegration" data-args='["${integ.id}"]' class="btn btn-ghost btn-sm">Test</button></div>
         </div>
       </div>
@@ -91,19 +91,19 @@ export function renderSettingsIntegrations(user, integrations = {}) {
         <button class="btn btn-ghost btn-sm" data-action="copyPrivateKey">Copy</button>
         <button class="btn btn-primary btn-sm" data-action="generatePrivateKey">Generate New Key</button>
       </div>
-      <div class="text-xs text-base-content/50 mt-1">This key links Friday and My Review. Keep it confidential — anyone with access can import data.</div>
+      <div class="text-xs text-base-content/70 mt-1">This key links Friday and My Review. Keep it confidential — anyone with access can import data.</div>
     </div>
     <div class="mb-4">
       <label class="label"><span class="label-text font-semibold">My Review API Key (from MWR app)</span></label>
       <input type="text" id="mwr-api-key" class="input input-solid w-full" value="${esc(mwr_api_key)}" placeholder="Paste the key from My Review Integrations settings"/>
-      <div class="text-xs text-base-content/50 mt-1">Enter the private key generated in the My Review settings to enable cross-app access.</div>
+      <div class="text-xs text-base-content/70 mt-1">Enter the private key generated in the My Review settings to enable cross-app access.</div>
     </div>
     <button class="btn btn-primary btn-sm" data-action="saveApiKeys">Save API Keys</button>
   </div></div>`;
   const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">Integrations</h1>${apiKeysCard}${cards}`;
   const script = `${TOAST_SCRIPT}
 function toggleConfig(id){const el=document.getElementById('config-'+id);el.classList.toggle('hidden')}
-function saveIntegration(id){const key=document.getElementById('key-'+id).value;if(!key){showToast('Enter credentials','error');return}showToast('Integration saved','success');toggleConfig(id)}
+function saveIntegration(id){const key=document.getElementById('key-'+id).value.trim();if(!key){showToast('Enter the API key or credentials before saving','error');return}showToast('Integration credentials saved','success');toggleConfig(id)}
 function testIntegration(id){showToast('Testing connection...','info');setTimeout(()=>showToast('Test complete','success'),1000)}
 function generatePrivateKey(){const arr=new Uint8Array(32);crypto.getRandomValues(arr);const key=Array.from(arr,b=>b.toString(16).padStart(2,'0')).join('');document.getElementById('mwr-private-key').value=key}
 function copyPrivateKey(){const v=document.getElementById('mwr-private-key').value;if(!v){showToast('No key to copy','error');return}navigator.clipboard.writeText(v).then(()=>showToast('Copied to clipboard','success')).catch(()=>showToast('Copy failed','error'))}
@@ -115,7 +115,7 @@ export function renderSettingsNotifications(user, config = {}) {
   const t = config.thresholds || {};
   const rfi = t.rfi || {};
   const notif = t.notification || {};
-  const togRow = tg => `<div class="flex justify-between items-center py-3 border-b border-base-200"><div><div class="text-sm font-semibold">${tg.label}</div><div class="text-xs text-base-content/50">${tg.desc}</div></div><input type="checkbox" name="${tg.id}" ${tg.checked ? 'checked' : ''} class="checkbox checkbox-primary"/></div>`;
+  const togRow = tg => `<div class="flex justify-between items-center py-3 border-b border-base-200"><div><div class="text-sm font-semibold">${tg.label}</div><div class="text-xs text-base-content/70">${tg.desc}</div></div><input type="checkbox" name="${tg.id}" ${tg.checked ? 'checked' : ''} class="checkbox checkbox-primary"/></div>`;
   const toggles = [
     { id: 'rfi_reminders', label: 'RFI Reminders', desc: 'Send reminders for outstanding RFIs', checked: true },
     { id: 'deadline_alerts', label: 'Deadline Alerts', desc: 'Alert when deadlines are approaching', checked: true },
@@ -123,10 +123,10 @@ export function renderSettingsNotifications(user, config = {}) {
     { id: 'new_messages', label: 'New Messages', desc: 'Notify when new messages are received', checked: true },
     { id: 'weekly_reports', label: 'Weekly Reports', desc: 'Send weekly summary reports', checked: true },
   ];
-  const triggerDialog = `<div id="notif-trigger-dialog" class="modal" style="display:none" >
+  const triggerDialog = `<div id="notif-trigger-dialog" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="notif-trigger-dialog-title">
     <div class="modal-overlay" data-dialog-close="notif-trigger-dialog"></div>
     <div class="modal-content rounded-box max-w-md p-6">
-      <h3 class="text-lg font-semibold mb-4">Add Notification Trigger</h3>
+      <h3 id="notif-trigger-dialog-title" class="text-lg font-semibold mb-4">Add Notification Trigger</h3>
       <div class="form-group mb-3"><label class="form-label">Trigger Type</label><select id="ntd-type" class="form-input"><option value="before">Before</option><option value="after">After</option></select></div>
       <div class="form-group mb-3"><label class="form-label">Days</label><input id="ntd-days" type="number" min="0" max="365" value="7" class="form-input"/></div>
       <div class="form-group mb-3"><label class="form-label">Reference Date</label><select id="ntd-ref" class="form-input"><option value="commencement_date">Commencement Date</option><option value="deadline_date">Deadline Date</option></select></div>
@@ -151,14 +151,14 @@ export function renderSettingsNotifications(user, config = {}) {
     <div class="card-clean"><div class="card-clean-body" style="padding:0">
       <div class="table-wrap"><table class="data-table" id="triggers-table">
         <thead><tr><th>Type</th><th>Days</th><th>Reference</th><th>Recipient</th><th>Status</th><th></th></tr></thead>
-        <tbody id="triggers-tbody"><tr><td colspan="6" class="text-center py-8 text-base-content/40 text-sm">Loading...</td></tr></tbody>
+        <tbody id="triggers-tbody"><tr><td colspan="6" class="text-center py-8 text-base-content/70 text-sm">Loading...</td></tr></tbody>
       </table></div>
     </div></div>
     ${triggerDialog}`;
   const script = `${TOAST_SCRIPT}
 document.getElementById('notif-form').addEventListener('submit',async(e)=>{e.preventDefault();const fd=new FormData(e.target);const data={};for(const[k,v]of fd.entries())data[k]=v;document.querySelectorAll('#notif-form input[type=checkbox]').forEach(cb=>{data[cb.name]=cb.checked});try{const res=await fetch('/api/admin/settings/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(res.ok){showToast('Settings saved','success')}else{showToast('Save failed','error')}}catch(err){showToast('Error: '+err.message,'error')}});
 function _esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-async function loadTriggers(){const tbody=document.getElementById('triggers-tbody');try{const r=await fetch('/api/friday/engagement/notifications');const d=await r.json();const rows=d.data||[];tbody.innerHTML=rows.length?rows.map(function(t){return'<tr><td class="text-sm">'+_esc(t.trigger_type)+'</td><td class="text-sm">'+_esc(t.trigger_days)+' days</td><td class="text-sm">'+_esc(t.trigger_reference)+'</td><td class="text-sm">'+_esc(t.recipient_type)+'</td><td>'+(t.active?'<span class="badge badge-flat-success text-xs">Active</span>':'<span class="badge badge-flat-secondary text-xs">Inactive</span>')+'</td><td><button class="btn btn-ghost btn-xs" data-action="deleteNotifTrigger" data-args=\\'["\\'+encodeURIComponent(t.id)+\\'"]\\'>Delete</button></td></tr>'}).join(''):'<tr><td colspan="6" class="text-center py-8 text-base-content/40 text-sm">No triggers configured</td></tr>'}catch(e){tbody.innerHTML='<tr><td colspan="6" class="text-center py-4 text-error text-sm">Failed to load</td></tr>'}}
+async function loadTriggers(){const tbody=document.getElementById('triggers-tbody');try{const r=await fetch('/api/friday/engagement/notifications');const d=await r.json();const rows=d.data||[];tbody.innerHTML=rows.length?rows.map(function(t){return'<tr><td class="text-sm">'+_esc(t.trigger_type)+'</td><td class="text-sm">'+_esc(t.trigger_days)+' days</td><td class="text-sm">'+_esc(t.trigger_reference)+'</td><td class="text-sm">'+_esc(t.recipient_type)+'</td><td>'+(t.active?'<span class="badge badge-flat-success text-xs">Active</span>':'<span class="badge badge-flat-secondary text-xs">Inactive</span>')+'</td><td><button class="btn btn-ghost btn-xs" data-action="deleteNotifTrigger" data-args=\\'["\\'+encodeURIComponent(t.id)+\\'"]\\'>Delete</button></td></tr>'}).join(''):'<tr><td colspan="6" class="text-center py-8 text-base-content/70 text-sm">No triggers configured</td></tr>'}catch(e){tbody.innerHTML='<tr><td colspan="6" class="text-center py-4 text-error text-sm">Failed to load</td></tr>'}}
 function openNotifTriggerDialog(){document.getElementById('notif-trigger-dialog').style.display='flex'}
 async function saveNotifTrigger(){const type=document.getElementById('ntd-type').value;const days=Number(document.getElementById('ntd-days').value);const ref=document.getElementById('ntd-ref').value;const recipient=document.getElementById('ntd-recipient').value;const active=document.getElementById('ntd-active').checked;if(!days&&days!==0){showToast('Enter number of days','error');return}try{const r=await fetch('/api/friday/engagement/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trigger_type:type,trigger_days:days,trigger_reference:ref,recipient_type:recipient,active})});if(r.ok){showToast('Trigger added','success');document.getElementById('notif-trigger-dialog').style.display='none';loadTriggers()}else{const d=await r.json();showToast(d.message||'Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}
 async function deleteNotifTrigger(id){if(!(await window.gmConfirm({title:'Please confirm',message:'Delete this trigger?',danger:true,confirmLabel:'OK'})))return;try{const r=await fetch('/api/friday/engagement/notifications',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});if(r.ok){showToast('Deleted','success');loadTriggers()}else showToast('Delete failed','error')}catch(e){showToast('Error','error')}}
@@ -169,7 +169,7 @@ loadTriggers();`;
 function renderTypeList(user, items, entityKey, title) {
   const rows = items.map(t => `<tr class="hover">
     <td class="font-medium text-sm">${esc(t.name || '-')}</td>
-    <td class="text-xs text-base-content/50">${t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>
+    <td class="text-xs text-base-content/70">${t.created_at ? new Date(t.created_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : '-'}</td>
     <td><div class="flex gap-2">
       <button type="button" class="btn btn-ghost btn-xs type-edit-btn" data-id="${esc(t.id)}" data-name="${esc(t.name||'')}">Edit</button>
       <button type="button" class="btn btn-error btn-xs type-del-btn" data-id="${esc(t.id)}">Delete</button>

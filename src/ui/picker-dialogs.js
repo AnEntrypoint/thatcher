@@ -8,10 +8,10 @@ const PD_ESC = `function pdEsc(s){return String(s==null?'':s).replace(/&/g,'&amp
 
 export function colorPickerDialog(id = 'cpd', selected = '#B0B0B0', onSelect = '') {
   const swatches = DIALOG_COLORS.map(c =>
-    `<div class="cpd-swatch${c === selected ? ' cpd-selected' : ''}" style="background:${c}" data-color="${c}" role="option" tabindex="0" aria-label="Color ${c}" aria-selected="${c === selected}" data-action="cpdSelect" data-args='["${id}","${c}",${onSelect ? "true" : "false"}]'></div>`
+    `<div class="cpd-swatch${c === selected ? ' cpd-selected' : ''}" style="background:${c}" data-color="${c}" role="option" tabindex="0" aria-label="Color ${c}" aria-selected="${c === selected}"${c === selected ? ' aria-current="true"' : ''} data-action="cpdSelect" data-args='["${id}","${c}",${onSelect ? "true" : "false"}]'></div>`
   ).join('')
   return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close="${id}-dialog" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
-    <div class="dialog-panel" style="max-width:360px">
+    <div class="dialog-panel" style="max-width:min(360px,90vw)">
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Choose Color</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body"><div class="color-picker-grid" role="listbox" aria-label="Color options">${swatches}</div>
         <div style="margin-top:0.75rem;display:flex;align-items:center;gap:0.75rem"><label class="text-sm text-gray-500" for="${id}-custom">Custom:</label><input type="color" id="${id}-custom" value="${selected}" onchange="cpdSelect('${id}',this.value,true)" aria-label="Custom color picker" class="focus-visible-ring" style="width:44px;height:44px;min-width:44px;min-height:44px;border:none;cursor:pointer"/><span id="${id}-val" class="text-sm font-medium" aria-live="polite">${selected}</span></div>
@@ -19,7 +19,7 @@ export function colorPickerDialog(id = 'cpd', selected = '#B0B0B0', onSelect = '
       <div class="dialog-footer"><button class="btn btn-ghost btn-sm" data-dialog-close="${id}-dialog">Cancel</button><button class="btn btn-primary btn-sm" data-action="cpdConfirm" data-args='["${id}"]'>Select</button></div>
     </div></div>
   <script>window._cpd=window._cpd||{};window._cpd['${id}']='${selected}';
-  window.cpdSelect=function(id,c){window._cpd[id]=c;document.getElementById(id+'-val').textContent=c;document.getElementById(id+'-custom').value=c;document.querySelectorAll('#'+id+'-dialog .cpd-swatch').forEach(function(el){el.classList.toggle('cpd-selected',el.dataset.color===c)})};
+  window.cpdSelect=function(id,c){window._cpd[id]=c;document.getElementById(id+'-val').textContent=c;document.getElementById(id+'-custom').value=c;document.querySelectorAll('#'+id+'-dialog .cpd-swatch').forEach(function(el){var sel=el.dataset.color===c;el.classList.toggle('cpd-selected',sel);el.setAttribute('aria-selected',sel?'true':'false');if(sel)el.setAttribute('aria-current','true');else el.removeAttribute('aria-current')})};
   window.cpdConfirm=function(id){var c=window._cpd[id];document.getElementById(id+'-dialog').style.display='none';if(window._cpdCallback)window._cpdCallback(c)};
   window.showColorPicker=function(id,current,cb){window._cpdCallback=cb;if(current)cpdSelect(id,current);document.getElementById(id+'-dialog').style.display='flex'};
   window.cpdKeydown=function(id,e){var sw=Array.prototype.slice.call(document.querySelectorAll('#'+id+'-dialog .cpd-swatch'));if(!sw.length)return;var cur=sw.indexOf(document.activeElement);if(cur<0)cur=0;var next=cur;var k=e.key;if(k==='ArrowRight'||k==='ArrowDown')next=Math.min(sw.length-1,cur+1);else if(k==='ArrowLeft'||k==='ArrowUp')next=Math.max(0,cur-1);else if(k==='Home')next=0;else if(k==='End')next=sw.length-1;else return;e.preventDefault();sw[next].focus()};
@@ -34,7 +34,7 @@ export function dateChoiceDialog(id = 'dcd') {
   ]
   const presetBtns = presets.map(p => `<button class="date-preset-btn" data-action="dcdPreset" data-args='["${id}",${typeof p.days === 'number' ? p.days : '"' + p.days + '"'}]'>${p.label}</button>`).join('')
   return `<div id="${id}-dialog" class="dialog-overlay" style="display:none" data-dialog-close="${id}-dialog" role="dialog" aria-modal="true" aria-labelledby="${id}-dialog-title" aria-hidden="true">
-    <div class="dialog-panel" style="max-width:380px">
+    <div class="dialog-panel" style="max-width:min(380px,90vw)">
       <div class="dialog-header"><span class="dialog-title" id="${id}-dialog-title">Choose Date</span><button class="dialog-close" data-dialog-close="${id}-dialog" aria-label="Close dialog">&times;</button></div>
       <div class="dialog-body">
         <div class="modal-form-group"><label for="${id}-input">Date</label><input type="date"  id="${id}-input" class="input input-bordered w-full"/></div>

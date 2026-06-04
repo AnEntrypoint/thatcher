@@ -1,5 +1,5 @@
 import { getConfigEngineSync } from '@/lib/config-generator-engine';
-import { aria, role, focusTrap, keyboard } from '@/lib/accessibility';
+import { aria, role } from '@/lib/accessibility';
 
 export function renderDialog(dialogId, context = {}) {
   const config = getConfigEngineSync().getConfig();
@@ -29,7 +29,7 @@ function generateDialogHtml(dialogId, title, fields, actions, width, context, on
   }).join('');
 
   return `
-    <div id="${dialogId}" class="dialog-overlay" style="display:none" ${role.dialog} aria-modal="true" ${aria.labelledBy(titleId)} ${aria.hidden(true)} data-overlay-close="true" data-action="closeDialog" data-args='["${dialogId}"]' onkeydown="${keyboard.escape(`closeDialog('${dialogId}')`)}">
+    <div id="${dialogId}" class="dialog-overlay" style="display:none" ${role.dialog} aria-modal="true" ${aria.labelledBy(titleId)} ${aria.hidden(true)} data-dialog-close="${dialogId}">
       <div id="${dialogId}-panel" class="dialog-panel" style="max-width:${width}">
         <div class="dialog-header">
           <h2 id="${titleId}" class="dialog-title">${escapeHtml(title)}</h2>
@@ -48,11 +48,8 @@ function generateDialogHtml(dialogId, title, fields, actions, width, context, on
         const dlg = document.getElementById(id);
         dlg.style.display = 'none';
         dlg.setAttribute('aria-hidden', 'true');
-        ${focusTrap.deactivate('${dialogId}-panel')}
-        if (dlg._previousFocus) {
-          dlg._previousFocus.focus();
-          delete dlg._previousFocus;
-        }
+        // Escape + focus-restore + tab-trap are owned centrally by dialogFocus
+        // (event-delegation.js, session-12) — no local focusTrap/_previousFocus here.
       };
       window.submitDialog = window.submitDialog || function(id) {
         const form = document.getElementById(id + '-form');
@@ -60,10 +57,10 @@ function generateDialogHtml(dialogId, title, fields, actions, width, context, on
       };
       window.openDialog = window.openDialog || function(id) {
         const dlg = document.getElementById(id);
-        dlg._previousFocus = document.activeElement;
         dlg.style.display = 'flex';
         dlg.setAttribute('aria-hidden', 'false');
-        ${focusTrap.activate('${dialogId}-panel')}
+        // focus-move into the panel + Tab-trap are owned by dialogFocus
+        // (event-delegation.js MutationObserver watches the display flip).
       };
     </script>
   `;

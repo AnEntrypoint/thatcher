@@ -104,7 +104,7 @@ export async function getSystemHealth() {
 export function renderBuildLogsContent(logs) {
   const rows = (logs || []).map(l => {
     const sts = l.status === 'success' ? '<span class="pill pill-success">Success</span>' : l.status === 'failed' ? '<span class="pill pill-danger">Failed</span>' : `<span class="pill pill-warning">${l.status || 'pending'}</span>`;
-    const ts = l.created_at ? new Date(l.created_at * 1000).toLocaleString() : '-';
+    const ts = l.created_at ? new Date(l.created_at * 1000).toLocaleString('en-ZA') : '-';
     return `<tr><td style="padding:8px 12px">${l.version||'-'}</td><td style="padding:8px 12px">${sts}</td><td style="padding:8px 12px;font-size:0.78rem;color:var(--color-text-muted)">${ts}</td><td style="padding:8px 12px">${l.duration?l.duration+'s':'-'}</td><td style="padding:8px 12px;font-size:0.78rem">${l.message||'-'}</td></tr>`;
   }).join('');
   return `<div style="margin-bottom:24px"><h1 class="page-title">Build Logs</h1></div><div class="table-wrap" style="overflow-x:auto"><table class="data-table"><thead><tr><th>Version</th><th>Status</th><th>Time</th><th>Duration</th><th>Message</th></tr></thead><tbody>${rows||'<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--color-text-muted)">No build logs</td></tr>'}</tbody></table></div>`;

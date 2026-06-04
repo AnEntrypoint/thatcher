@@ -17,7 +17,7 @@ export function renderMlConsole(user, candidates, reviewMap) {
     const rows = candidates.map((h) => {
         const reviewName = reviewMap[h.review_id] || '-';
         const comment = h.comment || h.text || '';
-        const truncated = comment.length > 240 ? comment.slice(0, 240) + '…' : comment;
+        const truncated = comment.length > 240 ? comment.slice(0, 240) + '...' : comment;
         return `<tr>
             <td style="padding:8px 10px;border-bottom:1px solid var(--color-border);font-size:13px">
                 <div style="font-weight:500">${esc(reviewName)}</div>
@@ -69,7 +69,7 @@ export function renderMlConsole(user, candidates, reviewMap) {
         <h3 style="font-size:16px;font-weight:600;margin:0 0 12px 0">AI Suggestion</h3>
         <div id="ml-ask-query" style="font-size:13px;color:var(--color-text-muted);margin-bottom:12px;padding:8px 10px;background:var(--color-surface-muted,#f8fafc);border-radius:6px"></div>
         <div id="ml-ask-result" style="font-size:14px;white-space:pre-wrap;min-height:60px;padding:10px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:6px">
-          <div style="color:var(--color-text-muted);font-style:italic">Generating suggestion…</div>
+          <div style="color:var(--color-text-muted);font-style:italic">Generating suggestion...</div>
         </div>
         <div id="ml-ask-meta" style="font-size:11px;color:var(--color-text-muted);margin-top:8px"></div>
         <div class="modal-action" style="margin-top:16px">
@@ -89,7 +89,7 @@ export function renderMlConsole(user, candidates, reviewMap) {
         var loadingEl = document.createElement('div');
         loadingEl.style.color = '#64748b';
         loadingEl.style.fontStyle = 'italic';
-        loadingEl.textContent = 'Generating suggestion…';
+        loadingEl.textContent = 'Generating suggestion...';
         resultEl.appendChild(loadingEl);
         document.getElementById('ml-ask-meta').textContent = '';
         dlg.style.display = 'flex';

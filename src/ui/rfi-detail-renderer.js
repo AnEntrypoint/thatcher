@@ -16,10 +16,10 @@ function questionRow(q, i, sections = [], clientId = '', showRespond = false, sh
   const viewBtn = showView && hasResp ? `<button data-action="viewResponses" data-args='["${esc(q.id)}","${esc(q.question_text||q.question||q.title||'')}"]' class="btn btn-ghost btn-xs">Responses</button>` : '';
   const editDelBtns = !showRespond ? `<button data-action="openEditQuestion" data-args='["${esc(q.id)}"]' class="btn btn-ghost btn-xs">Edit</button>${assignBtn}<button data-action="deleteQuestion" data-args='["${esc(q.id)}"]' class="btn btn-error btn-xs">Del</button>` : '';
   return `<tr class="hover">
-    <td class="text-center text-sm text-base-content/40 w-8">${i+1}</td>
+    <td class="text-center text-sm text-base-content/70 w-8">${i+1}</td>
     <td class="text-sm max-w-sm">${esc(q.question_text||q.question||q.title||'Question')}</td>
     <td>${sLabel}</td>
-    <td class="text-sm text-base-content/50">${q.deadline?new Date(typeof q.deadline==='number'?q.deadline*1000:q.deadline).toLocaleDateString():'-'}</td>
+    <td class="text-sm text-base-content/50">${q.deadline?new Date(typeof q.deadline==='number'?q.deadline*1000:q.deadline).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td>
     <td>${respBadge}${assignedLabel}</td>
     <td><div class="flex gap-2">${respondBtn}${viewBtn}${editDelBtns}</div></td>
   </tr>`;
@@ -27,15 +27,15 @@ function questionRow(q, i, sections = [], clientId = '', showRespond = false, sh
 
 function editQuestionDialog(rfiId, sections) {
   const sectionOpts = sections.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
-  return `<div id="q-dialog" data-rfi-id="${esc(rfiId)}" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="q-dialog"></div><div class="modal-content rounded-box max-w-lg p-6"><h3 class="text-lg font-semibold mb-4" id="q-dialog-title">Edit Question</h3><div class="form-group mb-3"><label class="label"><span class="label-text font-medium">Question Text</span></label><textarea id="q-text" rows="4" class="textarea textarea-solid max-w-full"></textarea></div><div class="form-group mb-3"><label class="label"><span class="label-text font-medium">Section</span></label><select id="q-section" class="select select-solid max-w-full"><option value="">No section</option>${sectionOpts}</select></div><div class="grid grid-cols-2 gap-3 mb-4"><div class="form-group"><label class="label"><span class="label-text font-medium">Deadline</span></label><input type="date" id="q-deadline" class="input input-solid max-w-full"/></div><div class="form-group"><label class="label"><span class="label-text font-medium">Category</span></label><input type="text" id="q-category" placeholder="Category" class="input input-solid max-w-full"/></div></div><input type="hidden" id="q-edit-id"/><div class="modal-action"><button data-action="saveQuestion" data-args='["${esc(rfiId)}"]' class="btn btn-primary">Save</button><button data-dialog-close="q-dialog" class="btn btn-ghost">Cancel</button></div></div></div>`;
+  return `<div id="q-dialog" data-rfi-id="${esc(rfiId)}" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="q-dialog"></div><div class="modal-content rounded-box max-w-lg p-6"><h2 class="text-lg font-semibold mb-4" id="q-dialog-title">Edit Question</h2><div class="form-group mb-3"><label class="label"><span class="label-text font-medium">Question Text</span></label><textarea id="q-text" rows="4" class="textarea textarea-solid max-w-full"></textarea></div><div class="form-group mb-3"><label class="label"><span class="label-text font-medium">Section</span></label><select id="q-section" class="select select-solid max-w-full"><option value="">No section</option>${sectionOpts}</select></div><div class="grid grid-cols-2 gap-3 mb-4"><div class="form-group"><label class="label"><span class="label-text font-medium">Deadline</span></label><input type="date" id="q-deadline" class="input input-solid max-w-full"/></div><div class="form-group"><label class="label"><span class="label-text font-medium">Category</span></label><input type="text" id="q-category" placeholder="Category" class="input input-solid max-w-full"/></div></div><input type="hidden" id="q-edit-id"/><div class="modal-action"><button data-action="saveQuestion" data-args='["${esc(rfiId)}"]' class="btn btn-primary">Save</button><button data-dialog-close="q-dialog" class="btn btn-ghost">Cancel</button></div></div></div>`;
 }
 
 function assignQuestionDialog(rfiId) {
-  return `<div id="assign-q-dialog" data-rfi-id="${esc(rfiId)}" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="assign-q-dialog"></div><div class="modal-content rounded-box max-w-sm p-6"><h3 class="text-lg font-semibold mb-4">Assign to Client User</h3><div class="form-group mb-4"><label class="label"><span class="label-text font-medium">Client User</span></label><select id="assign-q-user" class="select select-solid max-w-full"><option value="">Loading...</option></select></div><input type="hidden" id="assign-q-id"/><div class="modal-action"><button data-action="saveAssignQuestion" class="btn btn-primary">Assign</button><button data-dialog-close="assign-q-dialog" class="btn btn-ghost">Cancel</button></div></div></div>`;
+  return `<div id="assign-q-dialog" data-rfi-id="${esc(rfiId)}" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="assign-q-dialog"></div><div class="modal-content rounded-box max-w-sm p-6"><h2 class="text-lg font-semibold mb-4">Assign to Client User</h2><div class="form-group mb-4"><label class="label"><span class="label-text font-medium">Client User</span></label><select id="assign-q-user" class="select select-solid max-w-full"><option value="">Loading...</option></select></div><input type="hidden" id="assign-q-id"/><div class="modal-action"><button data-action="saveAssignQuestion" class="btn btn-primary">Assign</button><button data-dialog-close="assign-q-dialog" class="btn btn-ghost">Cancel</button></div></div></div>`;
 }
 
 function addSectionDialog(rfiId) {
-  return `<div id="sec-dialog" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="sec-dialog"></div><div class="modal-content rounded-box max-w-sm p-6"><h3 class="text-lg font-semibold mb-4">Add Section</h3><div class="form-group mb-4"><label class="label"><span class="label-text font-medium">Section Name</span></label><input type="text" id="sec-name" class="input input-solid max-w-full"/></div><div class="modal-action"><button data-action="saveSection" data-args='["${esc(rfiId)}"]' class="btn btn-primary">Add</button><button data-dialog-close="sec-dialog" class="btn btn-ghost">Cancel</button></div></div></div>`;
+  return `<div id="sec-dialog" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="sec-dialog"></div><div class="modal-content rounded-box max-w-sm p-6"><h2 class="text-lg font-semibold mb-4">Add Section</h2><div class="form-group mb-4"><label class="label"><span class="label-text font-medium">Section Name</span></label><input type="text" id="sec-name" class="input input-solid max-w-full"/></div><div class="modal-action"><button data-action="saveSection" data-args='["${esc(rfiId)}"]' class="btn btn-primary">Add</button><button data-dialog-close="sec-dialog" class="btn btn-ghost">Cancel</button></div></div></div>`;
 }
 
 export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], engagement = null) {
@@ -44,7 +44,11 @@ export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], e
   const canViewResponses = isPartner(user) || isManager(user);
   const clientId = engagement?.client_id || '';
   const qRows = questions.map((q, i) => questionRow(q, i, sections, canEditRfi ? clientId : '', isClient, canViewResponses)).join('') ||
-    `<tr><td colspan="6" class="text-center py-8 text-base-content/40 text-sm">No questions yet. Add one using the button above.</td></tr>`;
+    `<tr><td colspan="6"><div class="empty-state">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+      <div class="empty-state-title">No questions yet</div>
+      <div class="empty-state-desc">Add one using the +&nbsp;Question button above.</div>
+    </div></td></tr>`;
 
   const sectionTabs = sections.length ? `<div class="tabs tabs-boxed bg-base-200 flex-wrap gap-1">
     <button data-action="filterBySection" data-args='[""]' id="stab-all" class="tab-btn active">All</button>
@@ -64,9 +68,9 @@ export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], e
     ` : ''}</div>`;
 
   const infoItems = [
-    ['Engagement', engagement?.name ? esc(engagement.name) : '<span class="text-base-content/30">—</span>'],
+    ['Engagement', engagement?.name ? esc(engagement.name) : '<span class="text-base-content/70">—</span>'],
     ['Status', statusBadge(rfi.status)],
-    ['Deadline', rfi.deadline?new Date(typeof rfi.deadline==='number'?rfi.deadline*1000:rfi.deadline).toLocaleDateString():'-'],
+    ['Deadline', rfi.deadline?new Date(typeof rfi.deadline==='number'?rfi.deadline*1000:rfi.deadline).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'-'],
     ['Questions', questions.length],
     ['Sections', sections.length],
     ['Mandatory', rfi.mandatory!==false?'Yes':'No'],
@@ -108,8 +112,8 @@ export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], e
     ${editQuestionDialog(rfi.id, sections)}
     ${addSectionDialog(rfi.id)}
     ${clientId ? assignQuestionDialog(rfi.id) : ''}
-    ${canViewResponses ? `<div id="view-resp-dialog" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="view-resp-dialog"></div><div class="modal-content rounded-box max-w-lg p-6"><h3 class="text-lg font-semibold mb-1">Responses</h3><p id="view-resp-qtext" class="text-sm text-base-content/60 mb-3"></p><div id="view-resp-list" style="max-height:240px;overflow-y:auto"></div><div class="modal-action"><button data-dialog-close="view-resp-dialog" class="btn btn-ghost">Close</button></div></div></div>` : ''}
-    ${isClient ? `<div id="respond-q-dialog" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="respond-q-dialog"></div><div class="modal-content rounded-box max-w-lg p-6"><h3 class="text-lg font-semibold mb-1">Respond to Question</h3><p id="respond-q-text" class="text-sm text-base-content/60 mb-4"></p><div class="form-group mb-3"><label class="label"><span class="label-text font-medium">Your Response</span></label><textarea id="respond-q-answer" rows="5" class="textarea textarea-solid max-w-full" placeholder="Enter your response..."></textarea></div><div class="form-group mb-4"><label class="label"><span class="label-text font-medium">Attach File (optional)</span></label><input type="file" id="respond-q-file" class="input input-solid max-w-full"/></div><input type="hidden" id="respond-q-id"/><div class="modal-action"><button data-action="submitResponse" class="btn btn-primary">Submit</button><button data-dialog-close="respond-q-dialog" class="btn btn-ghost">Cancel</button></div></div></div>` : ''}
+    ${canViewResponses ? `<div id="view-resp-dialog" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="view-resp-dialog"></div><div class="modal-content rounded-box max-w-lg p-6"><h2 class="text-lg font-semibold mb-1">Responses</h2><p id="view-resp-qtext" class="text-sm text-base-content/75 mb-3"></p><div id="view-resp-list" style="max-height:240px;overflow-y:auto"></div><div class="modal-action"><button data-dialog-close="view-resp-dialog" class="btn btn-ghost">Close</button></div></div></div>` : ''}
+    ${isClient ? `<div id="respond-q-dialog" class="modal" style="display:none" ><div class="modal-overlay" data-dialog-close="respond-q-dialog"></div><div class="modal-content rounded-box max-w-lg p-6"><h2 class="text-lg font-semibold mb-1">Respond to Question</h2><p id="respond-q-text" class="text-sm text-base-content/75 mb-4"></p><div class="form-group mb-3"><label class="label"><span class="label-text font-medium">Your Response</span></label><textarea id="respond-q-answer" rows="5" class="textarea textarea-solid max-w-full" placeholder="Enter your response..."></textarea></div><div class="form-group mb-4"><label class="label"><span class="label-text font-medium">Attach File (optional)</span></label><input type="file" id="respond-q-file" class="input input-solid max-w-full"/></div><input type="hidden" id="respond-q-id"/><div class="modal-action"><button data-action="submitResponse" class="btn btn-primary">Submit</button><button data-dialog-close="respond-q-dialog" class="btn btn-ghost">Cancel</button></div></div></div>` : ''}
   `;
 
   const script = `${TOAST}

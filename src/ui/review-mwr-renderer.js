@@ -11,7 +11,7 @@ const starIcon = () => icon('star', 16);
 function fmtDate(ts) {
   if (!ts) return '-';
   const n = Number(ts);
-  if (!isNaN(n) && n > 1e9 && n < 3e9) return new Date(n * 1000).toLocaleDateString();
+  if (!isNaN(n) && n > 1e9 && n < 3e9) return new Date(n * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
   return String(ts);
 }
 

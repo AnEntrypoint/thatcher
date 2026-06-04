@@ -80,7 +80,7 @@ export function renderSettingsMwrPermissions(user, permissions = []) {
     <td class="text-sm">${esc(p.entity_id||'-')}</td>
     <td class="text-sm">${esc(p.user_id||'-')}</td>
     <td class="text-sm">${esc(p.permission_type||'-')}</td>
-    <td class="text-sm">${p.granted_at ? new Date(p.granted_at * 1000).toLocaleDateString() : '-'}</td>
+    <td class="text-sm">${p.granted_at ? new Date(p.granted_at * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : '-'}</td>
     <td><button type="button" class="btn btn-error btn-xs btn-outline" data-action="revokePermission" data-args='${esc(JSON.stringify([p.id]))}'>Revoke</button></td>
   </tr>`).join('');
   const content = `${settingsBack()}<div class="flex justify-between items-center mb-6">

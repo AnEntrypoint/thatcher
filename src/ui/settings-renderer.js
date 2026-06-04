@@ -50,7 +50,7 @@ const SETTINGS_CARDS = [
 export function renderSettingsHome(user, config = {}, counts = {}) {
   const cards = SETTINGS_CARDS.map(c => {
     const cnt = c.countKey && counts[c.countKey] !== undefined ? counts[c.countKey] : null;
-    const badge = cnt !== null ? `<span class="badge badge-flat-primary text-xs">${cnt.toLocaleString()} items</span>` : '';
+    const badge = cnt !== null ? `<span class="badge badge-flat-primary text-xs">${cnt.toLocaleString('en-ZA')} items</span>` : '';
     return `<a href="${c.href}" class="card-clean" style="text-decoration:none;border:1px solid var(--color-border);transition:box-shadow 0.15s">
       <div class="card-clean-body" style="padding:${SPACING.md}">
         <div style="display:flex;align-items:flex-start;gap:${SPACING.md}">

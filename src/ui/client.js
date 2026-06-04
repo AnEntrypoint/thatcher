@@ -68,7 +68,7 @@ export async function submitForm(formId, url, method = 'POST') {
 }
 
 export async function confirmDelete(url, redirectUrl) {
-  if (!confirm('Are you sure you want to delete this?')) return false;
+  if (!(await window.gmConfirm({ title: 'Please confirm', message: 'Are you sure you want to delete this?', confirmLabel: 'Delete', danger: true }))) return false;
   try {
     const res = await fetch(url, { method: 'DELETE' });
     if (res.ok) {

@@ -3,7 +3,7 @@ import { esc, TOAST_SCRIPT, emptyRow } from '@/ui/render-helpers.js';
 
 function fmtDate(ts) {
   if (!ts) return '-';
-  return new Date(typeof ts === 'number' && ts < 2e10 ? ts * 1000 : ts).toLocaleString();
+  return new Date(typeof ts === 'number' && ts < 2e10 ? ts * 1000 : ts).toLocaleString('en-ZA');
 }
 
 function notifRow(n) {
@@ -18,7 +18,7 @@ function notifRow(n) {
     <td class="text-xs"><span class="badge badge-flat-secondary">${esc(typeLabel)}</span></td>
     <td class="text-sm max-w-md">${esc(n.message || '-')}</td>
     <td>${entityLink}</td>
-    <td>${isRead ? '<span class="text-xs text-base-content/30">Read</span>' : `<button data-action="markRead" data-args='["${esc(n.id)}"]' class="btn btn-ghost btn-xs">Mark read</button>`}</td>
+    <td>${isRead ? '<span class="text-xs" style="color:var(--color-text-muted)">Read</span>' : `<button data-action="markRead" data-args='["${esc(n.id)}"]' class="btn btn-ghost btn-xs">Mark read</button>`}</td>
   </tr>`;
 }
 
