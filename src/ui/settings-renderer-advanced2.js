@@ -39,7 +39,7 @@ export function renderSettingsFileReview(user, config = {}, frSettings = {}) {
     { id: 'mobile_resize', label: 'Mobile Resize', desc: 'Enable mobile-friendly resizable highlights', checked: fr.mobile_resize !== false },
     { id: 'coordinate_snap', label: 'Coordinate Snap', desc: 'Snap highlight coordinates to text boundaries', checked: !!fr.coordinate_snap },
   ];
-  const flagChips = (flags, type) => flags.map(f => `<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">${esc(f)}<button type="button" onclick="removeFlag('${type}','${esc(f.replace(/'/g,"\\'"))}')" aria-label="Remove flag" style="background:none;border:none;cursor:pointer;line-height:1;color:inherit;display:inline-flex">${icon('close',16)}</button></span>`).join('');
+  const flagChips = (flags, type) => flags.map(f => `<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">${esc(f)}<button type="button" data-action="removeFlag" data-args='${esc(JSON.stringify([type, f]))}' aria-label="Remove flag" style="background:none;border:none;cursor:pointer;line-height:1;color:inherit;display:inline-flex">${icon('close',16)}</button></span>`).join('');
   const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">File Review Settings</h1>
   <div id="fr-review-flags" data-flags='${JSON.stringify(reviewFlags)}'></div>
   <div id="fr-tender-flags" data-flags='${JSON.stringify(tenderFlags)}'></div>
@@ -55,11 +55,11 @@ export function renderSettingsFileReview(user, config = {}, frSettings = {}) {
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
     <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-3">Review Flags</h2>
       <div id="review-flags-list" class="flex flex-wrap gap-2 mb-3">${flagChips(reviewFlags, 'review')}</div>
-      <div class="flex gap-2"><input type="text" id="new-review-flag" class="input input-solid" placeholder="New flag label..." style="flex:1"/><button type="button" onclick="addFlag('review')" class="btn btn-primary btn-sm">Add</button></div>
+      <div class="flex gap-2"><input type="text" id="new-review-flag" class="input input-solid" placeholder="New flag label..." style="flex:1"/><button type="button" data-action="addFlag" data-args='["review"]' class="btn btn-primary btn-sm">Add</button></div>
     </div></div>
     <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-3">Tender Flags</h2>
       <div id="tender-flags-list" class="flex flex-wrap gap-2 mb-3">${flagChips(tenderFlags, 'tender')}</div>
-      <div class="flex gap-2"><input type="text" id="new-tender-flag" class="input input-solid" placeholder="New flag label..." style="flex:1"/><button type="button" onclick="addFlag('tender')" class="btn btn-primary btn-sm">Add</button></div>
+      <div class="flex gap-2"><input type="text" id="new-tender-flag" class="input input-solid" placeholder="New flag label..." style="flex:1"/><button type="button" data-action="addFlag" data-args='["tender"]' class="btn btn-primary btn-sm">Add</button></div>
     </div></div>
   </div>
   <button type="submit" class="btn btn-primary">Save File Review Settings</button></form>`;
@@ -67,7 +67,7 @@ export function renderSettingsFileReview(user, config = {}, frSettings = {}) {
 var _rvFlags=${JSON.stringify(reviewFlags)};
 var _tdFlags=${JSON.stringify(tenderFlags)};
 function _escFlag(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-function renderFlags(type){const list=type==='review'?_rvFlags:_tdFlags;const el=document.getElementById(type+'-flags-list');if(!el)return;el.innerHTML=list.map(f=>'<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">'+_escFlag(f)+'<button type="button" onclick="removeFlag(\\''+_escFlag(type)+'\\',\\''+_escFlag(f).replace(/'/g,"\\'")+'\\')" style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;color:inherit">&times;</button></span>').join('')}
+function renderFlags(type){const list=type==='review'?_rvFlags:_tdFlags;const el=document.getElementById(type+'-flags-list');if(!el)return;el.innerHTML=list.map(f=>'<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">'+_escFlag(f)+'<button type="button" data-action="removeFlag" data-args=\\''+_escFlag(JSON.stringify([type,f]))+'\\' aria-label="Remove flag" style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;color:inherit">&times;</button></span>').join('')}
 window.addFlag=function(type){const inp=document.getElementById('new-'+type+'-flag');const val=(inp?.value||'').trim();if(!val)return;if(type==='review'){_rvFlags=[..._rvFlags,val]}else{_tdFlags=[..._tdFlags,val]};inp.value='';renderFlags(type)};
 window.removeFlag=function(type,flag){if(type==='review'){_rvFlags=_rvFlags.filter(f=>f!==flag)}else{_tdFlags=_tdFlags.filter(f=>f!==flag)};renderFlags(type)};
 document.getElementById('file-review-settings-form').addEventListener('submit',async(e)=>{e.preventDefault();const fd=new FormData(e.target);const data={};for(const[k,v]of fd.entries())data[k]=v;document.querySelectorAll('#file-review-settings-form input[type=checkbox]').forEach(cb=>{data[cb.name]=cb.checked});document.querySelectorAll('#file-review-settings-form input[type=number]').forEach(n=>{if(data[n.name])data[n.name]=Number(data[n.name])});data.review_flags=_rvFlags;data.tender_flags=_tdFlags;try{const res=await fetch('/api/admin/settings/file-review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(res.ok){showToast('Settings saved','success')}else{showToast('Save failed','error')}}catch(err){showToast('Error: '+err.message,'error')}})`;
@@ -81,7 +81,7 @@ export function renderSettingsMwrPermissions(user, permissions = []) {
     <td class="text-sm">${esc(p.user_id||'-')}</td>
     <td class="text-sm">${esc(p.permission_type||'-')}</td>
     <td class="text-sm">${p.granted_at ? new Date(p.granted_at * 1000).toLocaleDateString() : '-'}</td>
-    <td><button class="btn btn-error btn-xs btn-outline" onclick="revokePermission('${esc(p.id)}')">Revoke</button></td>
+    <td><button type="button" class="btn btn-error btn-xs btn-outline" data-action="revokePermission" data-args='${esc(JSON.stringify([p.id]))}'>Revoke</button></td>
   </tr>`).join('');
   const content = `${settingsBack()}<div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold">MWR Permissions</h1>
@@ -104,7 +104,7 @@ export function renderSettingsMwrPermissions(user, permissions = []) {
       </div>
     </div>
   </div>`;
-  const script = `${TOAST_SCRIPT}window.grantPermission=async function(){var body={entity_type:document.getElementById('gp-entity-type').value.trim(),entity_id:document.getElementById('gp-entity-id').value.trim(),user_id:document.getElementById('gp-user-id').value.trim(),permission_type:document.getElementById('gp-perm-type').value};var res=document.getElementById('gp-result');if(!body.entity_type||!body.entity_id||!body.user_id){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">All fields required.</div>';return}try{var r=await fetch('/api/mwr/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();if(r.ok&&d.success){showToast('Permission granted','success');(window.closeDialog?window.closeDialog('grant-perm-dialog'):document.getElementById('grant-perm-dialog').style.display='none');setTimeout(function(){location.reload()},500)}else{res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||'Failed')+'</div>'}}catch(e){showToast('Error: '+e.message,'error')}};window.revokePermission=async function(id){if(!confirm('Revoke this permission?'))return;try{var r=await fetch('/api/permission/'+id,{method:'DELETE'});if(r.ok){showToast('Revoked','success');setTimeout(function(){location.reload()},500)}else{showToast('Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}`;
+  const script = `${TOAST_SCRIPT}window.grantPermission=async function(){var body={entity_type:document.getElementById('gp-entity-type').value.trim(),entity_id:document.getElementById('gp-entity-id').value.trim(),user_id:document.getElementById('gp-user-id').value.trim(),permission_type:document.getElementById('gp-perm-type').value};var res=document.getElementById('gp-result');if(!body.entity_type||!body.entity_id||!body.user_id){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">All fields required.</div>';return}try{var r=await fetch('/api/mwr/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();if(r.ok&&d.success){showToast('Permission granted','success');(window.closeDialog?window.closeDialog('grant-perm-dialog'):document.getElementById('grant-perm-dialog').style.display='none');setTimeout(function(){location.reload()},500)}else{res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||'Failed')+'</div>'}}catch(e){showToast('Error: '+e.message,'error')}};window.revokePermission=async function(id){if(!(await window.gmConfirm({title:'Revoke permission',message:'Revoke this permission?',confirmLabel:'Revoke',danger:true})))return;try{var r=await fetch('/api/permission/'+id,{method:'DELETE'});if(r.ok){showToast('Revoked','success');setTimeout(function(){location.reload()},500)}else{showToast('Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}`;
   return settingsPage(user, 'MWR Permissions', bc('MWR Permissions'), content, [script]);
 }
 
