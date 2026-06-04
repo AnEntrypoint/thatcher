@@ -19,7 +19,7 @@ export function modalDialog(id, title, body, footer, opts = {}) {
   const maxWidth = opts.maxWidth || 'md';
   const sizeMap = { sm: '28rem', md: '36rem', lg: '48rem', xl: '64rem' };
   const width = sizeMap[maxWidth] || maxWidth;
-  return `<div id="${esc(id)}" class="modal" style="display:none" data-dialog-close-overlay="true">
+  return `<div id="${esc(id)}" class="modal" style="display:none">
   <div class="modal-overlay" data-dialog-close="${esc(id)}"></div>
   <div class="modal-content rounded-box" style="max-width:${width};padding:1.5rem">
     <h3 class="text-lg font-semibold mb-4">${title}</h3>
