@@ -27,7 +27,7 @@ export const GET = async (request) => {
     }
 
     if (type === 'all' || type === 'database') {
-      data.database = getDatabaseStats()
+      try { data.database = getDatabaseStats() } catch { data.database = null }
     }
 
     if (type === 'all' || type === 'resources') {
