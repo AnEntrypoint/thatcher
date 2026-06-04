@@ -1,5 +1,6 @@
 import { canCreate } from '@/ui/permissions-ui.js';
 import { page } from '@/ui/layout.js';
+import { esc } from '@/ui/render-helpers.js';
 import { reviewCreateDialog, reviewTemplateChoiceDialog, reviewContextMenu, reviewFlagsDialog, reviewTagsDialog, reviewValueDialog, reviewDeadlineDialog, reviewNotificationDialog } from '@/ui/review-dialogs.js';
 import { SPACING, renderButton, renderEmptyState, renderStatsRow, renderPageHeader } from '@/ui/spacing-system.js';
 
@@ -149,7 +150,7 @@ export function reviewGroupedList(reviews, groupBy) {
     `<div class="card-clean" style="margin-bottom:${SPACING.md}">
       <div class="card-clean-body" style="padding:${SPACING.md}">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${SPACING.sm};cursor:pointer" data-action="toggleReviewGroup" data-self>
-          <span style="font-weight:600;font-size:14px">${name}</span>
+          <span style="font-weight:600;font-size:14px">${esc(name)}</span>
           <span class="pill pill-neutral">${items.length}</span>
         </div>
         <div class="review-group-items">

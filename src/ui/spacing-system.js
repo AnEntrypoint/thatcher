@@ -124,11 +124,14 @@ export function renderStatsRow(stats) {
   </div>`).join('')}</div>`;
 }
 
+// title/subtitle are plain text (escaped here); actionsHtml is a caller-built
+// HTML fragment by contract. esc() inline to keep this module dependency-free.
+function phEsc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 export function renderPageHeader(title, subtitle, actionsHtml = '') {
   return `<div class="page-header">
     <div>
-      <h1 class="page-title">${title}</h1>
-      ${subtitle ? `<p class="page-subtitle">${subtitle}</p>` : ''}
+      <h1 class="page-title">${phEsc(title)}</h1>
+      ${subtitle ? `<p class="page-subtitle">${phEsc(subtitle)}</p>` : ''}
     </div>
     ${actionsHtml ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${actionsHtml}</div>` : ''}
   </div>`;

@@ -1,7 +1,10 @@
 import { statusLabel } from '@/ui/renderer.js';
+import { esc } from '@/ui/render-helpers.js';
+
+const RFI_HANDLE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>';
 
 export function rfiSectionCrudPanel(engagementId, sections = []) {
-  const rows = sections.map((s, i) => `<div class="rfi-section-row" draggable="true" data-id="${s.id}" data-idx="${i}" ondragstart="rfiDragStart(event)" ondragover="rfiDragOver(event)" ondrop="rfiDrop(event)"><span class="rfi-section-handle">&#9776;</span><span class="rfi-section-name">${s.name || 'Untitled'}</span><span class="badge-status">${s.question_count || 0} Q</span><div class="flex gap-1"><button class="btn btn-xs btn-ghost" data-action="rfiEditSection" data-args='["${s.id}","${(s.name || '').replace(/"/g, '&quot;')}"]'>Edit</button><button class="btn btn-xs btn-ghost btn-error" data-action="rfiDeleteSection" data-args='["${s.id}"]'>Del</button></div></div>`).join('');
+  const rows = sections.map((s, i) => `<div class="rfi-section-row" draggable="true" data-id="${esc(String(s.id))}" data-idx="${i}" ondragstart="rfiDragStart(event)" ondragover="rfiDragOver(event)" ondrop="rfiDrop(event)"><span class="rfi-section-handle">${RFI_HANDLE_SVG}</span><span class="rfi-section-name">${esc(s.name || 'Untitled')}</span><span class="badge-status">${s.question_count || 0} Q</span><div class="flex gap-1"><button class="btn btn-xs btn-ghost" data-action="rfiEditSection" data-args='${esc(JSON.stringify([String(s.id), String(s.name || '')]))}'>Edit</button><button class="btn btn-xs btn-ghost btn-error" data-action="rfiDeleteSection" data-args='${esc(JSON.stringify([String(s.id)]))}'>Del</button></div></div>`).join('');
   return `<div class="card-clean" style="margin-bottom:1rem"><div class="card-clean-body"><div class="flex justify-between items-center mb-3"><h3 style="font-size:0.875rem;font-weight:600">RFI Sections</h3><button class="btn btn-primary btn-sm" data-action="rfiAddSection">Add Section</button></div><div id="rfi-sections-list">${rows || '<div class="text-gray-500 text-sm text-center py-3">No sections yet</div>'}</div></div></div>
   <script>
   var rfiEngId='${engagementId}';var dragSrc=null;
@@ -113,7 +116,7 @@ export function rfiEmailRemindersDialog(rfiId) {
   </script>`;
 }
 export function rfiTemplateSelectDropdown(templates = []) {
-  const opts = templates.map(t => `<option value="${t.id}">${t.name} (${t.questionCount || 0} questions)</option>`).join('');
+  const opts = templates.map(t => `<option value="${esc(String(t.id))}">${esc(t.name)} (${t.questionCount || 0} questions)</option>`).join('');
   return `<div class="modal-form-group"><label for="rfi-template-select">RFI Template</label><select id="rfi-template-select" class="select select-bordered w-full" onchange="rfiTemplateChanged(this.value)"><option value="">-- Select Template --</option>${opts}</select><div id="rfi-template-desc" class="text-xs text-gray-500 mt-1"></div></div>
   <script>window.rfiTemplateChanged=function(id){var desc=document.getElementById('rfi-template-desc');if(!id){desc.textContent='';return}fetch('/api/rfi-template/'+id).then(function(r){return r.json()}).then(function(d){desc.textContent=(d.description||'')}).catch(function(){desc.textContent=''})};</script>`;
 }
@@ -127,9 +130,10 @@ export function rfiDataGridGrouping(questions = [], groupBy = 'section') {
   const groupRows = Object.entries(groups).map(([name, items]) => {
     const qRows = items.map(q => {
       const statusCls = q.status === 'answered' ? 'text-green-600' : q.status === 'overdue' ? 'text-red-600' : 'text-gray-600';
-      return `<tr class="hover cursor-pointer" tabindex="0" role="link" data-action="openQuestionEdit" data-args='["${q.id}"]' onkeydown="if(event.key==='Enter')openQuestionEdit('${q.id}')"><td class="text-sm">${q.question_text || q.question || '-'}</td><td><span class="${statusCls}">${statusLabel(q.status || 'pending')}</span></td><td class="text-xs text-gray-500">${q.assigned_to_name || q.assigned_to || '-'}</td><td class="text-xs">${q.deadline ? new Date(q.deadline * 1000).toLocaleDateString() : '-'}</td></tr>`;
+      const qIdArg = esc(JSON.stringify([String(q.id)]));
+      return `<tr class="hover cursor-pointer" tabindex="0" role="button" data-action="openQuestionEdit" data-args='${qIdArg}' onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"><td class="text-sm">${esc(q.question_text || q.question || '-')}</td><td><span class="${statusCls}">${statusLabel(q.status || 'pending')}</span></td><td class="text-xs text-gray-500">${esc(q.assigned_to_name || q.assigned_to || '-')}</td><td class="text-xs">${q.deadline ? new Date(q.deadline * 1000).toLocaleDateString() : '-'}</td></tr>`;
     }).join('');
-    return `<tr class="dg-group-header" tabindex="0" onkeydown="if(event.key==='Enter')this.click()" data-action="toggleNextSibling" data-self><td colspan="4"><button class="dg-expand-btn">&#9654;</button><strong>${name}</strong><span class="badge-status ml-2">${items.length}</span></td></tr><tbody>${qRows}</tbody>`;
+    return `<tr class="dg-group-header" tabindex="0" data-action="toggleNextSibling" data-self onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"><td colspan="4"><button class="dg-expand-btn" aria-label="Toggle group">[+]</button><strong>${esc(name)}</strong><span class="badge-status ml-2">${items.length}</span></td></tr><tbody>${qRows}</tbody>`;
   }).join('');
   return `<div class="dg-wrapper"><table class="dg-table w-full"><thead><tr><th class="dg-sortable" data-action="rfiSortCol" data-args='[0]'>Question</th><th class="dg-sortable" data-action="rfiSortCol" data-args='[1]'>Status</th><th>Assigned</th><th class="dg-sortable" data-action="rfiSortCol" data-args='[3]'>Deadline</th></tr></thead>${groupRows}</table></div>`;
 }
