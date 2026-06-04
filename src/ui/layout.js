@@ -1,6 +1,6 @@
 import { h } from '@/ui/webjsx.js'
 import { getNavItems, getAdminItems, isPartner, isClerk } from '@/ui/permissions-ui.js'
-import { TOAST_SCRIPT, AVATAR_COLORS } from '@/ui/render-helpers.js'
+import { TOAST_SCRIPT, AVATAR_COLORS, esc } from '@/ui/render-helpers.js'
 import { FETCH_JSON_SCRIPT } from '@/ui/fetch-json.js'
 import { aria, role, skipLink, liveRegion } from '@/lib/accessibility'
 
@@ -17,9 +17,10 @@ export function generateHtml(title, bodyContent, scripts = [], pathname = '/') {
   }`
 
   return `<!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script>(function(){try{var t=localStorage.getItem('thatcher-theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -99,7 +100,7 @@ export function nav(user, pathname = '') {
   <div class="main-nav-brand">
     <a href="/" class="main-nav-brand-link" ${aria.label('Home')}>
       ${logoSvg}
-      <span class="main-nav-brand-text">Moonlanding</span>
+      <span class="main-nav-brand-text">Thatcher</span>
     </a>
   </div>
   <div class="nav-links-desktop" style="align-items:center;gap:1.25rem;flex-shrink:0">
@@ -113,7 +114,7 @@ export function nav(user, pathname = '') {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span id="notif-count" style="display:none;position:absolute;top:2px;right:2px;background:var(--color-danger,#ef4444);color:#fff;border-radius:9999px;font-size:10px;font-weight:700;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px"></span>
     </a>
-    <div class="nav-avatar" style="background:${avatarBg}" id="user-avatar" data-action="toggleUserMenu" data-pass-event title="${user?.name || 'User'}" aria-label="User menu" role="button" tabindex="0">
+    <div class="nav-avatar" style="background:${avatarBg}" id="user-avatar" data-action="toggleUserMenu" data-pass-event title="${esc(user?.name || 'User')}" aria-label="User menu" role="button" tabindex="0">
       ${avatarInitial}
     </div>
     <button class="nav-hamburger" data-action="toggleMobileNav" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer" style="background:none;border:none;color:var(--color-text-muted,#ced4da);cursor:pointer;padding:8px;border-radius:4px;align-items:center;justify-content:center;min-width:44px;min-height:44px">
@@ -122,9 +123,9 @@ export function nav(user, pathname = '') {
   </div>
   <div id="user-dropdown" class="user-dropdown" ${role.menu}>
     <div class="user-dropdown-header">
-      <div class="user-dropdown-name">${user?.name || ''}</div>
-      <div class="user-dropdown-email">${user?.email || ''}</div>
-      <div class="user-dropdown-role" style="text-transform:capitalize">${user?.role || ''}</div>
+      <div class="user-dropdown-name">${esc(user?.name || '')}</div>
+      <div class="user-dropdown-email">${esc(user?.email || '')}</div>
+      <div class="user-dropdown-role" style="text-transform:capitalize">${esc(user?.role || '')}</div>
     </div>
     <a href="/api/auth/logout" class="user-dropdown-item">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -136,7 +137,7 @@ export function nav(user, pathname = '') {
   <div data-action="closeMobileNav" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);pointer-events:auto"></div>
   <div style="position:absolute;left:0;top:0;bottom:0;width:min(280px,70vw);max-width:80vw;background:#04141f;padding:0;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform 0.25s ease" id="mobile-nav-panel">
     <div class="mobile-nav-header-bar">
-      <span class="mobile-nav-header-title">Moonlanding</span>
+      <span class="mobile-nav-header-title">Thatcher</span>
       <button data-action="closeMobileNav" class="mobile-nav-close-btn" aria-label="Close menu">&times;</button>
     </div>
     <nav style="flex:1;padding:0.5rem 0;overflow-y:auto">
@@ -147,8 +148,8 @@ export function nav(user, pathname = '') {
       ${isPartner(user) ? `<a href="/admin/settings" class="mobile-nav-link">Settings</a>` : ''}
     </nav>
     <div class="mobile-nav-footer">
-      <div class="mobile-nav-user-name">${user?.name || ''}</div>
-      <div class="mobile-nav-user-email">${user?.email || ''}</div>
+      <div class="mobile-nav-user-name">${esc(user?.name || '')}</div>
+      <div class="mobile-nav-user-email">${esc(user?.email || '')}</div>
       <a href="/api/auth/logout" class="mobile-nav-logout">Sign out</a>
     </div>
   </div>
@@ -163,8 +164,7 @@ export function nav(user, pathname = '') {
 <script>
 window.loadingBtn=function(btn,loading,label){if(!btn)return;btn.disabled=loading;btn.style.opacity=loading?'0.7':'1';if(loading){btn._orig=btn.innerHTML;btn.innerHTML='<span class="btn-spinner"></span>'+(label||'Loading...');}else{btn.innerHTML=btn._orig||label||btn.innerHTML;btn.disabled=false}}
 window.showToast=window.showToast||function(m,t){var c=document.getElementById('toast-container');if(!c){c=document.createElement('div');c.id='toast-container';c.className='toast-container';document.body.appendChild(c)}var d=document.createElement('div');d.className='toast toast-'+(t||'info');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove()},300)},3000)}
-window.toggleTheme=function(){var cur=document.documentElement.getAttribute('data-theme')||'light';var next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('moonlanding-theme',next)}catch(_){}}
-;(function(){try{var saved=localStorage.getItem('moonlanding-theme');if(saved){document.documentElement.setAttribute('data-theme',saved)}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.setAttribute('data-theme','dark')}}catch(_){}})();
+window.toggleTheme=function(){var cur=document.documentElement.getAttribute('data-theme')||'light';var next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('thatcher-theme',next)}catch(_){}}
 function toggleUserMenu(e){e.stopPropagation();var d=document.getElementById('user-dropdown');var visible=d.style.display==='block';d.style.display=visible?'none':'block'}
 document.addEventListener('click',function(e){var d=document.getElementById('user-dropdown');if(d&&!d.contains(e.target)&&e.target.id!=='user-avatar'){d.style.display='none'}})
 function toggleMobileNav(){var btn=document.querySelector('.nav-hamburger');var open=btn.getAttribute('aria-expanded')==='true';btn.setAttribute('aria-expanded',String(!open));var drawer=document.getElementById('mobile-nav-drawer');var panel=document.getElementById('mobile-nav-panel');drawer.style.display=open?'none':'block';drawer.setAttribute('aria-hidden',String(open));panel.style.transform=open?'translateX(-100%)':'translateX(0)'}
@@ -201,18 +201,22 @@ export function fullPage(user, title, content, scripts = []) {
 
 export function statCards(cards) {
   return `<div class="stats shadow w-full mb-6 flex-wrap">` +
-    cards.map(c => `<div class="stat"><div class="stat-title">${c.label}</div><div class="stat-value text-2xl${c.textClass || ''}">${c.value}</div>${c.sub ? `<div class="stat-desc">${c.sub}</div>` : ''}</div>`).join('') +
+    cards.map(c => `<div class="stat"><div class="stat-title">${esc(c.label)}</div><div class="stat-value text-2xl${c.textClass ? ' ' + esc(c.textClass) : ''}">${esc(c.value)}</div>${c.sub ? `<div class="stat-desc">${esc(c.sub)}</div>` : ''}</div>`).join('') +
     `</div>`
 }
 
 export function confirmDialog(entityName) {
+  const noun = entityName ? `this ${esc(String(entityName).replace(/_/g, ' '))}` : 'this item'
   return `<div id="confirm-dialog" class="confirm-overlay" style="display:none" ${role.alertdialog} ${aria.labelledBy('confirm-title')} ${aria.describedBy('confirm-msg')} ${aria.hidden('true')}>
     <div class="confirm-dialog"><h2 id="confirm-title" class="confirm-title">Confirm Delete</h2>
-    <div id="confirm-msg" class="confirm-message">Are you sure you want to delete this item? This action cannot be undone.</div>
+    <div id="confirm-msg" class="confirm-message">Are you sure you want to delete ${noun}? This action cannot be undone.</div>
     <div class="confirm-actions"><button type="button" data-action="cancelDelete" class="btn btn-ghost" ${aria.label('Cancel deletion')}>Cancel</button>
     <button type="button" id="confirm-delete-btn" data-action="executeDelete" class="btn btn-error" ${aria.label('Confirm deletion')}>Delete</button></div></div></div>`
 }
 
+// headers and rows are pre-rendered HTML fragments composed by the caller; emptyMsg
+// may carry a caller-provided HTML link (e.g. "Create your first ..."), so it is
+// trusted-by-contract here. Callers MUST esc() any user/db data they fold into these.
 export function dataTable(headers, rows, emptyMsg) {
-  return `<div class="card-clean"><div class="table-wrap" ${role.region} ${aria.label('Data table')}><table class="data-table"><thead><tr>${headers}</tr></thead><tbody id="table-body">${rows || `<tr><td colspan="100" class="text-center py-8 text-base-content/50">${emptyMsg}</td></tr>`}</tbody></table></div></div>`
+  return `<div class="card-clean"><div class="table-wrap" ${role.region} ${aria.label('Data table')}><table class="data-table"><thead><tr>${headers}</tr></thead><tbody id="table-body">${rows || `<tr><td colspan="100" class="text-center py-8 text-base-content/50">${emptyMsg || 'No items found'}</td></tr>`}</tbody></table></div></div>`
 }
