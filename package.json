@@ -1,6 +1,6 @@
 {
   "name": "thatcher",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "A config-driven application framework for building data-intensive web apps without code. 100% feature-complete extraction from moonlanding.",
   "main": "src/index.js",
   "type": "module",
