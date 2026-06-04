@@ -1,5 +1,5 @@
 import { TOAST_SCRIPT, settingsPage, settingsBack, inlineTable } from '@/ui/settings-renderer.js';
-import { esc } from '@/ui/render-helpers.js';
+import { esc, icon } from '@/ui/render-helpers.js';
 
 const bc = (label) => [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }, { label }];
 const togRow = tg => `<div class="flex justify-between items-center py-3 border-b border-base-200"><div><div class="text-sm font-semibold">${tg.label}</div><div class="text-xs text-base-content/50">${tg.desc}</div></div><input type="checkbox" name="${tg.id}" ${tg.checked ? 'checked' : ''} class="checkbox checkbox-primary"/></div>`;
@@ -39,7 +39,7 @@ export function renderSettingsFileReview(user, config = {}, frSettings = {}) {
     { id: 'mobile_resize', label: 'Mobile Resize', desc: 'Enable mobile-friendly resizable highlights', checked: fr.mobile_resize !== false },
     { id: 'coordinate_snap', label: 'Coordinate Snap', desc: 'Snap highlight coordinates to text boundaries', checked: !!fr.coordinate_snap },
   ];
-  const flagChips = (flags, type) => flags.map(f => `<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">${esc(f)}<button type="button" onclick="removeFlag('${type}','${esc(f.replace(/'/g,"\\'"))}')" style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;color:inherit">&times;</button></span>`).join('');
+  const flagChips = (flags, type) => flags.map(f => `<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">${esc(f)}<button type="button" onclick="removeFlag('${type}','${esc(f.replace(/'/g,"\\'"))}')" aria-label="Remove flag" style="background:none;border:none;cursor:pointer;line-height:1;color:inherit;display:inline-flex">${icon('close',16)}</button></span>`).join('');
   const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">File Review Settings</h1>
   <div id="fr-review-flags" data-flags='${JSON.stringify(reviewFlags)}'></div>
   <div id="fr-tender-flags" data-flags='${JSON.stringify(tenderFlags)}'></div>

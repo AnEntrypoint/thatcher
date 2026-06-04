@@ -1,6 +1,7 @@
 import { statusLabel } from '@/ui/renderer.js';
 import { page } from '@/ui/layout.js';
 import { fmtDate, esc } from '@/ui/render-helpers.js';
+import { emptyState } from '@/ui/format-helpers.js';
 
 function resultCard(item, entityType) {
   const sts = item.status ? statusLabel(item.status) : '';
@@ -32,7 +33,7 @@ export function renderAdvancedSearch(user, results = {}, options = {}) {
 
   const resultCards = allResults.length > 0
     ? allResults.map(r => resultCard(r, r._type)).join('')
-    : '<div class="text-center py-12 text-gray-400">Enter a search query to find engagements, clients, RFIs, and reviews</div>';
+    : emptyState('Enter a search query to find engagements, clients, RFIs, and reviews', 'search');
 
   const content = `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Advanced Search</h1></div>${filterPanel(teams, stages)}<div class="flex items-center gap-2 mb-4"><span class="text-sm text-gray-500">${totalCount} result${totalCount !== 1 ? 's' : ''}</span>${countBadges}</div><div id="search-results">${resultCards}</div>`;
 

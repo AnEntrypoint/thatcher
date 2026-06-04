@@ -1,5 +1,5 @@
 import { h } from '@/ui/webjsx.js'
-import { STAGE_COLORS, statusLabel, esc } from '@/ui/render-helpers.js'
+import { STAGE_COLORS, statusLabel, esc, icon } from '@/ui/render-helpers.js'
 import { teamAvatarGroup } from '@/ui/widgets.js'
 import { canEdit } from '@/ui/permissions-ui.js'
 
@@ -51,13 +51,13 @@ export function stagePipeline(currentStage, stages = null, clickable = false, on
 export function activityTimeline(activities = [], showAll = false) {
   const maxItems = showAll ? activities.length : 10
   const items = activities.slice(0, maxItems)
-  const iconMap = { created: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`, updated: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`, status_changed: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>`, commented: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`, assigned: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`, uploaded: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>` }
+  const iconMap = { created: 'document', updated: 'clipboard', status_changed: 'flag', commented: 'chat', assigned: 'user', uploaded: 'inbox' }
   const timelineItems = items.map(a => {
     const action = a.action || 'updated'
-    const icon = iconMap[action] || `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>`
+    const actIcon = icon(iconMap[action] || 'list', 13)
     const ts = a.timestamp || a.created_at
     const timeStr = ts ? (typeof ts === 'number' && ts > 1e9 ? new Date(ts * 1000).toLocaleString() : new Date(ts).toLocaleString()) : ''
-    return `<div class="act-tl-item"><div class="act-tl-icon act-tl-${action}">${icon}</div><div class="act-tl-content"><div class="act-tl-header"><span class="act-tl-desc">${esc(a.description || a.action || '')}</span></div><div class="act-tl-time">${timeStr}${a.user_name ? ' by ' + esc(a.user_name) : ''}</div></div></div>`
+    return `<div class="act-tl-item"><div class="act-tl-icon act-tl-${action}">${actIcon}</div><div class="act-tl-content"><div class="act-tl-header"><span class="act-tl-desc">${esc(a.description || a.action || '')}</span></div><div class="act-tl-time">${timeStr}${a.user_name ? ' by ' + esc(a.user_name) : ''}</div></div></div>`
   }).join('')
   const moreBtn = !showAll && activities.length > maxItems ? `<div class="act-tl-more"><button class="btn btn-ghost btn-sm" data-action="showAllActivity" aria-label="Show ${activities.length - maxItems} more activities">Show ${activities.length - maxItems} more</button></div>` : ''
   return `<div class="act-timeline">${timelineItems}</div>${moreBtn}`

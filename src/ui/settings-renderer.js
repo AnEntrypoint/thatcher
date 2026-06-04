@@ -60,7 +60,7 @@ export function renderSettingsHome(user, config = {}, counts = {}) {
             <div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:${SPACING.xs};line-height:1.4">${c.desc}</div>
             ${badge ? `<div style="margin-top:${SPACING.sm}">${badge}</div>` : ''}
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--color-text-muted);margin-top:${SPACING.xs}"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--color-text-muted);margin-top:${SPACING.xs}"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
       </div>
     </a>`;
@@ -123,7 +123,7 @@ export function renderSettingsUsers(user, users = []) {
       <p class="text-sm text-base-content/50 mt-0.5">${users.length} total &middot; ${active} active</p>
     </div>
     <a href="/user/new" class="btn btn-primary btn-sm gap-1">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add User
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add User
     </a>
   </div>
   <div class="table-toolbar mb-3">

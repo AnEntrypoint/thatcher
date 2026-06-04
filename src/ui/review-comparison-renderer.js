@@ -1,5 +1,6 @@
 import { statusLabel } from '@/ui/renderer.js';
 import { page } from '@/ui/layout.js';
+import { emptyRow } from './render-helpers.js';
 
 function reviewSummaryPanel(review, highlights, side) {
   const total = highlights.length;
@@ -37,7 +38,7 @@ export function renderReviewComparison(user, leftReview, rightReview, leftHighli
 
   const diffSummary = `<div class="grid grid-cols-3 gap-4 mb-6"><div class="card-clean"><div class="card-clean-body" style=""><div class="text-lg font-bold text-green-600">${stats.common}</div><div class="text-xs text-gray-500">Matching</div></div></div><div class="card-clean"><div class="card-clean-body" style=""><div class="text-lg font-bold text-blue-600">${stats.onlyLeft}</div><div class="text-xs text-gray-500">Only in Left</div></div></div><div class="card-clean"><div class="card-clean-body" style=""><div class="text-lg font-bold text-purple-600">${stats.onlyRight}</div><div class="text-xs text-gray-500">Only in Right</div></div></div></div>`;
 
-  const comparisonTable = `<div class="card-clean" style="overflow-x:auto"><div class="card-clean-body" style="padding:0rem"><div class="grid grid-cols-2 gap-0"><div class="border-r border-gray-200">${reviewSummaryPanel(leftReview, leftHighlights, 'left')}</div><div>${reviewSummaryPanel(rightReview, rightHighlights, 'right')}</div></div><table class="data-table"><thead class="bg-gray-50"><tr><th class="text-center w-12">#</th><th>${leftReview.name || 'Left Review'}</th><th>${rightReview.name || 'Right Review'}</th><th class="text-center w-20">Status</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="text-center py-8 text-gray-400">No highlights to compare</td></tr>'}</tbody></table></div></div>`;
+  const comparisonTable = `<div class="card-clean" style="overflow-x:auto"><div class="card-clean-body" style="padding:0rem"><div class="grid grid-cols-2 gap-0"><div class="border-r border-gray-200">${reviewSummaryPanel(leftReview, leftHighlights, 'left')}</div><div>${reviewSummaryPanel(rightReview, rightHighlights, 'right')}</div></div><table class="data-table"><thead class="bg-gray-50"><tr><th class="text-center w-12">#</th><th>${leftReview.name || 'Left Review'}</th><th>${rightReview.name || 'Right Review'}</th><th class="text-center w-20">Status</th></tr></thead><tbody>${rows || emptyRow(4, 'No highlights to compare')}</tbody></table></div></div>`;
 
   const content = `<div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold">Review Comparison</h1><a href="/reviews" class="btn btn-ghost btn-sm">Back to Reviews</a></div>${diffSummary}${comparisonTable}`;
 

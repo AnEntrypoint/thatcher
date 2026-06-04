@@ -4,8 +4,9 @@ import { SPACING, renderCard, renderButton, renderProgress, renderEmptyState, re
 import { icon, esc } from '@/ui/format-helpers.js';
 import { TOAST_SCRIPT } from '@/ui/render-helpers.js';
 
-// Star icon with fill toggle for priority on/off state.
-const starIcon = (on) => `<svg width="16" height="16" viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+// Star icon for priority. Filled vs outline state is conveyed by the button's
+// .is-priority class (CSS) and aria-pressed; the glyph itself is the shared icon().
+const starIcon = () => icon('star', 16);
 
 function fmtDate(ts) {
   if (!ts) return '-';
@@ -48,7 +49,7 @@ export function renderMwrHome(user, stats) {
     const archiveLabel = r.status === 'archived' ? 'Unarchive' : 'Archive';
     const archiveAct = r.status === 'archived' ? 'unarchive' : 'archive';
     return `<div class="list-item-row" data-review-id="${r.id}">
-      <button type="button" class="row-action row-action-star${isPri ? ' is-priority' : ''}" data-action="toggleReviewStar" data-args='["${esc(r.id)}"]' aria-label="Toggle priority" aria-pressed="${isPri}" title="Star/Priority">${starIcon(isPri)}</button>
+      <button type="button" class="row-action row-action-star${isPri ? ' is-priority' : ''}" data-action="toggleReviewStar" data-args='["${esc(r.id)}"]' aria-label="Toggle priority" aria-pressed="${isPri}" title="Star/Priority">${starIcon()}</button>
       <span class="list-item-name" data-action="openReview" data-args='["${esc(r.id)}"]' style="cursor:pointer;flex:1">${esc(r.name || 'Untitled')}</span>
       <div class="list-item-meta">${statusBadge(r.status)}<span style="font-size:12px;color:var(--color-text-light)">${fmtDate(r.updated_at || r.created_at)}</span></div>
       <button class="row-action row-action-flag" data-action="toggleReviewFlag" data-args='["${r.id}"]' aria-label="Flag" title="Flag">${icon('flag', 16)}</button>
