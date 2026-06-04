@@ -1,7 +1,8 @@
 import { getDatabase, genId, now } from '@/lib/database-core';
 import { Mutex } from '@/lib/hot-reload/mutex';
 
-const db = getDatabase();
+// Lazy DB accessor: no DB open at module load (see query-engine-write.js).
+const db = () => getDatabase();
 const auditMutex = new Mutex('audit-logger');
 
 export const ACTIVITY_TYPES = {
@@ -40,7 +41,7 @@ const parseRow = (row) => row ? {
 export const logAction = (entityType, entityId, action, userId, beforeState, afterState) => {
   const id = genId();
   const timestamp = now();
-  db.prepare(`
+  db().prepare(`
     INSERT INTO audit_logs (id, entity_type, entity_id, action, user_id, before_state, after_state, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(id, entityType, entityId, action, userId || null,
@@ -60,9 +61,9 @@ export const getAuditHistory = (filters = {}, page = 1, pageSize = 50) => {
   if (filters.fromDate) { wc.push('created_at >= ?'); params.push(filters.fromDate); }
   if (filters.toDate) { wc.push('created_at <= ?'); params.push(filters.toDate); }
   const where = wc.length ? 'WHERE ' + wc.join(' AND ') : '';
-  const { count: total } = db.prepare(`SELECT COUNT(*) as count FROM audit_logs ${where}`).get(...params);
+  const { count: total } = db().prepare(`SELECT COUNT(*) as count FROM audit_logs ${where}`).get(...params);
   const offset = (page - 1) * pageSize;
-  const items = db.prepare(`SELECT * FROM audit_logs ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, pageSize, offset);
+  const items = db().prepare(`SELECT * FROM audit_logs ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, pageSize, offset);
   return {
     items: items.map(i => ({
       id: i.id, entityType: i.entity_type, entityId: i.entity_id, action: i.action,
@@ -73,13 +74,13 @@ export const getAuditHistory = (filters = {}, page = 1, pageSize = 50) => {
 };
 
 export const getEntityAuditTrail = (entityType, entityId) => {
-  return db.prepare(`SELECT * FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC`).all(entityType, entityId)
+  return db().prepare(`SELECT * FROM audit_logs WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC`).all(entityType, entityId)
     .map(i => ({ id: i.id, action: i.action, userId: i.user_id, beforeState: parseJson(i.before_state), afterState: parseJson(i.after_state), createdAt: i.created_at }));
 };
 
 const statsSql = (col) => `SELECT ${col}, COUNT(*) as count FROM audit_logs WHERE created_at >= ? AND created_at <= ? GROUP BY ${col} ORDER BY count DESC`;
-export const getActionStats = (fromDate, toDate) => db.prepare(statsSql('action')).all(fromDate, toDate);
-export const getUserStats = (fromDate, toDate) => db.prepare(statsSql('user_id')).all(fromDate, toDate);
+export const getActionStats = (fromDate, toDate) => db().prepare(statsSql('action')).all(fromDate, toDate);
+export const getUserStats = (fromDate, toDate) => db().prepare(statsSql('user_id')).all(fromDate, toDate);
 
 export const logPermissionChange = ({
   userId, entityType, entityId, action, oldPermissions = null, newPermissions = null,
@@ -88,7 +89,7 @@ export const logPermissionChange = ({
   if (!userId || !entityType || !entityId || !action) throw new Error('Missing required audit fields');
   const auditId = genId();
   const timestamp = now();
-  db.prepare(`
+  db().prepare(`
     INSERT INTO permission_audit (id, user_id, entity_type, entity_id, action, old_permissions, new_permissions,
       reason, reason_code, timestamp, ip_address, session_id, affected_user_id, metadata, created_at, updated_at, created_by, updated_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -154,21 +155,21 @@ export const getPermissionAuditTrail = ({ entityType, entityId, userId, affected
   if (userId) { sql += ' AND user_id = ?'; params.push(userId); }
   if (affectedUserId) { sql += ' AND affected_user_id = ?'; params.push(affectedUserId); }
   sql += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
-  return db.prepare(sql).all(...params, limit, offset).map(parseRow);
+  return db().prepare(sql).all(...params, limit, offset).map(parseRow);
 };
 
-export const getPermissionAuditById = (auditId) => parseRow(db.prepare('SELECT * FROM permission_audit WHERE id = ?').get(auditId));
-export const getPermissionAuditStats = () => db.prepare(`SELECT COUNT(*) as total_audits, COUNT(DISTINCT user_id) as unique_users, COUNT(DISTINCT entity_type) as entity_types, MIN(timestamp) as earliest_change, MAX(timestamp) as latest_change FROM permission_audit`).get();
-export const getPermissionAuditBreakdown = (field) => db.prepare(`SELECT ${field}, COUNT(*) as count FROM permission_audit GROUP BY ${field} ORDER BY count DESC`).all();
+export const getPermissionAuditById = (auditId) => parseRow(db().prepare('SELECT * FROM permission_audit WHERE id = ?').get(auditId));
+export const getPermissionAuditStats = () => db().prepare(`SELECT COUNT(*) as total_audits, COUNT(DISTINCT user_id) as unique_users, COUNT(DISTINCT entity_type) as entity_types, MIN(timestamp) as earliest_change, MAX(timestamp) as latest_change FROM permission_audit`).get();
+export const getPermissionAuditBreakdown = (field) => db().prepare(`SELECT ${field}, COUNT(*) as count FROM permission_audit GROUP BY ${field} ORDER BY count DESC`).all();
 
 export const searchPermissionAudit = (searchTerm, limit = 100) => {
   const pattern = `%${searchTerm}%`;
-  return db.prepare(`SELECT * FROM permission_audit WHERE reason LIKE ? OR entity_type LIKE ? OR entity_id LIKE ? ORDER BY timestamp DESC LIMIT ?`)
+  return db().prepare(`SELECT * FROM permission_audit WHERE reason LIKE ? OR entity_type LIKE ? OR entity_id LIKE ? ORDER BY timestamp DESC LIMIT ?`)
     .all(pattern, pattern, pattern, limit).map(parseRow);
 };
 
 export const getPermissionAuditByDateRange = (startDate, endDate, limit = 100) =>
-  db.prepare(`SELECT * FROM permission_audit WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC LIMIT ?`).all(startDate, endDate, limit).map(parseRow);
+  db().prepare(`SELECT * FROM permission_audit WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC LIMIT ?`).all(startDate, endDate, limit).map(parseRow);
 
 export const exportPermissionAuditCSV = async (filters = {}) => {
   const trail = getPermissionAuditTrail({ ...filters, limit: 10000 });

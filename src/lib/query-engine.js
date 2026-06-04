@@ -7,7 +7,9 @@ import { getDatabase } from './database-core.js';
 import { getSpec } from '../config/spec-helpers.js';
 import { RECORD_STATUS } from '../config/constants.js';
 
-const db = getDatabase();
+// Lazy DB accessor (see query-engine-write.js): avoid opening the DB at module load
+// so importers (incl. UI renderers via the config chain) don't require the DB / Bun-break.
+const db = () => getDatabase();
 const logger = createLogger('[QueryEngine]');
 
 /**
@@ -19,7 +21,7 @@ const logger = createLogger('[QueryEngine]');
  */
 function execQuery(sql, params = [], context = {}) {
   try {
-    return db.prepare(sql).all(...params);
+    return db().prepare(sql).all(...params);
   } catch (e) {
     logger.error(`${context.operation || 'Query'} ${context.entity || ''}`, { sql, error: e.message });
     throw new Error(`Database query failed: ${e.message}`);
@@ -35,7 +37,7 @@ function execQuery(sql, params = [], context = {}) {
  */
 function execGet(sql, params = [], context = {}) {
   try {
-    return db.prepare(sql).get(...params);
+    return db().prepare(sql).get(...params);
   } catch (e) {
     logger.error(`${context.operation || 'Get'} ${context.entity || ''}`, { sql, error: e.message });
     throw new Error(`Database get failed: ${e.message}`);
@@ -51,7 +53,7 @@ function execGet(sql, params = [], context = {}) {
  */
 function execRun(sql, params = [], context = {}) {
   try {
-    return db.prepare(sql).run(...params);
+    return db().prepare(sql).run(...params);
   } catch (e) {
     logger.error(`${context.operation || 'Run'} ${context.entity || ''}`, { sql, error: e.message });
     throw new Error(`Database run failed: ${e.message}`);
@@ -270,7 +272,7 @@ export function search(entity, query, where = {}, options = {}) {
   const ftsTable = `${tbl}_fts`;
 
   // Check if FTS table exists
-  const ftsExists = db.prepare(`
+  const ftsExists = db().prepare(`
     SELECT name FROM sqlite_master WHERE type='table' AND name=?
   `).get(ftsTable);
 
@@ -295,7 +297,7 @@ export function search(entity, query, where = {}, options = {}) {
   }
 
   // Use FTS
-  const ftsResults = db.prepare(`
+  const ftsResults = db().prepare(`
     SELECT rowid as id FROM ${ftsTable}
     WHERE ${ftsTable} MATCH ?
   `).all(query);

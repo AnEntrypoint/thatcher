@@ -12,7 +12,11 @@ import { broadcastUpdate } from './realtime-server.js'; // Optional
 import { createLogger } from './logger.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 
-const db = getDatabase();
+// Lazy DB accessor: getDatabase() opens the SQLite connection, so resolving it at
+// module-load coupled every importer (incl. UI renderers via the config chain) to
+// the DB and broke imports under Bun. getDatabase() caches the singleton, so calling
+// db() per-use is free after the first open.
+const db = () => getDatabase();
 const logger = createLogger('[WriteEngine]');
 
 /**
@@ -40,7 +44,7 @@ export function create(entity, data, user) {
   for (const [key, field] of Object.entries(spec.fields || {})) {
     if (field.auto === 'increment') {
       // Get max + 1 (simplified)
-      const maxRow = db.prepare(`SELECT MAX("${key}") as max FROM "${tableName}"`).get();
+      const maxRow = db().prepare(`SELECT MAX("${key}") as max FROM "${tableName}"`).get();
       record[key] = (maxRow?.max || 0) + 1;
     }
     if (field.auto === 'uuid' && !record[key]) {
@@ -59,7 +63,7 @@ export function create(entity, data, user) {
   const sql = `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders})`;
 
   try {
-    const info = db.prepare(sql).run(...values);
+    const info = db().prepare(sql).run(...values);
     record.id = info.lastInsertRowid ? String(info.lastInsertRowid) : record.id;
   } catch (e) {
     logger.error(`Create ${entity} failed`, { error: e.message, data: record });
@@ -92,7 +96,7 @@ export function update(entity, id, data, user) {
   const tableName = entity === 'user' ? 'users' : entity;
 
   // Fetch existing record
-  const existing = db.prepare(`SELECT * FROM "${tableName}" WHERE id = ?`).get(id);
+  const existing = db().prepare(`SELECT * FROM "${tableName}" WHERE id = ?`).get(id);
   if (!existing) {
     throw new Error(`${entity} with id ${id} not found`);
   }
@@ -121,14 +125,14 @@ export function update(entity, id, data, user) {
   const sql = `UPDATE "${tableName}" SET ${setClauses.join(', ')} WHERE id = ?`;
 
   try {
-    db.prepare(sql).run(...values);
+    db().prepare(sql).run(...values);
   } catch (e) {
     logger.error(`Update ${entity} ${id} failed`, { error: e.message, data: updateData });
     throw new Error(`Failed to update ${entity}: ${e.message}`);
   }
 
   // Fetch updated record
-  const updated = db.prepare(`SELECT * FROM "${tableName}" WHERE id = ?`).get(id);
+  const updated = db().prepare(`SELECT * FROM "${tableName}" WHERE id = ?`).get(id);
 
   // Execute hooks
   executeHook(`update:${entity}:after`, {
@@ -156,7 +160,7 @@ export function remove(entity, id) {
 
   const tableName = entity === 'user' ? 'users' : entity;
 
-  const existing = db.prepare(`SELECT * FROM "${tableName}" WHERE id = ?`).get(id);
+  const existing = db().prepare(`SELECT * FROM "${tableName}" WHERE id = ?`).get(id);
   if (!existing) {
     throw new Error(`${entity} with id ${id} not found`);
   }
@@ -169,17 +173,17 @@ export function remove(entity, id) {
   if (hasStatus) {
     // Soft delete
     const sql = `UPDATE "${tableName}" SET status = ?, updated_at = ? WHERE id = ?`;
-    db.prepare(sql).run(RECORD_STATUS.DELETED, now(), id);
+    db().prepare(sql).run(RECORD_STATUS.DELETED, now(), id);
     result = { ...existing, status: RECORD_STATUS.DELETED };
   } else if (hasArchived) {
     // Archive instead
     const sql = `UPDATE "${tableName}" SET archived = 1, updated_at = ? WHERE id = ?`;
-    db.prepare(sql).run(now(), id);
+    db().prepare(sql).run(now(), id);
     result = { ...existing, archived: 1 };
   } else {
     // Hard delete
     const sql = `DELETE FROM "${tableName}" WHERE id = ?`;
-    db.prepare(sql).run(id);
+    db().prepare(sql).run(id);
     result = existing;
   }
 
@@ -202,7 +206,7 @@ export function remove(entity, id) {
  * @returns {Array} Created records
  */
 export function bulkCreate(entity, records, user) {
-  return db.transaction((recordsData) => {
+  return db().transaction((recordsData) => {
     return recordsData.map(data => create(entity, data, user));
   })(records);
 }
@@ -217,5 +221,5 @@ export function hardDeleteAll(entity) {
 
   const tableName = entity === 'user' ? 'users' : entity;
   const sql = `DELETE FROM "${tableName}"`;
-  db.prepare(sql).run();
+  db().prepare(sql).run();
 }
