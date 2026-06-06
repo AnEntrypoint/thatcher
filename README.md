@@ -370,18 +370,6 @@ All APIs accessible via thatcher instance:
 | `EMAIL_USER` | SMTP username | — |
 | `EMAIL_PASSWORD` | SMTP password | — |
 
-## Migrating from Moonlanding
-
-Thatcher is a drop-in replacement for moonlanding's core:
-
-1. Copy `master-config.yml` → `thatcher.config.yml`
-2. Move any `.plugin.js` files to new project's `plugins/`
-3. Change import paths: `@/lib/...` → `thatcher/...`
-4. Replace `import ... from '@/engine'` with `thatcher.*` methods
-5. Update server initialization: `new Thatcher({ config: '...' })`
-
-All business logic remains in config and plugins — no code changes required.
-
 ## Publishing
 
 Thatcher is published to npm as `thatcher`. Every push to `main` triggers:
