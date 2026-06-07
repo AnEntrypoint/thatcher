@@ -167,8 +167,11 @@ export async function create(entity, data, user) {
   for (const k of Object.keys(record)) {
     if (record[k] === null || record[k] === undefined) record[k] = '';
   }
-  const [created] = unwrap(await client().from(tbl).insert(record), 'create');
-  return created || record;
+  unwrap(await client().from(tbl).insert(record), 'create');
+  // Always return the locally-constructed record: it holds the genId we put in
+  // the TEXT id column. The store's insert() may return a rowid/driver shape, so
+  // trusting `created` would hand callers the wrong id.
+  return record;
 }
 
 export async function update(entity, id, data) {

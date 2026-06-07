@@ -308,6 +308,21 @@ export class ConfigGeneratorEngine {
       ...pluginFields,
     };
 
+    // Auto-inject the system fields every entity needs (id is the primary key;
+    // created_at/created_by/updated_at/status are written by the store on every
+    // create/update). Declared fields of the same name win, so a config can
+    // still override e.g. status into an enum.
+    const SYSTEM_FIELDS = {
+      id: { type: 'id', readonly: true },
+      created_at: { type: 'timestamp', readonly: true },
+      created_by: { type: 'text', readonly: true },
+      updated_at: { type: 'timestamp', readonly: true },
+      status: { type: 'text' },
+    };
+    for (const [key, field] of Object.entries(SYSTEM_FIELDS)) {
+      if (!(key in allFields)) allFields[key] = field;
+    }
+
     // Ensure required metadata (label, type defaults)
     for (const [key, field] of Object.entries(allFields)) {
       spec.fields[key] = {

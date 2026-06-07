@@ -25,6 +25,13 @@ function resolveModule(relative) {
   return pathToFileURL(abs).href;
 }
 
+// busybase stores data in a directory. Callers pass `databasePath` which may be
+// either a directory or a path ending in a db filename (.db/.sqlite); reduce the
+// latter to its containing directory.
+function databasePathToDir(p) {
+  return /\.(db|sqlite|sqlite3)$/i.test(p) ? path.dirname(p) : p;
+}
+
 /**
  * Thatcher class - main API
  */
@@ -146,7 +153,13 @@ export class Thatcher {
   async initDatabase() {
     if (_databaseInitialized) return;
     const { createEmbedded } = await import('busybase/embedded');
-    const dir = this.options.dataDir || process.env.BUSYBASE_DIR || 'busybase_data';
+    // Honour the caller's chosen location. `databasePath` is the documented
+    // option; busybase wants a directory, so a value that looks like a db file
+    // is reduced to its dirname. `dataDir` and BUSYBASE_DIR remain fallbacks.
+    const dir = this.options.dataDir
+      || (this.options.databasePath ? databasePathToDir(this.options.databasePath) : null)
+      || process.env.BUSYBASE_DIR
+      || 'busybase_data';
     const client = await createEmbedded({ dir });
 
     const store = await import(resolveModule('./lib/busybase-store.js'));
