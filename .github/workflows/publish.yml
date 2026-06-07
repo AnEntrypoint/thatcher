@@ -35,15 +35,24 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+          # Start from the larger of package.json version and the highest existing
+          # vX.Y.Z git tag, then increment the patch until we find a tag that does
+          # not already exist. This keeps the bump idempotent across re-runs even
+          # if a prior run tagged but failed before pushing package.json.
           CURRENT=$(node -p "require('./package.json').version")
-          IFS='.' read -r MA MI PA <<< "$CURRENT"
+          HIGHEST_TAG=$(git tag -l 'v*.*.*' | sed 's/^v//' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+          BASE=$(printf '%s\n%s\n' "$CURRENT" "${HIGHEST_TAG:-0.0.0}" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+          IFS='.' read -r MA MI PA <<< "$BASE"
+          while git rev-parse "v$MA.$MI.$((PA+1))" >/dev/null 2>&1; do PA=$((PA+1)); done
           NEW="$MA.$MI.$((PA+1))"
           node -e "const f='./package.json';const p=require(f);p.version='$NEW';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n');"
           echo "version=$NEW" >> $GITHUB_OUTPUT
           git add package.json
           git commit -m "chore(release): v$NEW [skip ci]" || true
           git tag "v$NEW"
-          git push origin HEAD --tags
+          git push origin HEAD
+          git push origin "v$NEW"
 
       - name: Publish to npm
         env:
