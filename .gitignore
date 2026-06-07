@@ -15,3 +15,4 @@ coverage/
 *.tgz
 .gm/
 .gm/pw-sock-*/
+package-lock.json
