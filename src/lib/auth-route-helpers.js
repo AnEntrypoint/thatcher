@@ -79,5 +79,10 @@ export function validateOAuthState(code, state, storedState, storedCodeVerifier)
   if (!storedState || !storedCodeVerifier) {
     return { valid: false, error: 'state_not_found' };
   }
+  // The submitted state must equal the stored state, or an attacker can forge an
+  // OAuth callback (CSRF). Existence alone is not enough -- compare the values.
+  if (state !== storedState) {
+    return { valid: false, error: 'state_mismatch' };
+  }
   return { valid: true };
 }

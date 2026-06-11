@@ -5,6 +5,7 @@
 
 import http from 'http';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
 import * as thatcherLib from '../index.js';
 
@@ -160,7 +161,11 @@ async function serveStaticFile(pathname, req, res, load) {
       res.end(content);
       return true;
     }
-  } catch {}
+  } catch (err) {
+    // A missing file is a normal 404; anything else (permission denied, file
+    // locked) is a real problem worth surfacing rather than silently swallowing.
+    if (err.code !== 'ENOENT') console.error('[Static]', filePath, err.code, err.message);
+  }
   return false;
 }
 
@@ -311,14 +316,22 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
 async function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', chunk => data += chunk);
+    let size = 0;
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB cap: an unbounded body is an OOM/DoS vector
+    const timeout = setTimeout(() => { req.destroy(); reject(new Error('Request timeout')); }, 30000); // slowloris guard
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_SIZE) { clearTimeout(timeout); req.destroy(); reject(new Error('Request body too large')); return; }
+      data += chunk;
+    });
     req.on('end', () => {
+      clearTimeout(timeout);
       try {
         resolve(JSON.parse(data));
       } catch {
         resolve(data);
       }
     });
-    req.on('error', reject);
+    req.on('error', (err) => { clearTimeout(timeout); reject(err); });
   });
 }

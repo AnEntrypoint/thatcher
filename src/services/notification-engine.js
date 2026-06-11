@@ -18,7 +18,7 @@ export function getNotificationTemplate(name) {
  * Create notification record
  */
 export async function createNotification(notification) {
-  const { create } = await import('../lib/query-engine-write.js');
+  const { create } = await import('../lib/busybase-store.js');
   return create('notification', {
     ...notification,
     created_at: Math.floor(Date.now() / 1000),
@@ -81,21 +81,21 @@ export async function sendNotification(type, userId, context = {}, options = {})
  * Mark notification as read
  */
 export async function markNotificationRead(notificationId, userId) {
-  const { update } = await import('../lib/query-engine-write.js');
+  const { update } = await import('../lib/busybase-store.js');
   return update('notification', notificationId, {
     read_at: Math.floor(Date.now() / 1000),
-  }, { id: userId, role: 'user' });
+  });
 }
 
 /**
  * Get unread count for user
  */
 export async function getUnreadCount(userId) {
-  const { list } = await import('../lib/query-engine.js');
-  return list('notification', {
+  const { list } = await import('../lib/busybase-store.js');
+  return (await list('notification', {
     user_id: userId,
     read_at: null,
-  }).length;
+  })).length;
 }
 
 /**

@@ -129,21 +129,28 @@ export async function exportToPdf(fileId, user = null) {
  * @param {object} [user]
  * @returns {Array}
  */
+// Escape a value for inclusion in a single-quoted Google Drive query string.
+// Drive Query Language escapes \ and ' with a backslash; without this an
+// attacker-controlled name/id/mimeType could inject query operators.
+function escapeGQLString(str) {
+  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
 export async function listFiles(folderId = null, query = {}, user = null) {
   const drive = getDriveClient(user);
   const qParts = [];
 
   if (folderId) {
-    qParts.push(`'${folderId}' in parents`);
+    qParts.push(`'${escapeGQLString(folderId)}' in parents`);
   }
   if (query.trashed === false) {
     qParts.push("trashed = false");
   }
   if (query.mimeType) {
-    qParts.push(`mimeType = '${query.mimeType}'`);
+    qParts.push(`mimeType = '${escapeGQLString(query.mimeType)}'`);
   }
   if (query.name) {
-    qParts.push(`name = '${query.name}'`);
+    qParts.push(`name = '${escapeGQLString(query.name)}'`);
   }
 
   const res = await drive.files.list({
@@ -183,8 +190,8 @@ function getDefaultFolder() {
  */
 export async function ensureFolder(name, parentId = null, user = null) {
   const drive = getDriveClient(user);
-  const queryParts = [`name = '${name}'`, "mimeType = 'application/vnd.google-apps.folder'"];
-  if (parentId) queryParts.push(`'${parentId}' in parents`);
+  const queryParts = [`name = '${escapeGQLString(name)}'`, "mimeType = 'application/vnd.google-apps.folder'"];
+  if (parentId) queryParts.push(`'${escapeGQLString(parentId)}' in parents`);
 
   const res = await drive.files.list({
     q: queryParts.join(' AND '),

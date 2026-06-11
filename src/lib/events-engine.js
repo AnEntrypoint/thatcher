@@ -70,7 +70,7 @@ export const registerEntityHandlers = () => {
 
   hookEngine.on('engagement:afterUpdate', async (engagement, changes, prev, user) => {
     if (changes.stage && changes.stage !== prev.stage) {
-      logActivity('engagement', engagement.id, 'stage_change', `Stage: ${prev.stage} → ${changes.stage}`, user, { from: prev.stage, to: changes.stage });
+      logActivity('engagement', engagement.id, 'stage_change', `Stage: ${prev.stage} -> ${changes.stage}`, user, { from: prev.stage, to: changes.stage });
       const stageActions = {
         commencement: () => queueEmail('engagement_commencement', { engagement, recipients: 'client_users' }),
         finalization: async () => {
@@ -85,7 +85,7 @@ export const registerEntityHandlers = () => {
       await stageActions[changes.stage]?.();
     }
     if (changes.status && changes.status !== prev.status) {
-      logActivity('engagement', engagement.id, 'status_change', `Status: ${prev.status} → ${changes.status}`, user);
+      logActivity('engagement', engagement.id, 'status_change', `Status: ${prev.status} -> ${changes.status}`, user);
     }
     if (changes.commencement_date && changes.commencement_date !== prev.commencement_date) {
       await queueEmail('engagement_date_change', { engagement, field: 'commencement_date', recipients: 'team_members' });
@@ -118,7 +118,7 @@ export const registerEntityHandlers = () => {
       if (changes.client_status && changes.client_status !== prev.client_status) {
         await queueEmail('rfi_status_change', { rfi, from: prev.client_status, to: changes.client_status, recipients: 'assigned_users' });
       }
-      logActivity('rfi', rfi.id, 'status_change', `Status: ${prev.status} → ${changes.status}`, user);
+      logActivity('rfi', rfi.id, 'status_change', `Status: ${prev.status} -> ${changes.status}`, user);
     }
     if (changes.deadline && changes.deadline !== prev.deadline) {
       await queueEmail('rfi_deadline_change', { rfi, newDeadline: changes.deadline, recipients: 'assigned_users' });
@@ -160,7 +160,7 @@ export const registerEntityHandlers = () => {
   hookEngine.on('review:afterUpdate', async (review, changes, prev, user) => {
     if (changes.status && changes.status !== prev.status) {
       await queueEmail('review_status_change', { review, from: prev.status, to: changes.status, recipients: 'team_members' });
-      logActivity('review', review.id, 'status_change', `Status: ${prev.status} → ${changes.status}`, user);
+      logActivity('review', review.id, 'status_change', `Status: ${prev.status} -> ${changes.status}`, user);
     }
     if (changes.collaborators && changes.collaborators !== prev.collaborators) {
       const added = safeJsonParse(changes.collaborators, []).filter(c => !safeJsonParse(prev.collaborators, []).find(p => p.id === c.id));
