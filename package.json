@@ -15,8 +15,7 @@
     "./config/*.js": "./src/config/*.js",
     "./services/*": "./src/services/*.js",
     "./services/*.js": "./src/services/*.js",
-    "./migration/*": "./src/migration/*.js",
-    "./validation/*": "./src/validation/*.js",
+    "./validation/*": "./src/lib/validation/*.js",
     "./adapters/*": "./src/adapters/*.js",
     "./plugins/*": "./src/plugins/*.js",
     "./package.json": "./package.json"
@@ -28,7 +27,7 @@
   "scripts": {
     "dev": "bun run src/cli.js dev",
     "start": "bun run src/cli.js start",
-    "test": "bun test",
+    "test": "node test.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
   },
@@ -50,19 +49,16 @@
     "bun": ">=1.0.0"
   },
   "dependencies": {
-    "@casl/ability": "^6.8.0",
     "arctic": "^1.9.2",
     "bcrypt": "^5.1.1",
     "busybase": "^1.0.0",
-    "compression": "^1.8.1",
     "googleapis": "^140.0.0",
+    "hyperformula": "^3.2.0",
     "js-yaml": "^4.1.1",
     "lucia": "^3.2.2",
-    "nanoid": "^5.0.7",
     "nodemailer": "^6.9.7",
-    "puppeteer": "^21.6.1",
     "webjsx": "^0.0.73",
-    "tsx": "^4.7.0"
+    "xstate": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",

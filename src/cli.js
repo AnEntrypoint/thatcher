@@ -39,7 +39,7 @@ async function main() {
       console.log('[Thatcher] Running migrations...');
       const t1 = new Thatcher({});
       await t1.init();
-      console.log('✓ Migrations complete');
+      console.log('[Thatcher] Migrations complete');
       break;
 
     case 'validate':
@@ -47,11 +47,11 @@ async function main() {
       try {
         const t2 = new Thatcher({});
         await t2.init();
-        console.log('✓ Configuration is valid');
+        console.log('[Thatcher] Configuration is valid');
         console.log(`  Entities: ${t2.getAllEntities().length}`);
         console.log(`  Workflows: ${Object.keys(t2.config?.workflows || {}).length}`);
       } catch (err) {
-        console.error('✗ Configuration error:', err.message);
+        console.error('[Thatcher] Configuration error:', err.message);
         process.exit(1);
       }
       break;
@@ -200,7 +200,7 @@ thresholds:
 `;
 
   fs.writeFileSync(path.join(exampleDir, 'thatcher.config.yml'), config);
-  console.log(`✓ Example config written to ${exampleDir}/`);
+  console.log(`[Thatcher] Example config written to ${exampleDir}/`);
   console.log('  cd', exampleDir);
   console.log('  thatcher start');
 }

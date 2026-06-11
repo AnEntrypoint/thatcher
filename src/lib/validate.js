@@ -65,9 +65,9 @@ export async function validateField(fieldDef, value, options = {}) {
       return { valid: true };
     }
     try {
-      const { get } = await import('./query-engine.js');
+      const { getBy } = await import('./busybase-store.js');
       const refTable = fieldDef.ref === 'user' ? 'users' : fieldDef.ref;
-      if (!get(refTable, value)) {
+      if (!(await getBy(refTable, 'id', value))) {
         return {
           valid: false,
           error: `${fieldDef.ref.charAt(0).toUpperCase() + fieldDef.ref.slice(1)} with id '${value}' not found`,
@@ -184,9 +184,9 @@ async function checkUnique(fieldDef, value, { fieldName, entityName, existingRec
   const existingValue = existingRecord?.[fieldName];
   if (value === existingValue) return null;
   try {
-    const { get } = await import('./query-engine.js');
+    const { getBy } = await import('./busybase-store.js');
     const table = entityName === 'user' ? 'users' : entityName;
-    const dup = get(table, undefined, { [fieldName]: value });
+    const dup = await getBy(table, fieldName, value);
     if (dup && (!existingRecord || dup.id !== existingRecord.id)) {
       return `Field '${fieldName}' must be unique`;
     }

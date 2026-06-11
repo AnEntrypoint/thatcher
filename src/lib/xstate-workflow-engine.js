@@ -390,10 +390,9 @@ export function getAvailableTransitions(workflowName, currentState, user, record
 }
 
 export async function transition(entityType, entityId, workflowName, toState, user, reason = '') {
-  const { get } = await import('./query-engine.js');
-  const { update: updateRecord } = await import('./query-engine-write.js');
+  const { get, update: updateRecord } = await import('./busybase-store.js');
 
-  const record = get(entityType, entityId);
+  const record = await get(entityType, entityId);
   if (!record) throw new AppError('Record not found', 'NOT_FOUND', HTTP.NOT_FOUND);
 
   validateTransition(workflowName, record.status || record.stage, toState, user);
@@ -407,7 +406,7 @@ export async function transition(entityType, entityId, workflowName, toState, us
     updates.transition_reason = reason;
   }
 
-  const updated = updateRecord(entityType, entityId, updates, user);
+  const updated = await updateRecord(entityType, entityId, updates);
 
   _transitionHistory.push({
     entityType,

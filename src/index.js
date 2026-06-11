@@ -266,7 +266,7 @@ export class Thatcher {
 
     return new Promise((resolve) => {
       _server.listen(port, host, () => {
-        console.log(`\n▲ Thatcher Server\n- Local: http://localhost:${port}\n✓ Ready\n`);
+        console.log(`\n> Thatcher Server\n- Local: http://localhost:${port}\n[OK] Ready\n`);
         resolve(_server);
       });
     });
@@ -315,32 +315,32 @@ export class Thatcher {
   // === CRUD operations ===
 
   async list(entity, where = {}, opts = {}) {
-    const { list } = await import(resolveModule('./lib/query-engine.js'));
+    const { list } = await import(resolveModule('./lib/busybase-store.js'));
     return list(entity, where, opts);
   }
 
   async get(entity, id) {
-    const { get } = await import(resolveModule('./lib/query-engine.js'));
+    const { get } = await import(resolveModule('./lib/busybase-store.js'));
     return get(entity, id);
   }
 
   async create(entity, data, user) {
-    const { create } = await import(resolveModule('./lib/query-engine-write.js'));
+    const { create } = await import(resolveModule('./lib/busybase-store.js'));
     return create(entity, data, user);
   }
 
   async update(entity, id, data, user) {
-    const { update } = await import(resolveModule('./lib/query-engine-write.js'));
+    const { update } = await import(resolveModule('./lib/busybase-store.js'));
     return update(entity, id, data, user);
   }
 
   async delete(entity, id) {
-    const { remove } = await import(resolveModule('./lib/query-engine-write.js'));
+    const { remove } = await import(resolveModule('./lib/busybase-store.js'));
     return remove(entity, id);
   }
 
   async search(entity, query, where = {}, opts = {}) {
-    const { search } = await import(resolveModule('./lib/query-engine.js'));
+    const { search } = await import(resolveModule('./lib/busybase-store.js'));
     return search(entity, query, where, opts);
   }
 
@@ -378,8 +378,9 @@ export class Thatcher {
   // === Database transaction ===
 
   async withTransaction(callback) {
-    const { withTransaction } = await import(resolveModule('./lib/query-engine.js'));
-    return withTransaction(callback);
+    // busybase has no transaction primitive; the old query-engine's withTransaction
+    // was a pass-through, so preserve that contract rather than import a dead file.
+    return callback();
   }
 }
 

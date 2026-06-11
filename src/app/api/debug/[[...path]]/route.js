@@ -27,6 +27,12 @@ function errorResponse(message, status = 400) {
 }
 
 export async function GET(request) {
+  // The debug surface exposes memory, CPU, queries, hooks, config and env state.
+  // That is operational intelligence an attacker must never get in production, so
+  // the endpoint is disabled there outright (opt back in only behind real auth).
+  if (process.env.NODE_ENV === 'production') {
+    return errorResponse('Debug endpoints are disabled in production', 403);
+  }
   const url = new URL(request.url);
   const path = url.pathname;
   const params = url.searchParams;
