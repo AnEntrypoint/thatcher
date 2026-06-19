@@ -32,7 +32,6 @@ function log(level, message, metadata = {}) {
     console.error(prefix, message, metaStr)
   } else if (level === 'warn') {
     console.warn(prefix, message, metaStr)
-  } else {
   }
 }
 
