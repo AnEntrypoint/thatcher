@@ -1,7 +1,3 @@
-// ML / AI query console — lists highlight comments flagged as ML-candidate queries.
-// MVP: read-only list of highlights with comment text + link back to the source review.
-// Full AI integration (model invocation, response streaming) is out of scope — stub.
-
 import { page } from '@/ui/layout.js';
 import { esc } from '@/ui/render-helpers.js';
 import { SPACING } from '@/ui/spacing-system.js';
@@ -56,11 +52,6 @@ export function renderMlConsole(user, candidates, reviewMap) {
                 </thead>
                 <tbody>${rows}</tbody>
             </table>
-        </div>
-        <div style="margin-top:${SPACING.md};padding:${SPACING.md};background:var(--color-surface-muted,#f8fafc);border-radius:8px;font-size:13px;color:var(--color-text-muted)">
-            <strong>Note:</strong> Full AI integration requires an external model service.
-            Clicking "Ask AI" currently records an intent; plumbing to a model endpoint is
-            the next implementation step.
         </div>
     </div>
     <div id="ml-ask-dialog" class="modal" style="display:none">
