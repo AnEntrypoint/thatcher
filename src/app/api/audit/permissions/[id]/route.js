@@ -1,4 +1,7 @@
 import { NextResponse, cookies } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[AuditDetailAPI]');
 import { lucia } from '@/engine.server';
 import { getPermissionAuditById, getPermissionDiff } from '@/lib/busybase-audit-reads';
 
@@ -31,7 +34,7 @@ export async function GET(request, context) {
       data: { ...audit, timestamp_iso: new Date(audit.timestamp * 1000).toISOString(), diff },
     });
   } catch (error) {
-    console.error('[AuditDetailAPI] GET error:', error);
+    log.error('GET error:', { message: error.message });
     return NextResponse.json({ error: 'Failed to retrieve audit record', details: error.message }, { status: 500 });
   }
 }

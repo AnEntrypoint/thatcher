@@ -1,4 +1,7 @@
+import { createLogger } from '@/lib/logger.js';
 import fs from 'fs'
+
+const log = createLogger('[Health]');
 import path from 'path'
 import { count } from '@/engine'
 import { getAllMetrics } from '@/lib/metrics-collector.js'
@@ -67,7 +70,7 @@ export const GET = async (request) => {
       }
     )
   } catch (error) {
-    console.error('[Health] Check failed:', error)
+    log.error('check failed:', { message: error.message })
     return new Response(
       JSON.stringify({
         status: 'error',
@@ -87,7 +90,7 @@ export const HEAD = async (request) => {
     await count('user', {})
     return new Response(null, { status: 200 })
   } catch (error) {
-    console.error('[Health] Check failed:', error)
+    log.error('check failed:', { message: error.message })
     return new Response(null, { status: 503 })
   }
 }

@@ -1,4 +1,7 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[OAuth]');
 import { google } from '@/engine.server';
 import { Google } from 'arctic';
 import { generateState, generateCodeVerifier } from 'arctic';
@@ -52,7 +55,7 @@ export async function HEAD(request) {
     const { valid } = validateOAuthProvider(google);
     return new Response(null, { status: valid ? 200 : 503 });
   } catch (error) {
-    console.error('[OAuth HEAD] Error:', error);
+    log.error('HEAD error:', { message: error.message });
     return new Response(null, { status: 500 });
   }
 }

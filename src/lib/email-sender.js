@@ -1,4 +1,7 @@
+import { createLogger } from './logger.js';
 import { now, genId } from '@/lib/id-helpers';
+
+const log = createLogger('[Email]');
 import { list, update, create } from '@/lib/busybase-store';
 import { sendEmail } from '@/adapters/google-gmail';
 import { EMAIL_STATUS } from '@/config/constants';
@@ -35,7 +38,7 @@ export function parseAttachments(attachmentsJson) {
 export async function logEmailActivity(emailId, action, metadata = {}) {
   try {
     await create('activity_log', { id: genId(), entity_type: 'email', entity_id: emailId, action, metadata: JSON.stringify(metadata), created_at: now() });
-  } catch (e) { console.error('[EMAIL] Failed to log activity:', e.message); }
+  } catch (e) { log.error('failed to log activity:', { message: e.message }); }
 }
 
 export async function checkFailureRate() {
@@ -45,8 +48,8 @@ export async function checkFailureRate() {
     const total = recent.length;
     const failed = recent.filter(e => e.status === EMAIL_STATUS.FAILED).length;
     if (total > 10 && failed / total > 0.5)
-      console.warn('[EMAIL] HIGH FAILURE RATE ALERT:', { failureRate: `${((failed / total) * 100).toFixed(1)}%`, failed, total });
-  } catch (e) { console.error('[EMAIL] Failed to check failure rate:', e.message); }
+      log.warn('HIGH FAILURE RATE ALERT:', { failureRate: `${((failed / total) * 100).toFixed(1)}%`, failed, total });
+  } catch (e) { log.error('failed to check failure rate:', { message: e.message }); }
 }
 
 async function exponentialBackoff(attempt, maxDelayMs) {

@@ -1,4 +1,7 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[AuditStatsAPI]');
 import { getUser, setCurrentRequest } from '@/engine.server';
 import { getPermissionAuditStats, getPermissionAuditBreakdown } from '@/lib/busybase-audit-reads';
 
@@ -23,7 +26,7 @@ export async function GET(request) {
       breakdown: { by_action: actionBreakdown, by_reason_code: reasonCodeBreakdown },
     });
   } catch (error) {
-    console.error('[AuditStatsAPI] GET error:', error);
+    log.error('GET error:', { message: error.message });
     return NextResponse.json({ error: 'Failed to retrieve audit statistics', details: error.message }, { status: 500 });
   }
 }

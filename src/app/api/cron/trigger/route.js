@@ -1,4 +1,7 @@
+import { createLogger } from '@/lib/logger.js';
 import { runDueJobs } from '@/engine/job-engine';
+
+const log = createLogger('[Cron]');
 import { create } from '@/engine';
 
 export const runtime = 'nodejs';
@@ -28,7 +31,7 @@ export async function POST(request) {
       duration_ms: duration,
       status: results.failed > 0 ? 'partial_failure' : 'success',
       error_details: results.errors || null
-    }).catch(err => console.error('[Cron] Log error:', err.message));
+    }).catch(err => log.error('log error:', { message: err.message }));
 
     return new Response(
       JSON.stringify({

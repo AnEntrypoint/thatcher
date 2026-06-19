@@ -1,5 +1,8 @@
+import { createLogger } from './logger.js';
 import crypto from 'crypto';
 import { HTTP } from '@/config/constants';
+
+const log = createLogger('[CSRF]');
 
 const tokens = new Map();
 const TOKEN_TTL = 3600000;
@@ -44,14 +47,14 @@ export async function withCsrfValidation(handler) {
       const token = request.headers.get('x-csrf-token');
 
       if (!token || !validateToken(token)) {
-        console.warn(`[CSRF] Invalid token for ${method}`);
+        log.warn(`invalid token for ${method}`);
         return new Response(JSON.stringify({ error: 'Invalid CSRF token' }), {
           status: HTTP.FORBIDDEN,
           headers: { 'Content-Type': 'application/json' },
         });
       }
     } catch (e) {
-      console.error('[CSRF] Validation error:', e.message);
+      log.error('validation error:', { message: e.message });
       return new Response(JSON.stringify({ error: 'CSRF validation failed' }), {
         status: HTTP.BAD_REQUEST,
         headers: { 'Content-Type': 'application/json' },

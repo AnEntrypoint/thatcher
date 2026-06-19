@@ -1,4 +1,7 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[AuditDashboardAPI]');
 import { getUser, setCurrentRequest } from '@/engine.server';
 import {
   getPermissionAuditTrail, getPermissionAuditStats, getPermissionAuditBreakdown,
@@ -71,7 +74,7 @@ export async function GET(request) {
 
     return NextResponse.json({ success: true, view, data });
   } catch (error) {
-    console.error('[AuditDashboardAPI] GET error:', error);
+    log.error('GET error:', { message: error.message });
     return NextResponse.json({ error: 'Failed to retrieve audit dashboard data', details: error.message }, { status: 500 });
   }
 }

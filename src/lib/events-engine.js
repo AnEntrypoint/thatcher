@@ -1,4 +1,7 @@
+import { createLogger } from './logger.js';
 import { hookEngine } from '@/lib/hook-engine.js';
+
+const log = createLogger('[EventsEngine]');
 import { list, get, update, create, remove } from '@/engine.js';
 import { queueEmail } from '@/engine/notification-engine';
 import { safeJsonParse } from '@/lib/safe-json.js';
@@ -31,7 +34,7 @@ const activateWorkflowsForStage = async (engagementId, stage, user) => {
       hookEngine.execute(`feature:activated:${feature}`, { engagementId, stage, feature, user });
     }
   } catch (error) {
-    console.error(`[ACTIVATION] Error activating workflows for stage ${stage}:`, error.message);
+    log.error(`error activating workflows for stage ${stage}:`, { message: error.message });
   }
 };
 
@@ -47,7 +50,7 @@ export const registerEntityHandlers = () => {
       create('activity_log', { entity_type: 'engagement', entity_id: context.id, action: 'stage_transition',
         message: `Stage transitioned: ${prev.stage} -> ${data.stage}`,
         details: JSON.stringify({ from: prev.stage, to: data.stage, user_role: user?.role }), user_email: user?.email }, user);
-    } catch (e) { console.error('[events-engine] Failed to log stage change:', e.message); }
+    } catch (e) { log.error('failed to log stage change:', { message: e.message }); }
     return context;
   }, { priority: 100, name: 'workflow-stage-validator' });
 

@@ -1,4 +1,7 @@
+import { createLogger } from './logger.js';
 import { retryWithBackoff, withCircuitBreaker, checkpoint, restoreCheckpoint, logRecovery } from '@/lib/error-resilience';
+
+const log = createLogger('[Recovery]');
 import { normalizeError, AppError } from '@/lib/error-handler';
 import { HTTP } from '@/config/constants';
 
@@ -37,7 +40,7 @@ export async function supervise(name, fn, options = {}) {
     );
     supervisor.state = 'failed';
     supervisor.lastError = error;
-    console.error(`[SUPERVISOR] ${name} failed permanently after ${supervisor.restarts.length} restarts`);
+    log.error(`${name} failed permanently after ${supervisor.restarts.length} restarts`);
     throw error;
   }
 
@@ -58,7 +61,7 @@ export async function supervise(name, fn, options = {}) {
 
     if (supervisor.restarts.length < supervisor.maxRestarts) {
       const delay = Math.min(1000 * Math.pow(2, supervisor.restarts.length - 1), 30000);
-      console.warn(`[SUPERVISOR] ${name} restarting in ${delay}ms (attempt ${supervisor.restarts.length})`);
+      log.warn(`${name} restarting in ${delay}ms (attempt ${supervisor.restarts.length})`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return supervise(name, fn, options);
     }
@@ -79,7 +82,7 @@ export async function degradedMode(fn, fallback, options = {}) {
     ]);
     return { mode: 'normal', result };
   } catch (error) {
-    console.warn('[DEGRADED] Falling back to degraded mode', { error: error.message });
+    log.warn('falling back to degraded mode', { error: error.message });
     const result = await fallback();
     return { mode: 'degraded', result };
   }
@@ -115,7 +118,7 @@ export function isolateFailure(fn, defaultValue = null) {
     try {
       return await fn(...args);
     } catch (error) {
-      console.error('[ISOLATE] Failure contained', {
+      log.error('failure contained', {
         function: fn.name,
         error: String(error.message || error)
       });
@@ -163,7 +166,7 @@ export async function withRecovery(fn, options = {}) {
     return result;
   } catch (error) {
     if (fallback) {
-      console.warn('[RECOVERY] Using fallback after error', { error: error.message });
+      log.warn('using fallback after error', { error: error.message });
       return fallback();
     }
     throw error;

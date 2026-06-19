@@ -1,8 +1,3 @@
-/**
- * Structured Logger - Consistent logging across the SDK
- * Simple wrapper with prefix support
- */
-
 const LOG_PREFIXES = {
   API: '[API]',
   DB: '[DB]',
@@ -17,11 +12,6 @@ const LOG_PREFIXES = {
   workflow: '[Workflow]',
 };
 
-/**
- * Create a logger with prefix
- * @param {string} prefix - Log prefix (from LOG_PREFIXES or custom)
- * @returns {object} Logger with methods
- */
 export function createLogger(prefix) {
   const logger = {
     error: (msg, meta = {}) => {
@@ -43,11 +33,6 @@ export function createLogger(prefix) {
   return logger;
 }
 
-/**
- * Get prefixed logger
- * @param {string} key - Key from LOG_PREFIXES
- * @returns {object}
- */
 export function getLogger(key) {
   return createLogger(LOG_PREFIXES[key] || `[${key.toUpperCase()}]`);
 }

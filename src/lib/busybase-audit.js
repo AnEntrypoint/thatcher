@@ -6,7 +6,10 @@
  * forget: it returns immediately and swallows/logs write errors rather than throwing.
  */
 
+import { createLogger } from './logger.js';
 import { genId, now } from './id-helpers.js';
+
+const log = createLogger('[BusyBaseAudit]');
 
 let _client = null;
 
@@ -41,7 +44,7 @@ export function logAction(entityType, entityId, action, userId, beforeState, aft
   };
   if (_client) {
     Promise.resolve(_client.from('audit_logs').insert(row))
-      .catch(err => console.error('[BusyBaseAudit] logAction failed:', err?.message || err));
+      .catch(err => log.error('logAction failed:', { message: err?.message || String(err) }));
   }
   return { id, timestamp };
 }

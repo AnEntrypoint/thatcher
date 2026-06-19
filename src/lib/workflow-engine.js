@@ -3,6 +3,9 @@ import { getConfigEngineSync } from './config-generator-engine.js';
 import { executeHook } from './hook-engine.js';
 import { AppError } from './error-handler.js';
 import { HTTP } from '../config/constants.js';
+import { createLogger } from './logger.js';
+
+const log = createLogger('[WorkflowEngine]');
 
 const LOCKOUT_SECONDS = 300; // 5 minutes default
 const workflowCache = new Map();
@@ -144,7 +147,7 @@ export async function transition(entityType, entityId, workflowName, toState, us
     to: toState,
     user,
     record: updated,
-  }).catch(err => console.error('transition hook error:', err));
+  }).catch(err => log.error('transition hook error:', { message: err?.message || String(err) }));
 
   return updated;
 }

@@ -1,14 +1,7 @@
-/**
- * Spec Helpers - Utility functions for entity specifications
- * Provides easy access to entity specs, navigation, and derived properties
- */
+import { createLogger } from '../lib/logger.js';
 
-/**
- * Get entity spec by name
- * @param {string} name - Entity name
- * @param {object} configEngine - Config engine instance
- * @returns {object|null} Entity specification or null if not found
- */
+const log = createLogger('[SpecHelpers]');
+
 export function getSpec(name, configEngine) {
   // Callers across the framework invoke getSpec(name) without threading the engine
   // (moon's getSpec self-resolved it). Fall back to the singleton when omitted.
@@ -45,7 +38,7 @@ export function getNavItems(configEngine) {
         href: `/${s.name}`,
       }));
   } catch (error) {
-    console.error('[spec-helpers] getNavItems error:', error.message);
+    log.error('getNavItems error:', { message: error.message });
     return [];
   }
 }
@@ -232,7 +225,7 @@ export function buildNavigation(configEngine, user = null) {
 
     return items;
   } catch (error) {
-    console.error('[spec-helpers] buildNavigation error:', error.message);
+    log.error('buildNavigation error:', { message: error.message });
     return [];
   }
 }

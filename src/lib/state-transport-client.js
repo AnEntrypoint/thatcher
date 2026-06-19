@@ -1,5 +1,8 @@
 import Protocol from './state-protocol.js'
 import { CONFIG, ReconnectManager } from './state-transport-reconnect.js'
+import { createLogger } from './logger.js'
+
+const log = createLogger('[StateTransport]')
 
 class StateTransportClient {
   constructor(config = {}) {
@@ -151,7 +154,7 @@ class StateTransportClient {
       try {
         handler(data)
       } catch (error) {
-        console.error(`Error in event handler for ${event}:`, error)
+        log.error(`event handler error for ${event}:`, { message: error?.message || String(error) })
       }
     }
   }

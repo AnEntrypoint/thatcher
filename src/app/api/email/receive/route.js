@@ -1,6 +1,9 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
 import { genId, now } from '@/lib/id-helpers';
 import { create } from '@/engine';
+
+const log = createLogger('[EmailReceive]');
 import path from 'path';
 import fs from 'fs';
 
@@ -120,7 +123,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[EMAIL_RECEIVE] Error processing webhook:', error);
+    log.error('error processing webhook:', { message: error.message });
 
     return NextResponse.json(
       {

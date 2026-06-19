@@ -1,6 +1,9 @@
 import os from 'os'
 import fs from 'fs'
 import { recordResource } from '@/lib/metrics-collector.js'
+import { createLogger } from './logger.js';
+
+const log = createLogger('[ResourceMonitor]');
 
 let monitoringInterval = null
 let dbPath = null
@@ -69,7 +72,7 @@ function collectResources() {
 
     return { cpu, memory, disk }
   } catch (err) {
-    console.error('[ResourceMonitor] Collection error:', err)
+    log.error('collection error:', { message: err?.message || String(err) })
     return null
   }
 }

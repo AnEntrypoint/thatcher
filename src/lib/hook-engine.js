@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('[HookEngine]');
+
 export class HookEngine {
   constructor() {
     this.hooks = new Map();
@@ -39,7 +43,7 @@ export class HookEngine {
         await hook.callback(data);
         if (hook.once) this.off(name, hook.callback);
       } catch (error) {
-        console.error(`[HookEngine] Hook "${name}" error:`, error.message);
+        log.error(`hook "${name}" error:`, { message: error.message });
         errors.push(error);
         if (!fallthrough) throw error;
       }
@@ -59,7 +63,7 @@ export class HookEngine {
         if (result !== undefined) current = result;
         if (hook.once) this.off(name, hook.callback);
       } catch (error) {
-        console.error(`[HookEngine] Pipe hook "${name}" error:`, error.message);
+        log.error(`pipe hook "${name}" error:`, { message: error.message });
       }
     }
     return current;

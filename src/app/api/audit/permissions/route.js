@@ -1,4 +1,7 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[AuditAPI]');
 import { lucia } from '@/engine.server';
 import { cookies } from '@/lib/next-polyfills';
 import {
@@ -63,7 +66,7 @@ export async function GET(request) {
 
     return NextResponse.json({ success: true, data: results, count: results.length, scope: permCheck.scope });
   } catch (error) {
-    console.error('[AuditAPI] GET error:', error);
+    log.error('GET error:', { message: error.message });
     return NextResponse.json({ error: 'Failed to retrieve audit trail', details: error.message }, { status: 500 });
   }
 }
@@ -87,7 +90,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, auditId });
   } catch (error) {
-    console.error('[AuditAPI] POST error:', error);
+    log.error('POST error:', { message: error.message });
     return NextResponse.json({ error: 'Failed to log permission change', details: error.message }, { status: 500 });
   }
 }

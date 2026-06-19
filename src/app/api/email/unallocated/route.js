@@ -1,5 +1,8 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
 import { list } from '@/engine';
+
+const log = createLogger('[EmailUnallocated]');
 
 export async function GET(request) {
   try {
@@ -32,7 +35,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
-    console.error('[EMAIL_UNALLOCATED] Error:', error);
+    log.error('error:', { message: error.message });
     return NextResponse.json(
       { error: 'Internal server error', message: error.message },
       { status: 500 }
