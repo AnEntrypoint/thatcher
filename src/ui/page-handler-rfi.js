@@ -18,7 +18,13 @@ export async function handleRfiDetail(user, rfiId) {
     for (const r of responses) counts[r.question_id] = (counts[r.question_id] || 0) + 1;
     questions = questions.map(q => ({ ...q, response_count: counts[q.id] || 0 }));
   } catch {}
-  let sections = []; try { sections = (await list('rfi_section', {})).filter(s => s.rfi_id === rfiId || s.engagement_id === rfi.engagement_id); } catch {}
+  let sections = []; try {
+    const [bySectionId, byEngId] = await Promise.all([
+      list('rfi_section', { rfi_id: rfiId }),
+      list('rfi_section', { engagement_id: rfi.engagement_id }),
+    ]);
+    const seen = new Set(); sections = [...bySectionId, ...byEngId].filter(s => seen.has(s.id) ? false : seen.add(s.id));
+  } catch {}
   let engagement = null; try { if (rfi.engagement_id) engagement = await get('engagement', rfi.engagement_id); } catch {}
   const { renderRfiDetail } = await lazyR('rfi-detail-renderer.js');
   return renderRfiDetail(user, rfi, questions, sections, engagement);

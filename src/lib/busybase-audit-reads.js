@@ -21,11 +21,12 @@ const parsePermRow = (row) => row ? {
 function ts(r) { return r.timestamp || r.created_at || 0; }
 
 export async function getAuditHistory(filters = {}, page = 1, pageSize = 50) {
-  let rows = await list('audit_logs', {});
-  if (filters.entityType) rows = rows.filter(r => r.entity_type === filters.entityType);
-  if (filters.entityId) rows = rows.filter(r => r.entity_id === filters.entityId);
-  if (filters.userId) rows = rows.filter(r => r.user_id === filters.userId);
-  if (filters.action) rows = rows.filter(r => r.action === filters.action);
+  const where = {};
+  if (filters.entityType) where.entity_type = filters.entityType;
+  if (filters.entityId) where.entity_id = filters.entityId;
+  if (filters.userId) where.user_id = filters.userId;
+  if (filters.action) where.action = filters.action;
+  let rows = await list('audit_logs', where);
   if (filters.fromDate) rows = rows.filter(r => ts(r) >= filters.fromDate);
   if (filters.toDate) rows = rows.filter(r => ts(r) <= filters.toDate);
   rows.sort((a, b) => ts(b) - ts(a));
@@ -52,12 +53,12 @@ export const getActionStats = (fromDate, toDate) => rangeStats('action', fromDat
 export const getUserStats = (fromDate, toDate) => rangeStats('user_id', fromDate, toDate);
 
 export async function getPermissionAuditTrail({ entityType, entityId, userId, affectedUserId, limit = 100, offset = 0 }) {
-  let rows = await list('permission_audit', {});
-  if (entityType) rows = rows.filter(r => r.entity_type === entityType);
-  if (entityId) rows = rows.filter(r => r.entity_id === entityId);
-  if (userId) rows = rows.filter(r => r.user_id === userId);
-  if (affectedUserId) rows = rows.filter(r => r.affected_user_id === affectedUserId);
-  rows.sort((a, b) => ts(b) - ts(a));
+  const where = {};
+  if (entityType) where.entity_type = entityType;
+  if (entityId) where.entity_id = entityId;
+  if (userId) where.user_id = userId;
+  if (affectedUserId) where.affected_user_id = affectedUserId;
+  const rows = (await list('permission_audit', where)).sort((a, b) => ts(b) - ts(a));
   return rows.slice(offset, offset + limit).map(parsePermRow);
 }
 
