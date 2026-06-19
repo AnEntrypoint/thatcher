@@ -2,36 +2,36 @@ import { h } from '@/ui/webjsx.js'
 import { SPACING } from './spacing-system.js'
 
 export const STAGE_COLORS = {
-  info_gathering: { bg: '#dbeafe', text: '#1e40af', label: 'Info Gathering', bgDark: '#1e3a8a', textDark: '#60a5fa' },
-  commencement: { bg: '#dbeafe', text: '#1e40af', label: 'Commencement', bgDark: '#1e3a8a', textDark: '#60a5fa' },
-  team_execution: { bg: '#fef3c7', text: '#92400e', label: 'Team Execution', bgDark: '#78350f', textDark: '#fbbf24' },
-  partner_review: { bg: '#fef3c7', text: '#92400e', label: 'Partner Review', bgDark: '#78350f', textDark: '#fbbf24' },
-  finalization: { bg: '#d1fae5', text: '#065f46', label: 'Finalization', bgDark: '#064e3b', textDark: '#34d399' },
-  closeout: { bg: '#d1fae5', text: '#065f46', label: 'Close Out', bgDark: '#064e3b', textDark: '#34d399' },
+  info_gathering: { label: 'Info Gathering' },
+  commencement: { label: 'Commencement' },
+  team_execution: { label: 'Team Execution' },
+  partner_review: { label: 'Partner Review' },
+  finalization: { label: 'Finalization' },
+  closeout: { label: 'Close Out' },
 }
 
 export const STATUS_COLORS = {
-  pending: { bg: '#fef3c7', text: '#92400e' },
-  active: { bg: '#dbeafe', text: '#1e40af' },
-  completed: { bg: '#d1fae5', text: '#065f46' },
-  archived: { bg: '#f3f4f6', text: '#4b5563' },
-  open: { bg: '#fef3c7', text: '#92400e' },
-  closed: { bg: '#d1fae5', text: '#065f46' },
-  draft: { bg: '#f3f4f6', text: '#374151' },
-  in_progress: { bg: '#dbeafe', text: '#1e40af' },
-  review: { bg: '#ede9fe', text: '#5b21b6' },
-  approved: { bg: '#d1fae5', text: '#065f46' },
-  rejected: { bg: '#fee2e2', text: '#991b1b' },
-  overdue: { bg: '#fee2e2', text: '#991b1b' },
-  cancelled: { bg: '#f3f4f6', text: '#374151' },
-  on_hold: { bg: '#fef3c7', text: '#92400e' },
-  resolved: { bg: '#d1fae5', text: '#065f46' },
-  unresolved: { bg: '#fee2e2', text: '#991b1b' },
-  flagged: { bg: '#fce7f3', text: '#9d174d' },
-  responded: { bg: '#dbeafe', text: '#1e40af' },
-  expired: { bg: '#f3f4f6', text: '#374151' },
-  private: { bg: '#ede9fe', text: '#5b21b6' },
-  public: { bg: '#dbeafe', text: '#1e40af' },
+  pending: {},
+  active: {},
+  completed: {},
+  archived: {},
+  open: {},
+  closed: {},
+  draft: {},
+  in_progress: {},
+  review: {},
+  approved: {},
+  rejected: {},
+  overdue: {},
+  cancelled: {},
+  on_hold: {},
+  resolved: {},
+  unresolved: {},
+  flagged: {},
+  responded: {},
+  expired: {},
+  private: {},
+  public: {},
 }
 
 export const STAGE_CONFIG = [
@@ -63,11 +63,8 @@ export function emptyRow(colspan, message = 'No items found') {
 export function stagePill(stage) {
   const cfg = STAGE_CONFIG.find(s => s.key === stage)
   const lbl = cfg ? cfg.label : (stage || '-')
-  const stageColor = STAGE_COLORS[stage]
-  if (stageColor) {
-    return `<span class="stage-pill stage-${esc(stage||'')}" data-stage="${stage}" style="background:${stageColor.bg};color:${stageColor.text}">${lbl}</span>`
-  }
-  return `<span class="stage-pill stage-${esc(stage||'')}">${lbl}</span>`
+  // Use CSS classes (stage-pill stage-${stage}) for dark-mode support via styles2.css
+  return `<span class="stage-pill stage-${esc(stage||'')}" data-stage="${stage}">${lbl}</span>`
 }
 
 export function statusPill(status) {
@@ -85,7 +82,8 @@ export function statusBadge(status) {
 export function progressBar(pct) {
   if (typeof pct !== 'number') return '-'
   const p = Math.min(100, Math.max(0, Math.round(pct)))
-  return `<div style="display:flex;align-items:center;gap:${SPACING.sm};min-width:100px"><div style="flex:1;height:6px;background:var(--color-border-light,#e2e8f0);border-radius:3px;overflow:hidden"><div style="height:100%;width:${p}%;background:var(--color-primary);border-radius:3px"></div></div><span style="font-size:12px;color:var(--color-text-muted);min-width:28px">${p}%</span></div>`
+  // Use CSS variable for border color (defined in both light and dark mode), responsive min-width
+  return `<div style="display:flex;align-items:center;gap:${SPACING.sm};min-width:min(80px,60vw);max-width:100%"><div style="flex:1;height:6px;background:var(--color-border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${p}%;background:var(--color-primary);border-radius:3px"></div></div><span style="font-size:12px;color:var(--color-text-muted);min-width:28px">${p}%</span></div>`
 }
 
 export function fmtVal(value, fieldKey, item = {}) {
@@ -96,12 +94,15 @@ export function fmtVal(value, fieldKey, item = {}) {
   }
   if (fieldKey === 'year') { const n = Number(value); if (!isNaN(n)) return String(Math.floor(n)) }
   if (fieldKey === 'stage' && STAGE_COLORS[value]) {
-    const s = STAGE_COLORS[value]
-    return h('span', { className: 'badge-stage', style: `background:${s.bg};color:${s.text}` }, s.label)
+    const lbl = STAGE_COLORS[value].label || value.charAt(0).toUpperCase() + value.slice(1)
+    // Use CSS classes (stage-${value}) for dark-mode support via styles2.css
+    return h('span', { className: `badge-stage stage-${esc(value)}` }, lbl)
   }
   if (fieldKey === 'status' && STATUS_COLORS[value]) {
-    const s = STATUS_COLORS[value]
-    return h('span', { className: 'badge-status', style: `background:${s.bg};color:${s.text}` }, value.charAt(0).toUpperCase() + value.slice(1))
+    // Map status to pill class following the pattern in statusBadge
+    const statusClassMap = { active:'pill pill-success', inactive:'pill pill-danger', pending:'pill pill-warning', open:'pill pill-info', in_progress:'pill pill-info', completed:'pill pill-success', closed:'pill pill-neutral', archived:'pill pill-neutral', responded:'pill pill-info', overdue:'pill pill-danger', rejected:'pill pill-danger', unresolved:'pill pill-danger', approved:'pill pill-success', review:'pill pill-primary', flagged:'pill pill-danger', expired:'pill pill-neutral', private:'pill pill-primary', public:'pill pill-info' }
+    const cls = statusClassMap[value] || 'pill pill-neutral'
+    return h('span', { className: cls }, value.charAt(0).toUpperCase() + value.slice(1))
   }
   // *_display is the resolved label of a referenced record (set in
   // page-handler-helpers from refCaches), i.e. DB-sourced plain text — escape it.
@@ -114,9 +115,11 @@ export function fmtVal(value, fieldKey, item = {}) {
 export function statusLabel(status) {
   if (!status) return ''
   const key = status.toLowerCase().replace(/\s+/g, '_')
-  const s = STATUS_COLORS[key] || { bg: '#f3f4f6', text: '#374151' }
+  // Map to pill class following the pattern in statusBadge for consistent dark-mode styling
+  const statusClassMap = { active:'pill pill-success', inactive:'pill pill-danger', pending:'pill pill-warning', open:'pill pill-info', in_progress:'pill pill-info', completed:'pill pill-success', closed:'pill pill-neutral', archived:'pill pill-neutral', responded:'pill pill-info', overdue:'pill pill-danger', rejected:'pill pill-danger', unresolved:'pill pill-danger', approved:'pill pill-success', review:'pill pill-primary', flagged:'pill pill-danger', expired:'pill pill-neutral', private:'pill pill-primary', public:'pill pill-info' }
+  const cls = statusClassMap[key] || 'pill pill-neutral'
   const label = status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
-  return h('span', { className: 'status-label', style: `background:${s.bg};color:${s.text}` }, label)
+  return h('span', { className: `status-label ${cls}` }, label)
 }
 
 export function nameHash(name) {

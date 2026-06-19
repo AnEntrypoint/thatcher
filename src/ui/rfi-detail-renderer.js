@@ -1,13 +1,13 @@
 import { page } from '@/ui/layout.js';
 import { canEdit, isPartner, isManager, isClientUser } from '@/ui/permissions-ui.js';
-import { esc, statusBadge, TOAST_SCRIPT } from '@/ui/render-helpers.js';
+import { esc, statusBadge, TOAST_SCRIPT, emptyRow } from '@/ui/render-helpers.js';
 import { SPACING } from '@/ui/spacing-system.js';
 
 const TOAST = TOAST_SCRIPT;
 
 function questionRow(q, i, sections = [], clientId = '', showRespond = false, showView = false) {
   const section = sections.find(s => s.id === q.section_id || s.id === q.rfi_section_id);
-  const sLabel = section ? `<span class="badge badge-flat-primary text-xs">${esc(section.name)}</span>` : '';
+  const sLabel = section ? `<span class="badge badge-primary text-xs">${esc(section.name)}</span>` : '';
   const hasResp = q.responses > 0 || q.response_count > 0;
   const respBadge = hasResp ? `<span class="badge badge-success badge-flat-success text-xs">Responded</span>` : '';
   const assignedLabel = q.assigned_to ? `<span class="badge badge-flat-secondary text-xs">Assigned</span>` : '';
@@ -19,7 +19,7 @@ function questionRow(q, i, sections = [], clientId = '', showRespond = false, sh
     <td class="text-center text-sm text-base-content/70 w-8">${i+1}</td>
     <td class="text-sm max-w-sm">${esc(q.question_text||q.question||q.title||'Question')}</td>
     <td>${sLabel}</td>
-    <td class="text-sm text-base-content/50">${q.deadline?new Date(typeof q.deadline==='number'?q.deadline*1000:q.deadline).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td>
+    <td class="text-sm text-base-content/70">${q.deadline?new Date(typeof q.deadline==='number'?q.deadline*1000:q.deadline).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}):'-'}</td>
     <td>${respBadge}${assignedLabel}</td>
     <td><div class="flex gap-2">${respondBtn}${viewBtn}${editDelBtns}</div></td>
   </tr>`;
@@ -77,7 +77,7 @@ export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], e
   ];
 
   const infoGrid = `<div class="rfi-info-grid">` +
-    infoItems.map(([l,v]) => `<div><div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--color-text-muted);margin-bottom:${SPACING.xs}">${l}</div><div style="font-size:0.875rem;color:var(--color-text)">${v}</div></div>`).join('') +
+    infoItems.map(([l,v]) => `<div><div class="info-label-key">${l}</div><div class="info-label-value">${v}</div></div>`).join('') +
     `</div>`;
 
   const content = `
@@ -95,16 +95,16 @@ export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], e
     <div class="card-clean">
       <div class="card-clean-body">
          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${SPACING.md};flex-wrap:wrap;gap:${SPACING.sm}">
-           <h2 style="font-size:0.875rem;font-weight:600;color:var(--color-text)">Questions (${questions.length})</h2>
+           <h3 style="font-size:1rem;font-weight:600;color:var(--color-text)">Questions (${questions.length})</h3>
            <div style="display:flex;gap:${SPACING.sm};align-items:center;flex-wrap:wrap">
             ${sectionTabs}
             <input type="text" placeholder="Search..." oninput="filterQuestions(this.value)" class="input input-solid" style="max-width:160px;font-size:0.875rem"/>
           </div>
         </div>
         <div class="table-wrap">
-          <table class="data-table" id="q-table">
-            <thead><tr><th>#</th><th>Question</th><th>Section</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="q-tbody">${qRows}</tbody>
+          <table class="data-table" id="q-table" aria-label="Questions table">
+            <thead><tr><th scope="col">#</th><th scope="col">Question</th><th scope="col">Section</th><th scope="col">Deadline</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+            <tbody id="q-tbody">${qRows || `<tr><td colspan="6" style="padding:${SPACING.md}"><div class="skeleton" style="height:40px"></div></td></tr>`}</tbody>
           </table>
         </div>
       </div>
@@ -117,6 +117,7 @@ export function renderRfiDetail(user, rfi = {}, questions = [], sections = [], e
   `;
 
   const script = `${TOAST}
+(function(){if(!document.getElementById('rfi-detail-styles')){var style=document.createElement('style');style.id='rfi-detail-styles';style.textContent='.info-label-key{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--color-text-muted);margin-bottom:${SPACING.xs}} .info-label-value{font-size:0.875rem;color:var(--color-text)}';document.head.appendChild(style)}})();
 var activeSection='';
 function filterBySection(sid){
   activeSection=sid;
