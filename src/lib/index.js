@@ -17,15 +17,11 @@ export {
   UnauthorizedError,
   ConflictError,
   DatabaseError,
-  ExternalAPIError,
-  errorHandler,
-  apiErrorHandler,
   normalizeError,
   formatErrorResponse,
   createErrorLogger,
 } from '@/lib/error-handler';
 export { createApiHandler } from '@/lib/api';
-export * from '@/lib/errors';
 export { genId, now } from '@/lib/id-helpers';
 export { setBusyBaseClient } from '@/lib/busybase-store';
 export { logAction } from '@/lib/busybase-audit';

@@ -1,13 +1,9 @@
 let tagsStore = {};
 
 async function apiCall(endpoint, options = {}) {
-  try {
-    const res = await fetch(`/api/tag${endpoint}`, { headers: { 'Content-Type': 'application/json' }, ...options });
-    if (!res.ok) throw new Error('API error');
-    return await res.json();
-  } catch (e) {
-    throw e;
-  }
+  const res = await fetch(`/api/tag${endpoint}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+  if (!res.ok) throw new Error('API error');
+  return await res.json();
 }
 
 async function createTag(name, color = '#808080') {

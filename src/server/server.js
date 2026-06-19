@@ -1,13 +1,14 @@
-/**
- * Thatcher HTTP Server - Simplified generic CRUD router
- * Provides out-of-the-box API for all entities
- */
-
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { createLogger } from '../lib/logger.js';
 import * as thatcherLib from '../index.js';
+
+const log = createLogger('[Server]');
+const pageLog = createLogger('[Page]');
+const staticLog = createLogger('[Static]');
+const apiLog = createLogger('[API]');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,7 +59,7 @@ export function createServer(options) {
         const { loadPlugins } = await load(path.join(__dirname, '../plugins/index.js'));
         await loadPlugins(configEngine);
         systemInitialized = true;
-        console.log('[Server] System ready');
+        log.info('System ready');
       }
 
       const url = new URL(req.url, `http://${req.headers.host}`);
@@ -114,7 +115,7 @@ export function createServer(options) {
             return;
           }
         } catch (e) {
-          console.error('[Page]', e.message);
+          pageLog.error(e.message);
         }
       }
 
@@ -123,7 +124,7 @@ export function createServer(options) {
       res.end(JSON.stringify({ error: 'Not found' }));
 
     } catch (err) {
-      console.error('[Server]', err.message);
+      log.error(err.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     } finally {
@@ -134,9 +135,6 @@ export function createServer(options) {
   return server;
 }
 
-/**
- * Serve static file if exists
- */
 async function serveStaticFile(pathname, req, res, load) {
   if (pathname === '/' || pathname === '/index.html') {
     // Could serve SPA
@@ -164,14 +162,11 @@ async function serveStaticFile(pathname, req, res, load) {
   } catch (err) {
     // A missing file is a normal 404; anything else (permission denied, file
     // locked) is a real problem worth surfacing rather than silently swallowing.
-    if (err.code !== 'ENOENT') console.error('[Static]', filePath, err.code, err.message);
+    if (err.code !== 'ENOENT') staticLog.error(`${filePath} ${err.code}`, { message: err.message });
   }
   return false;
 }
 
-/**
- * File exists check
- */
 function fileExists(p) {
   try {
     return fs.existsSync(p);
@@ -180,9 +175,6 @@ function fileExists(p) {
   }
 }
 
-/**
- * Send response appropriately
- */
 async function sendResponse(res, response) {
   const headerObj = {};
   if (response.headers) {
@@ -213,9 +205,6 @@ async function sendResponse(res, response) {
   res.end(bodyOut);
 }
 
-/**
- * Generic CRUD handler
- */
 async function handleGenericCrud(req, res, entity, id, action, thatcher, configEngineArg) {
   // Simple auth: get from cookie or header
   let user = null;
@@ -304,15 +293,12 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
   } catch (err) {
-    console.error('[API]', err.message);
+    apiLog.error(err.message);
     res.writeHead(500);
     res.end(JSON.stringify({ error: err.message }));
   }
 }
 
-/**
- * Read request body
- */
 async function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';

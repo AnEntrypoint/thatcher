@@ -52,7 +52,7 @@ export function createStagePipeline(options = {}) {
     `;
 
     if (isComplete) {
-      circle.textContent = '✓';
+      circle.textContent = 'ok';
     } else {
       circle.textContent = idx + 1;
     }
@@ -110,7 +110,7 @@ export function createStagePipeline(options = {}) {
 
         if (i < idx) {
           circle.style.background = '#28a745';
-          circle.textContent = '✓';
+          circle.textContent = 'ok';
           label.style.color = '#28a745';
         } else if (i === idx) {
           circle.style.background = '#007bff';

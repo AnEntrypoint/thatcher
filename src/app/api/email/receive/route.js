@@ -4,10 +4,10 @@ import { create } from '@/engine';
 import path from 'path';
 import fs from 'fs';
 
-const TEMP_EMAIL_ATTACHMENTS_DIR = path.resolve(process.cwd(), 'data', 'temp_email_attachments');
+const EMAIL_ATTACHMENTS_DIR = path.resolve(process.cwd(), 'data', 'temp_email_attachments');
 
-if (!fs.existsSync(TEMP_EMAIL_ATTACHMENTS_DIR)) {
-  fs.mkdirSync(TEMP_EMAIL_ATTACHMENTS_DIR, { recursive: true });
+if (!fs.existsSync(EMAIL_ATTACHMENTS_DIR)) {
+  fs.mkdirSync(EMAIL_ATTACHMENTS_DIR, { recursive: true });
 }
 
 export async function POST(request) {
@@ -50,7 +50,7 @@ export async function POST(request) {
         const attachmentId = genId();
         const ext = path.extname(filename);
         const safeFilename = `${attachmentId}${ext}`;
-        const filePath = path.join(TEMP_EMAIL_ATTACHMENTS_DIR, safeFilename);
+        const filePath = path.join(EMAIL_ATTACHMENTS_DIR, safeFilename);
 
         const buffer = Buffer.isBuffer(content)
           ? content

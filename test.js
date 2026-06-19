@@ -19,10 +19,10 @@ let failed = 0;
 function assert(condition, message) {
   if (condition) {
     passed++;
-    console.log(`  ✓ ${message}`);
+    console.log(`  [PASS] ${message}`);
   } else {
     failed++;
-    console.error(`  ✗ ${message}`);
+    console.error(`  [FAIL] ${message}`);
   }
 }
 
@@ -32,7 +32,7 @@ async function test(name, fn) {
     await fn();
   } catch (error) {
     failed++;
-    console.error(`  ✗ ${name}: ${error.message}`);
+    console.error(`  [FAIL] ${name}: ${error.message}`);
   }
 }
 

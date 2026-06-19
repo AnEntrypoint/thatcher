@@ -1,19 +1,8 @@
-/**
- * Hook Engine - Event system for plugins and lifecycle hooks
- * Fires events like 'create:entity:after', 'update:entity:before', etc.
- */
-
 export class HookEngine {
   constructor() {
     this.hooks = new Map();
   }
 
-  /**
-   * Register a hook handler
-   * @param {string} name - Event name
-   * @param {Function} callback - Handler function
-   * @param {object} options - { priority, once }
-   */
   register(name, callback, options = {}) {
     const { priority = 0, once = false } = options;
     if (!this.hooks.has(name)) this.hooks.set(name, []);
@@ -30,9 +19,6 @@ export class HookEngine {
     return this.register(name, callback, options);
   }
 
-  /**
-   * Unregister a hook handler
-   */
   off(name, callback) {
     const list = this.hooks.get(name);
     if (!list) return this;
@@ -42,13 +28,6 @@ export class HookEngine {
     return this;
   }
 
-  /**
-   * Execute all handlers for an event (fire-and-forget style)
-   * @param {string} name
-   * @param {object} data
-   * @param {object} options - { fallthrough: true to continue on error }
-   * @returns {Promise<{success: boolean, data, errors}>}
-   */
   async execute(name, data = {}, options = {}) {
     const { fallthrough = true } = options;
     const hooks = this.hooks.get(name);
@@ -69,12 +48,6 @@ export class HookEngine {
     return { success: errors.length === 0, data, errors };
   }
 
-  /**
-   * Pipe data through transformation hooks
-   * @param {string} name
-   * @param {any} data
-   * @returns {Promise<any>}
-   */
   async pipe(name, data = {}) {
     const hooks = this.hooks.get(name);
     if (!hooks || hooks.length === 0) return data;
@@ -92,19 +65,10 @@ export class HookEngine {
     return current;
   }
 
-  /**
-   * Get all listeners for an event
-   * @param {string} name
-   * @returns {Array}
-   */
   listeners(name) {
     return this.hooks.has(name) ? Array.from(this.hooks.get(name)) : [];
   }
 
-  /**
-   * Get statistics
-   * @returns {object} Map of event -> count
-   */
   stats() {
     const result = {};
     for (const [name, list] of this.hooks.entries()) {
@@ -113,9 +77,6 @@ export class HookEngine {
     return result;
   }
 
-  /**
-   * Clear all hooks
-   */
   clear() {
     this.hooks.clear();
   }
@@ -124,23 +85,14 @@ export class HookEngine {
 // Global singleton
 export const hookEngine = new HookEngine();
 
-/**
- * Execute hook (convenience function)
- */
 export async function executeHook(name, data = {}, options = {}) {
   return hookEngine.execute(name, data, options);
 }
 
-/**
- * Pipe through hooks
- */
 export async function pipeHook(name, data = {}) {
   return hookEngine.pipe(name, data);
 }
 
-/**
- * Register hook debug exposure
- */
 function registerHookDebug() {
   if (globalThis.__debug__) {
     globalThis.__debug__.expose('hooks', {

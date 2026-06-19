@@ -4,7 +4,7 @@ const extractEntityInfo = (request, params = {}) => {
   const url = new URL(request.url);
   const parts = url.pathname.split('/').filter(Boolean);
   const entityType = parts[parts.length - 2] || 'unknown';
-  const entityId = params.id || params.engagementId || params.reviewId || params.highlightId || params.permissionId || parts[parts.length - 1];
+  const entityId = params.id || parts[parts.length - 1];
   return { entityType, entityId };
 };
 

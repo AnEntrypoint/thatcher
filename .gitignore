@@ -16,3 +16,5 @@ coverage/
 .gm/
 .gm/pw-sock-*/
 package-lock.json
+.gm/browser-profile/
+.gm/browser-profile-*/

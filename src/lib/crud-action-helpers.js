@@ -1,4 +1,4 @@
-import { AppError } from '@/lib/errors';
+import { AppError } from '@/lib/error-handler';
 import { HTTP } from '@/config/constants';
 import { now } from '@/lib/id-helpers';
 
