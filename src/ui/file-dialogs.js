@@ -53,7 +53,18 @@ export function quickViewAttachment() {
 }
 export function fetchCachedPdf(fileId) {
   return `<script>
-  window.fetchCachedPdf=function(id){var cacheKey='pdf_cache_'+id;var cached=sessionStorage.getItem(cacheKey);if(cached){return Promise.resolve(cached)}return fetch('/api/file/'+(id||'${fileId}')+'/download').then(function(r){return r.blob()}).then(function(b){var url=URL.createObjectURL(b);sessionStorage.setItem(cacheKey,url);return url})};
+  window.fetchCachedPdf = function(id) {
+    var cacheKey = 'pdf_cache_' + id;
+    var cached = sessionStorage.getItem(cacheKey);
+    if (cached) { return Promise.resolve(cached); }
+    return fetch('/api/file/' + (id || '${fileId}') + '/download')
+      .then(function(r) { return r.blob(); })
+      .then(function(b) {
+        var url = URL.createObjectURL(b);
+        sessionStorage.setItem(cacheKey, url);
+        return url;
+      });
+  };
   </script>`;
 }
 export function fileAttachmentBar(files = []) {

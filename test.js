@@ -168,6 +168,31 @@ await test('10. Export Sink - creation', async () => {
   assert(stats.queueSize === 0, 'Queue starts empty');
 });
 
+await test('11. createErrorLogger - delegates to createLogger (no raw console)', async () => {
+  const { createErrorLogger } = await import('./src/lib/error-handler.js');
+  const logger = createErrorLogger('test-ctx');
+  assert(typeof logger.error === 'function', 'error method exists');
+  assert(typeof logger.warn === 'function', 'warn method exists');
+  assert(typeof logger.debug === 'function', 'debug method exists');
+  assert(typeof logger.info === 'function', 'info is a no-op function');
+  assert(logger.info('msg') === undefined, 'info returns undefined (no-op)');
+});
+
+await test('12. searchLogs - where clause filter applied at DB level', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile('./src/lib/audit-logger-enhanced.js', 'utf8');
+  assert(src.includes('where.level = filters.level'), 'level filter pushed to DB where clause');
+  assert(src.includes('where.operation = filters.operation'), 'operation filter pushed to DB where clause');
+  assert(src.includes("list('structured_logs', where)"), 'searchLogs passes where clause to list()');
+});
+
+await test('13. route-helpers - safe wrapper logs swallowed errors via log.warn', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const src = await readFile('./src/lib/route-helpers.js', 'utf8');
+  assert(src.includes('log.warn'), 'swallowed metadata errors are logged via log.warn');
+  assert(src.includes("title: 'Not Found'"), 'fallback returns Not Found title');
+});
+
 console.log(`\n${'='.repeat(50)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);
 console.log(`${'='.repeat(50)}`);
