@@ -176,6 +176,18 @@ html, body { overflow-x: hidden; max-width: 100%; }
 .stage-finalization { background: #dcfce7; color: #15803d; }
 .stage-closeout { background: #f1f5f9; color: #475569; }
 
+/* Badge variants for table cells and detail views (inherit stage/status pill colors via classes) */
+.badge-stage { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; }
+.badge-stage.stage-info_gathering { background: #dbeafe; color: #1e40af; }
+.badge-stage.stage-commencement { background: #fef3c7; color: #92400e; }
+.badge-stage.stage-team_execution { background: #dbeafe; color: #1e40af; }
+.badge-stage.stage-partner_review { background: #ede9fe; color: #5b21b6; }
+.badge-stage.stage-finalization { background: #dcfce7; color: #15803d; }
+.badge-stage.stage-closeout { background: #f1f5f9; color: #475569; }
+
+/* Status label badges (alias to pill classes for consistency) */
+.status-label { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 500; }
+
 /* Dark-mode overrides for status pills + stage pills: keep them as dark-tinted
    islands (not light-on-dark) with legible light text. */
 @media (prefers-color-scheme: dark) {
@@ -191,6 +203,12 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .stage-partner_review { background: #261b3f; color: #c4b5fd; }
   .stage-finalization { background: #14321f; color: #86efac; }
   .stage-closeout { background: #25303d; color: #cbd5e1; }
+  .badge-stage.stage-info_gathering { background: #1e3a8a; color: #60a5fa; }
+  .badge-stage.stage-commencement { background: #3a2c12; color: #fcd34d; }
+  .badge-stage.stage-team_execution { background: #16263f; color: #93c5fd; }
+  .badge-stage.stage-partner_review { background: #261b3f; color: #c4b5fd; }
+  .badge-stage.stage-finalization { background: #14321f; color: #86efac; }
+  .badge-stage.stage-closeout { background: #25303d; color: #cbd5e1; }
 }
 
 /* Buttons */
