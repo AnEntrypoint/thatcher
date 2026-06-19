@@ -1,8 +1,3 @@
-/**
- * XState Workflow Engine - State machine-based workflow management for Thatcher
- * Replaces the legacy workflow engine with xstate v5 state machines and actors
- */
-
 import { createMachine, createActor, assign, fromPromise, sendParent } from 'xstate';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { hookEngine } from './hook-engine.js';

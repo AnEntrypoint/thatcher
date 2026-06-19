@@ -18,13 +18,6 @@ const metrics = {
 
 let _requestCount = 0;
 
-/**
- * Record a request
- * @param {string} endpoint
- * @param {string} method
- * @param {number} durationMs
- * @param {number} statusCode
- */
 export function recordRequest(endpoint, method, durationMs, statusCode) {
   _requestCount++;
 
@@ -38,17 +31,14 @@ export function recordRequest(endpoint, method, durationMs, statusCode) {
 
   metrics.requests.push(record);
 
-  // Keep last 1000 requests
   if (metrics.requests.length > 1000) {
     metrics.requests.shift();
   }
 
-  // Track slow queries (>500ms)
   if (durationMs > 500) {
     metrics.slowQueries.push(record);
   }
 
-  // Track errors
   if (statusCode >= 400) {
     metrics.errors.push(record);
   }
@@ -63,16 +53,12 @@ export function recordRequest(endpoint, method, durationMs, statusCode) {
   if (arr.length > 1000) arr.shift();
 }
 
-/**
- * Get all metrics
- * @returns {object}
- */
 export function getMetrics() {
   const now = Date.now();
   const uptimeSec = Math.floor((now - metrics.startTime) / 1000);
 
   const requests = metrics.requests;
-  const recent = requests.filter(r => now - r.timestamp < 60000); // last minute
+  const recent = requests.filter(r => now - r.timestamp < 60000);
 
   const avgDuration = recent.length
     ? recent.reduce((sum, r) => sum + r.durationMs, 0) / recent.length
@@ -93,10 +79,6 @@ export function getMetrics() {
   };
 }
 
-/**
- * Get summary statistics
- * @returns {object}
- */
 export function getSummary() {
   const m = getMetrics();
   return {
@@ -106,9 +88,6 @@ export function getSummary() {
   };
 }
 
-/**
- * Reset metrics (for testing)
- */
 export function resetMetrics() {
   metrics.requests = [];
   metrics.slowQueries = [];
@@ -135,9 +114,6 @@ const channels = {
 const errorCounts = new Map();
 const resourceSamples = [];
 
-/**
- * Record an error against an endpoint.
- */
 export function recordError(path, method, error, stack) {
   const key = `${method}:${path}`;
   if (!channels.errors.has(key)) {
@@ -151,9 +127,6 @@ export function recordError(path, method, error, stack) {
   errorCounts.set(countKey, (errorCounts.get(countKey) || 0) + 1);
 }
 
-/**
- * Record a database operation timing.
- */
 export function recordDatabase(operation, duration, query) {
   const key = operation;
   if (!channels.database.has(key)) {
@@ -164,17 +137,11 @@ export function recordDatabase(operation, duration, query) {
   if (arr.length > 1000) arr.shift();
 }
 
-/**
- * Record a resource sample (cpu/memory/disk).
- */
 export function recordResource(cpu, memory, disk) {
   resourceSamples.push({ cpu, memory, disk, ts: Date.now() });
   if (resourceSamples.length > 1000) resourceSamples.shift();
 }
 
-/**
- * Record a custom metric value with optional tags.
- */
 export function recordCustom(name, value, tags = {}) {
   const key = name;
   if (!channels.custom.has(key)) {
@@ -192,9 +159,6 @@ function getPercentile(values, percentile) {
   return sorted[Math.max(0, index)];
 }
 
-/**
- * Compute count/min/max/avg/p50/p95/p99 stats over a data array.
- */
 export function getStats(dataArray, field = 'duration') {
   if (!dataArray || dataArray.length === 0) {
     return { count: 0, min: 0, max: 0, avg: 0, p50: 0, p95: 0, p99: 0 };
@@ -257,9 +221,6 @@ export function getResourceMetrics() {
   };
 }
 
-/**
- * Aggregate snapshot across all channels.
- */
 export function getAllMetrics() {
   return {
     requests: getRequestMetrics(),
@@ -273,9 +234,6 @@ export function getAllMetrics() {
   };
 }
 
-/**
- * Clear the per-channel collector state.
- */
 export function clearMetrics() {
   channels.requests.clear();
   channels.errors.clear();
