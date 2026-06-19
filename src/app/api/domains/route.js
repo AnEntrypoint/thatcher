@@ -1,4 +1,7 @@
+import { createLogger } from '@/lib/logger.js';
 import { getDomainLoader } from '@/lib/domain-loader';
+
+const log = createLogger('[DomainsAPI]');
 import { ok } from '@/lib/response-formatter';
 import { withErrorHandler } from '@/lib/with-error-handler';
 import { getConfigEngine } from '@/lib/config-generator-engine';
@@ -12,7 +15,7 @@ export const GET = withErrorHandler(async (request) => {
     try {
       return domainLoader.getDomainInfo(domainName);
     } catch (error) {
-      console.error(`[Domains API] Error loading domain ${domainName}:`, error.message);
+      log.error(`error loading domain ${domainName}:`, { message: error.message });
       return null;
     }
   }).filter(Boolean);

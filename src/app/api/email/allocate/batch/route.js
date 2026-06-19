@@ -1,4 +1,7 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[EmailBatchAllocate]');
 import { genId, now } from '@/lib/id-helpers';
 import { list, create, update } from '@/engine';
 import { autoAllocateEmail } from '@/lib/email-parser';
@@ -84,7 +87,7 @@ export async function POST(request) {
     return NextResponse.json(results);
 
   } catch (error) {
-    console.error('[EMAIL_BATCH_ALLOCATE] Error:', error);
+    log.error('error:', { message: error.message });
     return NextResponse.json(
       { error: 'Internal server error', message: error.message },
       { status: 500 }

@@ -4,17 +4,18 @@ import { getSpec } from '@/config/spec-helpers';
 import { migrate } from '@/engine';
 import { getUser } from '@/engine.server';
 import { can } from '@/services/permission.service';
-import { logger } from '@/lib/logger';
+import { createLogger } from '@/lib/logger';
 import { HTTP } from '@/config/constants';
 import { ERROR_MESSAGES } from '@/config';
+
+const log = createLogger('[API]');
 
 let dbInit = false;
 export function ensureDb() {
   if (!dbInit) {
     migrate();
     dbInit = true;
-  } else {
-  }
+
 }
 
 const withMetadata = (data, status = HTTP.OK, type = 'success') => ({
@@ -41,7 +42,7 @@ export async function withEntityAccess(entity, action, handler) {
     if (!can(user, spec, action)) return unauthorized(action);
     return await handler(spec, user);
   } catch (e) {
-    logger.apiError(action, entity, e);
+    log.error(`${action} ${entity}: ${e.message}`);
     return serverError(e.message);
   }
 }

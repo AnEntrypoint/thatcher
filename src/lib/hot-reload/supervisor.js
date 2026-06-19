@@ -1,4 +1,7 @@
+import { createLogger } from '../logger.js';
 import { EventEmitter } from 'events';
+
+const log = createLogger('[Supervisor]');
 
 export class Supervisor extends EventEmitter {
   constructor(name, workerFn, options = {}) {
@@ -22,7 +25,7 @@ export class Supervisor extends EventEmitter {
 
     if (this.listenerCount('error') === 0) {
       this.on('error', (data) => {
-        console.error(`[Supervisor:${this.name}] Worker error:`, data.error?.message || data.error);
+        log.error(`[${this.name}] worker error:`, { message: data.error?.message || String(data.error) });
       });
     }
   }
@@ -73,7 +76,7 @@ export class Supervisor extends EventEmitter {
       try {
         await this.options.onError(err);
       } catch (handlerErr) {
-        console.error(`[Supervisor:${this.name}] Error handler failed:`, handlerErr);
+        log.error(`[${this.name}] error handler failed:`, { message: handlerErr?.message || String(handlerErr) });
       }
     }
 
@@ -84,7 +87,7 @@ export class Supervisor extends EventEmitter {
     this.restarts.push(now);
 
     if (this.restarts.length > this.options.maxRestarts) {
-      console.error(`[Supervisor:${this.name}] Max restarts exceeded. Giving up.`);
+      log.error(`[${this.name}] max restarts exceeded, giving up`);
       this.emit('giveup', this.name);
       this.running = false;
       return;

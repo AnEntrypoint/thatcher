@@ -1,4 +1,7 @@
+import { createLogger } from '@/lib/logger.js';
 import { getBy, verifyPassword, migrate } from '@/engine';
+
+const log = createLogger('[Login]');
 import { initializeSystemConfig } from '@/config/system-config-loader';
 import { withErrorHandler } from '@/lib/with-error-handler';
 import { lucia } from '@/engine.server';
@@ -40,7 +43,7 @@ export const POST = withErrorHandler(async (request) => {
       await initializeSystemConfig();
       migrate();
     } catch (e) {
-      console.error('[Login] Init failed:', e.message);
+      log.error('init failed:', { message: e.message });
       return new Response(JSON.stringify({ error: 'System init failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   }
@@ -115,7 +118,7 @@ export const POST = withErrorHandler(async (request) => {
       }
     });
   } catch (err) {
-    console.error('[Login] Error:', err.message);
+    log.error(err.message);
     return new Response(JSON.stringify({ error: 'Authentication failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }, 'Auth:Login');

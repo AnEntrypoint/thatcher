@@ -1,29 +1,23 @@
-/**
- * Email Sender - SMTP email delivery with templates
- * Uses nodemailer
- */
-
 import nodemailer from 'nodemailer';
 import { buildConfig } from '../config/env.js';
+import { createLogger } from '../lib/logger.js';
+
+const log = createLogger('[Email]');
 
 let transporter = null;
 
-/**
- * Initialize email transporter
- * @param {object} [config]
- */
 export function initEmail(config = null) {
   const cfg = config || buildConfig();
 
   if (!cfg.email.smtp.user || !cfg.email.smtp.password) {
-    console.warn('[Email] SMTP credentials not configured');
+    log.warn('SMTP credentials not configured');
     return null;
   }
 
   transporter = nodemailer.createTransport({
     host: cfg.email.smtp.host,
     port: cfg.email.smtp.port,
-    secure: cfg.email.smtp.port === 465, // true for 465, false for other ports
+    secure: cfg.email.smtp.port === 465,
     auth: {
       user: cfg.email.smtp.user,
       pass: cfg.email.smtp.password,
@@ -33,20 +27,11 @@ export function initEmail(config = null) {
   return transporter;
 }
 
-/**
- * Get initialized transporter
- * @returns {object}
- */
 export function getTransporter() {
   if (!transporter) initEmail();
   return transporter;
 }
 
-/**
- * Send email
- * @param {object} options - { to, subject, text, html, attachments }
- * @returns {Promise<object>}
- */
 export async function sendEmail(options) {
   const transporter = getTransporter();
   if (!transporter) {
@@ -60,19 +45,11 @@ export async function sendEmail(options) {
     ...options,
   });
 
-  console.log('[Email] Sent:', info.messageId);
+  log.info('sent:', { messageId: info.messageId });
   return info;
 }
 
-/**
- * Send templated email
- * @param {string} templateName
- * @param {string} to
- * @param {object} context
- * @returns {Promise<object>}
- */
 export async function sendTemplatedEmail(templateName, to, context = {}) {
-  // Templates could be loaded from config or files
   const templates = getTemplates();
   const template = templates[templateName];
 
@@ -87,15 +64,11 @@ export async function sendTemplatedEmail(templateName, to, context = {}) {
   return sendEmail({ to, subject, text, html });
 }
 
-/**
- * Simple templates (could be loaded from config)
- * @returns {object}
- */
 function getTemplates() {
   return {
     notification: {
       subject: 'Notification from {{appName}}',
-      text: '{{message}}\n\n— {{appName}}',
+      text: '{{message}}\n\n- {{appName}}',
     },
     invitation: {
       subject: 'You\'ve been invited to {{appName}}',

@@ -1,4 +1,7 @@
+import { createLogger } from '../logger.js';
 import { safeError } from './safe-error.js';
+
+const log = createLogger('[RouteWrapper]');
 import { contain } from './promise-container.js';
 
 export function wrapRouteHandler(handler, options = {}) {
@@ -13,7 +16,7 @@ export function wrapRouteHandler(handler, options = {}) {
       return result;
     } catch (err) {
       if (logErrors) {
-        console.error(`[RouteError:${context}] ${req.method} ${req.url}:`, err);
+        log.error(`${context} ${req.method} ${req.url}:`, { message: err?.message || String(err) });
       }
       if (sendErrorResponse && !res.headersSent) {
         const safe = safeError(err);

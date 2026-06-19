@@ -1,4 +1,7 @@
+import { createLogger } from './logger.js';
 import { getConfigEngineSync } from '@/lib/config-generator-engine';
+
+const log = createLogger('[DomainLoader]');
 
 const requireStr = (val, label) => { if (!val || typeof val !== 'string') throw new Error(`[DomainLoader] ${label} must be a non-empty string`); };
 
@@ -22,7 +25,7 @@ export class DomainLoader {
 
   getSpecsForDomain(domain) {
     return this.getEntitiesForDomain(domain).reduce((acc, name) => {
-      try { acc.push(this.engine.generateEntitySpec(name)); } catch (e) { console.error(`[DomainLoader] spec failed for ${name}:`, e.message); }
+      try { acc.push(this.engine.generateEntitySpec(name)); } catch (e) { log.error(`spec failed for ${name}:`, { message: e.message }); }
       return acc;
     }, []);
   }

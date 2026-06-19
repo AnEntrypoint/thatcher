@@ -1,5 +1,8 @@
+import { createLogger } from '../logger.js';
 import fs from 'fs';
 import path from 'path';
+
+const log = createLogger('[Checkpoint]');
 
 export class CheckpointManager {
   constructor(options = {}) {
@@ -23,7 +26,7 @@ export class CheckpointManager {
       await this._pruneOldCheckpoints(key);
       return true;
     } catch (err) {
-      console.error(`[Checkpoint] Failed to save ${key}:`, err);
+      log.error(`failed to save ${key}:`, { message: err?.message || String(err) });
       return false;
     }
   }
@@ -42,7 +45,7 @@ export class CheckpointManager {
       this.checkpoints.set(key, checkpoint);
       return checkpoint.state;
     } catch (err) {
-      console.error(`[Checkpoint] Failed to load ${key}:`, err);
+      log.error(`failed to load ${key}:`, { message: err?.message || String(err) });
       return null;
     }
   }

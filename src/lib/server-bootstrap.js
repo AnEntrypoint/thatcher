@@ -1,5 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import { createLogger } from './logger.js';
+
+const log = createLogger('[Server]');
 
 export function loadEnv(filePath) {
   try {
@@ -12,18 +15,16 @@ export function loadEnv(filePath) {
       if (key) process.env[key] = value;
     });
   } catch (e) {
-    console.warn('[Server] .env file not loaded:', e.message);
+    log.warn('.env file not loaded:', { message: e.message });
   }
 }
 
 export function setupProcessGuards() {
   process.on('uncaughtException', (err) => {
-    console.error('[FATAL] Uncaught exception (process kept alive):', err?.message || err);
-    if (err?.stack) console.error(err.stack);
+    log.error('uncaught exception (process kept alive):', { message: err?.message || String(err), stack: err?.stack });
   });
   process.on('unhandledRejection', (reason) => {
-    console.error('[FATAL] Unhandled rejection (process kept alive):', reason?.message || reason);
-    if (reason?.stack) console.error(reason.stack);
+    log.error('unhandled rejection (process kept alive):', { message: reason?.message || String(reason), stack: reason?.stack });
   });
 }
 
@@ -36,18 +37,18 @@ export function setupHotReload(__dirname, moduleCache, onConfigReset) {
         if (filename && (filename.endsWith('.js') || filename.endsWith('.jsx') || filename.endsWith('.yml'))) {
           moduleCache.clear();
           globalThis.__reloadTs__ = Date.now();
-          console.log(`[Hot] Invalidated: ${filename}`);
+          log.info(`hot invalidated: ${filename}`);
           if (filename.endsWith('master-config.yml') || filename.includes('master-config')) {
             try {
               const { resetConfigEngine } = await import('./config-generator-engine.js');
               resetConfigEngine();
               onConfigReset?.();
-            } catch (e) { console.log('[Hot] Could not reset config engine:', e.message); }
+            } catch (e) { log.warn('could not reset config engine:', { message: e.message }); }
           }
         }
       });
-      watcher.on('error', (err) => console.error(`[Hot] Watcher error on ${dir}:`, err.message));
-    } catch (err) { console.error(`[Hot] Failed to watch ${dir}:`, err.message); }
+      watcher.on('error', (err) => log.error(`hot watcher error on ${dir}:`, { message: err.message }));
+    } catch (err) { log.error(`hot failed to watch ${dir}:`, { message: err.message }); }
   });
 }
 

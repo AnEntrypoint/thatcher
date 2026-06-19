@@ -1,4 +1,7 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[FilesAPI]');
 import { requireUser } from '@/engine.server';
 import { permissionService } from '@/services/permission.service';
 import { get } from '@/engine';
@@ -32,7 +35,7 @@ export async function GET(request, { params }) {
       },
     });
   } catch (error) {
-    console.error('File download error:', error);
+    log.error('file download error:', { message: error.message });
     return NextResponse.json({ error: error.message }, { status: HTTP.INTERNAL_ERROR });
   }
 }

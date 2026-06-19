@@ -1,9 +1,7 @@
-/**
- * Google Auth Adapter - Factory for Google OAuth2 clients
- * Provides JWT and OAuth2 clients for Google APIs
- */
-
+import { createLogger } from '../lib/logger.js';
 import { google } from 'googleapis';
+
+const log = createLogger('[GoogleAuth]');
 import { buildConfig } from '../config/env.js';
 import fs from 'fs';
 import path from 'path';
@@ -45,7 +43,7 @@ export function initGoogleAuth(config = null) {
         ],
       });
     } catch (err) {
-      console.warn('[GoogleAuth] Failed to load service account:', err.message);
+      log.warn('failed to load service account:', { message: err.message });
     }
   }
 

@@ -1,3 +1,7 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('[AlertManager]');
+
 const alerts = []
 const alertHandlers = []
 const thresholds = {
@@ -105,13 +109,13 @@ function triggerAlert(type, message, metadata = {}) {
   alerts.push(alert)
   if (alerts.length > 1000) alerts.shift()
 
-  console.error(`[ALERT] [${alert.severity.toUpperCase()}] ${type}: ${message}`, metadata)
+  log.error(`[${alert.severity.toUpperCase()}] ${type}: ${message}`, metadata)
 
   for (const handler of alertHandlers) {
     try {
       handler(alert)
     } catch (err) {
-      console.error('[AlertManager] Handler error:', err)
+      log.error('handler error:', { message: err.message })
     }
   }
 }
@@ -133,7 +137,7 @@ function checkAllThresholds(allMetrics) {
     checkResources(allMetrics.resources)
     checkDatabase(allMetrics.database)
   } catch (err) {
-    console.error('[AlertManager] Check error:', err)
+    log.error('check error:', { message: err.message })
   }
 }
 

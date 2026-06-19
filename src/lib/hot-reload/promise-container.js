@@ -1,5 +1,9 @@
 import { EventEmitter } from 'events';
 
+import { createLogger } from '../logger.js';
+
+const log = createLogger('[PromiseContainer]');
+
 export class PromiseContainer extends EventEmitter {
   constructor() {
     super();
@@ -40,7 +44,7 @@ export class PromiseContainer extends EventEmitter {
     try {
       await Promise.race([drainPromise, timeoutPromise]);
     } catch (err) {
-      console.warn(`Promise drain timeout: ${this.activePromises.size} promises still active`);
+      log.warn(`promise drain timeout: ${this.activePromises.size} promises still active`);
     }
   }
 
@@ -55,11 +59,11 @@ export class PromiseContainer extends EventEmitter {
 export const globalContainer = new PromiseContainer();
 
 globalContainer.setGlobalHandler((err, context) => {
-  console.error(`[PromiseContainer] Unhandled rejection in ${context}:`, err);
+  log.error(`unhandled rejection in ${context}:`, { message: err?.message || String(err) });
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[Process] Unhandled Promise Rejection:', reason);
+  log.error('unhandled promise rejection:', { message: reason?.message || String(reason) });
   globalContainer.emit('processRejection', { reason, promise });
 });
 

@@ -1,4 +1,7 @@
+import { createLogger } from '@/lib/logger.js';
 import { google, createSession } from '@/engine.server';
+
+const log = createLogger('[OAuth]');
 import { getBy, create } from '@/engine';
 import { Google } from 'arctic';
 import { GOOGLE_APIS } from '@/config/constants';
@@ -40,7 +43,7 @@ export async function GET(request) {
 
   const stateValidation = validateOAuthState(code, stateKey, state, codeVerifier);
   if (!stateValidation.valid) {
-    console.error('[OAuth Callback] State validation failed:', stateValidation.error);
+    log.warn('state validation failed:', { error: stateValidation.error });
     return buildOAuthErrorResponse(stateValidation.error, request);
   }
 
@@ -88,7 +91,7 @@ export async function GET(request) {
 
     return response;
   } catch (error) {
-    console.error('Google OAuth error:', error);
+    log.error('Google OAuth error:', { message: error.message });
     return buildOAuthErrorResponse('oauth_failed', request);
   }
 }

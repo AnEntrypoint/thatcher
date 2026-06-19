@@ -1,22 +1,15 @@
-/**
- * Notification Engine - In-app notifications, email triggers
- */
-
 import { getTransporter, sendEmail } from './email-sender.js';
 import { getConfigEngineSync } from '../lib/config-generator-engine.js';
 import { executeHook } from '../lib/hook-engine.js';
+import { createLogger } from '../lib/logger.js';
 
-/**
- * Get notification template from config
- */
+const log = createLogger('[Notification]');
+
 export function getNotificationTemplate(name) {
   const engine = getConfigEngineSync();
   return engine.generateNotificationHandler(name);
 }
 
-/**
- * Create notification record
- */
 export async function createNotification(notification) {
   const { create } = await import('../lib/busybase-store.js');
   return create('notification', {
@@ -26,20 +19,16 @@ export async function createNotification(notification) {
   }, { id: notification.created_by || 'system', role: 'system' });
 }
 
-/**
- * Send notification to user (in-app + optional email)
- */
 export async function sendNotification(type, userId, context = {}, options = {}) {
   const template = getNotificationTemplate(type);
   if (!template) {
-    console.warn(`[Notification] Template not found: ${type}`);
+    log.warn(`template not found: ${type}`);
     return null;
   }
 
   const title = interpolate(template.title, context);
   const message = interpolate(template.message, context);
 
-  // Create notification record
   const notification = await createNotification({
     type,
     user_id: userId,
@@ -51,7 +40,6 @@ export async function sendNotification(type, userId, context = {}, options = {})
     created_by: context.userId || 'system',
   });
 
-  // Send email if enabled
   if (options.sendEmail !== false) {
     try {
       const { getUser } = await import('../engine.server.js');
@@ -64,7 +52,7 @@ export async function sendNotification(type, userId, context = {}, options = {})
         });
       }
     } catch (err) {
-      console.error('[Notification] Email failed:', err.message);
+      log.error('email failed:', { message: err.message });
     }
   }
 
@@ -72,14 +60,11 @@ export async function sendNotification(type, userId, context = {}, options = {})
     notification,
     user: { id: userId },
     context,
-  }).catch(console.error);
+  }).catch(err => log.error('hook error:', { message: err?.message || String(err) }));
 
   return notification;
 }
 
-/**
- * Mark notification as read
- */
 export async function markNotificationRead(notificationId, userId) {
   const { update } = await import('../lib/busybase-store.js');
   return update('notification', notificationId, {
@@ -87,9 +72,6 @@ export async function markNotificationRead(notificationId, userId) {
   });
 }
 
-/**
- * Get unread count for user
- */
 export async function getUnreadCount(userId) {
   const { list } = await import('../lib/busybase-store.js');
   return (await list('notification', {
@@ -98,9 +80,6 @@ export async function getUnreadCount(userId) {
   })).length;
 }
 
-/**
- * Interpolate {{key}} in template strings
- */
 function interpolate(template, context) {
   if (!template) return '';
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {

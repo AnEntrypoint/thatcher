@@ -1,5 +1,8 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
 import { now } from '@/lib/id-helpers';
+
+const log = createLogger('[Email]');
 import { list, update } from '@/engine';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 import { EMAIL_STATUS } from '@/config/constants';
@@ -51,7 +54,7 @@ export async function POST(request) {
     await checkFailureRate();
     return NextResponse.json({ success: true, processed: pendingEmails.length, results: { success: successCount, failed: failureCount }, details: results });
   } catch (error) {
-    console.error('[EMAIL] Queue processing error:', error);
+    log.error('queue processing error:', { message: error.message });
     return NextResponse.json({ error: 'Email queue processing failed', details: error.message }, { status: 500 });
   }
 }

@@ -1,6 +1,9 @@
 import { NextResponse } from '@/lib/next-polyfills';
+import { createLogger } from '@/lib/logger.js';
 import { genId, now } from '@/lib/id-helpers';
 import { get, create } from '@/engine';
+
+const log = createLogger('[EmailAllocate]');
 import {
   allocateEmailToEntity,
   autoAllocateEmail,
@@ -128,7 +131,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[EMAIL_ALLOCATE] Error:', error);
+    log.error('error:', { message: error.message });
     return NextResponse.json(
       { error: 'Internal server error', message: error.message },
       { status: 500 }

@@ -1,3 +1,6 @@
+import { createLogger } from './logger.js';
+
+const log = createLogger('[Perf]');
 const metrics = new Map()
 const thresholds = { render: 100, query: 50, api: 200, total: 500 }
 let enabled = process.env.PERF_MONITOR !== 'false'
@@ -49,7 +52,7 @@ export function checkThreshold(key, value) {
   if (!enabled) return true
   const limit = thresholds[key]
   if (limit && value > limit) {
-    console.warn(`[PERF] ${key} exceeded threshold: ${value.toFixed(2)}ms > ${limit}ms`)
+    log.warn(`${key} exceeded threshold: ${value.toFixed(2)}ms > ${limit}ms`)
     return false
   }
   return true

@@ -1,4 +1,7 @@
+import { createLogger } from './logger.js';
 import { genId, now } from '@/lib/id-helpers';
+
+const log = createLogger('[AuditEnhanced]');
 import { list, create, remove } from '@/lib/busybase-store';
 
 export const LOG_LEVELS = { DEBUG: 'debug', INFO: 'info', WARN: 'warn', ERROR: 'error' };
@@ -19,7 +22,7 @@ export const logStructured = ({ level = LOG_LEVELS.INFO, operation, entityType, 
     error_stack: error && error.stack ? String(error.stack).split('\n').slice(0, MAX_STACK_DEPTH).join('\n') : '',
     performance_ms: performanceMs ?? 0,
   };
-  Promise.resolve(create('structured_logs', row)).catch(e => console.error('[AuditEnhanced] log failed:', e?.message || e));
+  Promise.resolve(create('structured_logs', row)).catch(e => log.error('log failed:', { message: e?.message || String(e) }));
   return id;
 };
 

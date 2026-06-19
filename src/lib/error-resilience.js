@@ -1,4 +1,7 @@
+import { createLogger } from './logger.js';
 import { HTTP } from '@/config/constants';
+
+const log = createLogger('[Resilience]');
 import { AppError, normalizeError } from '@/lib/error-handler';
 
 const errorState = { errors: [], circuitBreakers: new Map(), checkpoints: new Map() };
@@ -12,12 +15,12 @@ export async function retryWithBackoff(fn, options = {}) {
     } catch (error) {
       if (attempt === maxAttempts) {
         const normalized = normalizeError(error);
-        console.error(`[RETRY] Final attempt failed:`, { ...context, attempt, error: normalized.toJSON() });
+        log.error('final attempt failed:', { ...context, attempt, error: normalized.toJSON() });
         throw normalized;
       }
 
       const waitTime = delay * Math.pow(backoff, attempt - 1);
-      console.warn(`[RETRY] Attempt ${attempt} failed, retrying in ${waitTime}ms`, context);
+      log.warn(`attempt ${attempt} failed, retrying in ${waitTime}ms`, context);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
   }
@@ -65,7 +68,7 @@ export async function withCircuitBreaker(name, fn, options = {}) {
     if (breaker.failures >= breaker.threshold) {
       breaker.state = 'open';
       breaker.nextAttempt = Date.now() + breaker.resetTimeout;
-      console.error(`[CIRCUIT] ${name} opened after ${breaker.failures} failures`);
+      log.error(`circuit ${name} opened after ${breaker.failures} failures`);
     }
 
     throw error;

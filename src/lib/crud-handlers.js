@@ -3,7 +3,10 @@
  * This is where request/response handling, validation, auth, and business logic meet
  */
 
+import { createLogger } from './logger.js';
 import { get, listWithPagination, searchWithPagination, create, update, remove } from './busybase-store.js';
+
+const log = createLogger('[CRUD]');
 import { validateEntity, validateUpdate, sanitizeData } from './validate.js';
 import { requirePermission, getSessionToken } from './auth-middleware.js';
 import { executeHook } from './hook-engine.js';
@@ -121,7 +124,7 @@ export function createCrudHandlers(entityName, spec) {
         id: record.id,
         data: record,
         user,
-      }).catch(console.error);
+      }).catch(e => log.error(e.message));
 
       return created(permissionService.filterFields(user, spec, record));
     },
@@ -163,7 +166,7 @@ export function createCrudHandlers(entityName, spec) {
         before: existing,
         after: record,
         user,
-      }).catch(console.error);
+      }).catch(e => log.error(e.message));
 
       return ok(permissionService.filterFields(user, spec, record));
     },
@@ -204,7 +207,7 @@ export function createCrudHandlers(entityName, spec) {
         id,
         data: result,
         user,
-      }).catch(console.error);
+      }).catch(e => log.error(e.message));
 
       return noContent();
     },
