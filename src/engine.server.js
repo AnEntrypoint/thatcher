@@ -1,8 +1,4 @@
-/**
- * Auth Engine - Lucia session management and Google OAuth
- * Simplified extraction from moonlanding/src/engine.server.js
- */
-
+// Simplified extraction from moonlanding/src/engine.server.js
 import { Lucia } from 'lucia';
 import { Google } from 'arctic';
 import bcrypt from 'bcrypt';
@@ -13,10 +9,6 @@ let _lucia = null;
 let _google = null;
 let _adapter = null;
 
-/**
- * Initialize auth engine with database and config
- * @param {object} [config] - Optional config override
- */
 export function initAuth(config = null) {
   const cfg = config || buildConfig();
 
@@ -52,29 +44,16 @@ export function initAuth(config = null) {
   return { lucia: _lucia, google: _google };
 }
 
-/**
- * Get Lucia instance
- * @returns {Lucia}
- */
 export function getLucia() {
   if (!_lucia) initAuth();
   return _lucia;
 }
 
-/**
- * Get Google OAuth client
- * @returns {Google|null}
- */
 export function getGoogle() {
   if (!_google) initAuth();
   return _google;
 }
 
-/**
- * Parse cookies from header
- * @param {string} cookieHeader
- * @returns {object}
- */
 function parseCookies(cookieHeader) {
   const cookies = {};
   if (!cookieHeader) return cookies;
@@ -87,18 +66,10 @@ function parseCookies(cookieHeader) {
 
 let _currentRequest = null;
 
-/**
- * Set current request context (for auth)
- * @param {object} req
- */
 export function setCurrentRequest(req) {
   _currentRequest = req;
 }
 
-/**
- * Get current user from session
- * @returns {object|null}
- */
 export async function getUser() {
   try {
     const request = _currentRequest;
@@ -118,21 +89,12 @@ export async function getUser() {
   }
 }
 
-/**
- * Require user (throw if not authenticated)
- * @returns {Promise<object>}
- */
 export async function requireUser() {
   const user = await getUser();
   if (!user) throw new Error('Unauthorized');
   return user;
 }
 
-/**
- * Create a new session
- * @param {string} userId
- * @returns {{session: object, sessionCookie: object}}
- */
 export async function createSession(userId) {
   const lucia = getLucia();
   // Note: cookies() requires Next.js polyfill in moonlanding; for SDK we return session data
@@ -141,49 +103,25 @@ export async function createSession(userId) {
   return { session, sessionCookie };
 }
 
-/**
- * Invalidate current session
- */
 export async function invalidateSession() {
   const lucia = getLucia();
   // Simplified - caller handles cookie clearing
   // In full app this uses @lucia-auth/adapter-sqlite's cookie management
 }
 
-/**
- * Hash password with bcrypt
- * @param {string} password
- * @returns {Promise<string>}
- */
 export async function hashPassword(password) {
   return bcrypt.hash(password, 12);
 }
 
-/**
- * Verify password
- * @param {string} password
- * @param {string} hash
- * @returns {Promise<boolean>}
- */
 export async function verifyPassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
-/**
- * Get user by email
- * @param {string} email
- * @returns {object|null}
- */
 export async function getUserByEmail(email) {
   const { getBy } = await import('./lib/busybase-store.js');
   return getBy('user', 'email', email);
 }
 
-/**
- * Create a new user
- * @param {object} userData
- * @returns {object}
- */
 export async function createUser(userData) {
   const hashedPassword = await hashPassword(userData.password);
   const { create } = await import('./lib/busybase-store.js');
@@ -193,12 +131,6 @@ export async function createUser(userData) {
   }, { id: 'system' });
 }
 
-/**
- * Authenticate user with credentials
- * @param {string} email
- * @param {string} password
- * @returns {object|null} User if valid, null otherwise
- */
 export async function authenticate(email, password) {
   const user = await getUserByEmail(email);
   if (!user) return null;

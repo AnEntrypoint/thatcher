@@ -1,7 +1,3 @@
-/**
- * Date/Time Utilities - Common date operations
- */
-
 import { now } from './id-helpers.js';
 
 const SECONDS_PER_MINUTE = 60;
@@ -9,12 +5,6 @@ const SECONDS_PER_HOUR = 60 * SECONDS_PER_MINUTE;
 const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 const SECONDS_PER_YEAR = 365.25 * SECONDS_PER_DAY;
 
-/**
- * Format Unix timestamp to human-readable date
- * @param {number} timestamp - Unix seconds
- * @param {string} [format='short']
- * @returns {string}
- */
 export function formatDate(timestamp, format = 'short') {
   if (!timestamp) return '—';
   const date = new Date(timestamp * 1000);
@@ -34,11 +24,6 @@ export function formatDate(timestamp, format = 'short') {
   return date.toLocaleDateString();
 }
 
-/**
- * Format relative time (e.g., "2 hours ago")
- * @param {number} timestamp - Unix seconds
- * @returns {string}
- */
 export function formatRelative(timestamp) {
   const nowSec = now();
   const diff = nowSec - timestamp;
@@ -59,13 +44,6 @@ export function formatRelative(timestamp) {
   return formatDate(timestamp, 'short');
 }
 
-/**
- * Check if timestamp is within allowed year range
- * @param {number} timestamp
- * @param {number} minYearsAgo
- * @param {number} maxYearsAhead
- * @returns {boolean}
- */
 export function isWithinYears(timestamp, minYearsAgo = 10, maxYearsAhead = 5) {
   const nowSec = now();
   return (
@@ -74,59 +52,28 @@ export function isWithinYears(timestamp, minYearsAgo = 10, maxYearsAhead = 5) {
   );
 }
 
-/**
- * Check if date1 is before date2
- * @param {number} date1 - Unix timestamp
- * @param {number} date2 - Unix timestamp
- * @returns {boolean}
- */
 export function isBeforeDate(date1, date2) {
   return date1 < date2;
 }
 
-/**
- * Add days to current timestamp
- * @param {number} days
- * @returns {number}
- */
 export function addDays(days) {
   return now() + (days * SECONDS_PER_DAY);
 }
 
-/**
- * Add hours to current timestamp
- * @param {number} hours
- * @returns {number}
- */
 export function addHours(hours) {
   return now() + (hours * SECONDS_PER_HOUR);
 }
 
-/**
- * Start of day (midnight) for timestamp
- * @param {number} [timestamp]
- * @returns {number}
- */
 export function startOfDay(timestamp = now()) {
   const date = new Date(timestamp * 1000);
   date.setHours(0, 0, 0, 0);
   return Math.floor(date.getTime() / 1000);
 }
 
-/**
- * End of day (23:59:59) for timestamp
- * @param {number} [timestamp]
- * @returns {number}
- */
 export function endOfDay(timestamp = now()) {
   return startOfDay(timestamp) + SECONDS_PER_DAY - 1;
 }
 
-/**
- * Get days remaining until deadline
- * @param {number} deadlineTs - Unix timestamp
- * @returns {number} - negative if past due
- */
 export function daysRemaining(deadlineTs) {
   const nowSec = now();
   const startOfNextDay = startOfDay(nowSec) + SECONDS_PER_DAY;
@@ -134,20 +81,10 @@ export function daysRemaining(deadlineTs) {
   return Math.ceil(remaining / SECONDS_PER_DAY);
 }
 
-/**
- * Check if timestamp is in the past
- * @param {number} timestamp
- * @returns {boolean}
- */
 export function isPast(timestamp) {
   return now() > timestamp;
 }
 
-/**
- * Format duration in seconds to human-readable
- * @param {number} seconds
- * @returns {string}
- */
 export function formatDuration(seconds) {
   if (seconds < 60) return `${seconds}s`;
   const mins = Math.floor(seconds / 60);
@@ -162,23 +99,12 @@ export function formatDuration(seconds) {
 // Additive helpers ported from moonlanding (adapted to Unix-seconds model)
 // ---------------------------------------------------------------------------
 
-/**
- * Whether a timestamp falls on a working day (Mon–Fri).
- * @param {number} timestamp - Unix seconds
- * @returns {boolean}
- */
 export function isWorkingDay(timestamp) {
   if (!timestamp) return false;
   const day = new Date(timestamp * 1000).getDay();
   return day !== 0 && day !== 6;
 }
 
-/**
- * Count working days (inclusive) between two Unix-seconds timestamps.
- * @param {number} startTs - Unix seconds
- * @param {number} endTs - Unix seconds
- * @returns {number}
- */
 export function getWorkingDaysDiff(startTs, endTs) {
   if (!startTs || !endTs) return 0;
   const end = new Date(endTs * 1000);
@@ -191,12 +117,6 @@ export function getWorkingDaysDiff(startTs, endTs) {
   return count;
 }
 
-/**
- * Add a number of working days (Mon–Fri) to a Unix-seconds timestamp.
- * @param {number} startTs - Unix seconds
- * @param {number} numDays
- * @returns {number} Unix seconds
- */
 export function addWorkingDays(startTs, numDays) {
   if (!startTs || numDays <= 0) return startTs;
   const date = new Date(startTs * 1000);
@@ -208,11 +128,7 @@ export function addWorkingDays(startTs, numDays) {
   return Math.floor(date.getTime() / 1000);
 }
 
-/**
- * Financial year (Mar 1 – Feb end) for a Unix-seconds timestamp.
- * @param {number} [timestamp] - Unix seconds (defaults to now)
- * @returns {number|null}
- */
+// Financial year runs March 1 to end of February (South African fiscal convention).
 export function getFinancialYear(timestamp) {
   const ms = timestamp ? timestamp * 1000 : Date.now();
   const date = new Date(ms);
@@ -222,11 +138,6 @@ export function getFinancialYear(timestamp) {
   return month >= 2 ? year : year - 1;
 }
 
-/**
- * Start/end Unix-seconds bounds for a financial year (Mar 1 – Feb end).
- * @param {number} year
- * @returns {{ start: number, end: number }}
- */
 export function getFinancialYearRange(year) {
   const start = new Date(year, 2, 1);
   const lastDay = new Date(year + 1, 2, 0).getDate();
@@ -237,13 +148,6 @@ export function getFinancialYearRange(year) {
   };
 }
 
-/**
- * Format an amount as currency.
- * @param {number|string} amount
- * @param {string} [currency='ZAR']
- * @param {string} [locale='en-ZA']
- * @returns {string|null}
- */
 export function formatCurrency(amount, currency = 'ZAR', locale = 'en-ZA') {
   if (amount === null || amount === undefined) return null;
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -251,13 +155,6 @@ export function formatCurrency(amount, currency = 'ZAR', locale = 'en-ZA') {
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(num);
 }
 
-/**
- * Format a number with fixed decimals.
- * @param {number|string} value
- * @param {number} [decimals=0]
- * @param {string} [locale='en-ZA']
- * @returns {string|null}
- */
 export function formatNumber(value, decimals = 0, locale = 'en-ZA') {
   if (value === null || value === undefined) return null;
   const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -268,11 +165,6 @@ export function formatNumber(value, decimals = 0, locale = 'en-ZA') {
   }).format(num);
 }
 
-/**
- * Human-readable file size.
- * @param {number} bytes
- * @returns {string|null}
- */
 export function formatFileSize(bytes) {
   if (bytes === null || bytes === undefined || bytes < 0) return null;
   if (bytes === 0) return '0 B';
@@ -282,13 +174,6 @@ export function formatFileSize(bytes) {
   return `${size.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-/**
- * Truncate text to a maximum length, appending a suffix.
- * @param {*} text
- * @param {number} [maxLength=100]
- * @param {string} [suffix='...']
- * @returns {string}
- */
 export function truncateText(text, maxLength = 100, suffix = '...') {
   if (!text) return '';
   const str = String(text);
@@ -296,11 +181,6 @@ export function truncateText(text, maxLength = 100, suffix = '...') {
   return str.substring(0, maxLength) + suffix;
 }
 
-/**
- * Convert a Unix-seconds timestamp to a UTC ISO-8601 string.
- * @param {number} timestamp - Unix seconds
- * @returns {string|null}
- */
 export function toUtcIso(timestamp) {
   if (!timestamp) return null;
   const date = new Date(timestamp * 1000);
@@ -308,11 +188,7 @@ export function toUtcIso(timestamp) {
   return date.toISOString();
 }
 
-/**
- * Normalize a Firestore timestamp (or number/date) to Unix seconds.
- * @param {*} ts
- * @returns {number|null}
- */
+// Firestore Timestamp objects expose ._seconds (newer SDK) or .seconds (older); plain numbers and date strings are also accepted.
 export function fromFirestoreTimestamp(ts) {
   if (!ts) return null;
   if (ts._seconds !== undefined) return ts._seconds;
