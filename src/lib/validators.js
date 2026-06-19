@@ -1,12 +1,3 @@
-/**
- * Validation Utilities - Reusable validation functions
- */
-
-/**
- * Validate email address
- * @param {string} email
- * @returns {{valid: boolean, email?: string, domain?: string, reason?: string}}
- */
 export function isValidEmail(email) {
   if (!email || typeof email !== 'string') {
     return { valid: false, reason: 'Email is required' };
@@ -37,11 +28,6 @@ export function isValidEmail(email) {
   return { valid: true, email: trimmed, domain };
 }
 
-/**
- * Validate URL
- * @param {string} url
- * @returns {boolean}
- */
 export function isValidUrl(url) {
   try {
     new URL(url);
@@ -51,13 +37,6 @@ export function isValidUrl(url) {
   }
 }
 
-/**
- * Validate date is within range
- * @param {number} timestamp - Unix timestamp (seconds)
- * @param {number} minYearsAgo
- * @param {number} maxYearsAhead
- * @returns {boolean}
- */
 export function isWithinYears(timestamp, minYearsAgo = 10, maxYearsAhead = 5) {
   const now = Date.now() / 1000;
   const secondsInYear = 365.25 * 24 * 60 * 60;
@@ -67,21 +46,10 @@ export function isWithinYears(timestamp, minYearsAgo = 10, maxYearsAhead = 5) {
   );
 }
 
-/**
- * Check if date1 is before date2
- * @param {number} date1 - Unix timestamp
- * @param {number} date2 - Unix timestamp
- * @returns {boolean}
- */
 export function isBeforeDate(date1, date2) {
   return date1 < date2;
 }
 
-/**
- * Slugify string
- * @param {string} str
- * @returns {string}
- */
 export function slugify(str) {
   return str
     .toLowerCase()
@@ -91,12 +59,6 @@ export function slugify(str) {
     .replace(/^-+|-+$/g, '');
 }
 
-/**
- * Validate required fields object
- * @param {object} data
- * @param {Array<string>} requiredFields
- * @returns {Array<string>} Missing field names
- */
 export function getMissingFields(data, requiredFields) {
   return requiredFields.filter(field => {
     const val = data[field];

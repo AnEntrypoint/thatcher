@@ -1,7 +1,4 @@
-/**
- * Auth Middleware - Authentication and authorization utilities
- * Adapted from moonlanding/src/lib/auth-middleware.js
- */
+// Adapted from moonlanding/src/lib/auth-middleware.js
 
 import { getUser, getLucia } from '../engine.server.js';
 import { getSpec } from '../config/spec-helpers.js';
@@ -18,11 +15,6 @@ const actionMap = {
   delete: 'delete',
 };
 
-/**
- * Get session token from request headers
- * @param {object} req - HTTP request
- * @returns {string|null}
- */
 export function getSessionToken(req) {
   const cookieHeader = req?.headers?.cookie || '';
   if (!cookieHeader) return null;
@@ -35,22 +27,12 @@ export function getSessionToken(req) {
   return value ? decodeURIComponent(value.trim()) : null;
 }
 
-/**
- * Require authentication (throws if not authenticated)
- * @returns {Promise<object>} User object
- */
 export async function requireAuth() {
   const user = await getUser();
   if (!user) throw UnauthorizedError('Authentication required');
   return user;
 }
 
-/**
- * Require permission for action on spec
- * @param {object} user
- * @param {object} spec
- * @param {string} action
- */
 export async function requirePermission(user, spec, action) {
   const mapped = actionMap[action] || action;
   if (!(await can(user, spec, mapped))) {
@@ -58,12 +40,6 @@ export async function requirePermission(user, spec, action) {
   }
 }
 
-/**
- * Create authenticated handler wrapper
- * @param {Function} handler
- * @param {string} action
- * @returns {Function}
- */
 export function withAuth(handler, action = 'view') {
   return async (request, context) => {
     const user = await requireAuth();
@@ -74,13 +50,6 @@ export function withAuth(handler, action = 'view') {
   };
 }
 
-/**
- * Page auth (for HTML page rendering)
- * @param {string} entityName
- * @param {string} action
- * @param {object} options
- * @returns {Promise<{user, spec}>}
- */
 export async function withPageAuth(entityName, action = 'view', options = {}) {
   const user = await getUser();
   if (!user) throw UnauthorizedError('Not authenticated');

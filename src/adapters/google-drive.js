@@ -1,8 +1,3 @@
-/**
- * Google Drive Adapter - File storage and manipulation
- * Upload, download, copy, export to PDF
- */
-
 import { google } from 'googleapis';
 import fs from 'fs';
 import path from 'path';
@@ -11,11 +6,6 @@ import { buildConfig } from '../config/env.js';
 
 const DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive'];
 
-/**
- * Get authenticated Drive API client
- * @param {object} [user] - User with oauth_token, or null for service account
- * @returns {object}
- */
 export function getDriveClient(user = null) {
   let client;
 
@@ -33,14 +23,6 @@ export function getDriveClient(user = null) {
   return google.drive({ version: 'v3', auth: client });
 }
 
-/**
- * Upload a file to Google Drive
- * @param {string} filePath - Local file path
- * @param {string} name - File name in Drive
- * @param {object} [options] - { folderId, mimeType, parents }
- * @param {object} [user] - Optional user context
- * @returns {object} File metadata
- */
 export async function uploadFile(filePath, name, options = {}, user = null) {
   const drive = getDriveClient(user);
   const absPath = path.resolve(filePath);
@@ -61,13 +43,6 @@ export async function uploadFile(filePath, name, options = {}, user = null) {
   return res.data;
 }
 
-/**
- * Download file from Drive
- * @param {string} fileId
- * @param {string} [destPath] - If provided, write to file; else return buffer
- * @param {object} [user] - Optional user context
- * @returns {Buffer|string}
- */
 export async function downloadFile(fileId, destPath = null, user = null) {
   const drive = getDriveClient(user);
   const res = await drive.files.get(
@@ -87,14 +62,6 @@ export async function downloadFile(fileId, destPath = null, user = null) {
   return Buffer.from(res.data);
 }
 
-/**
- * Create a copy of a file in Drive
- * @param {string} fileId
- * @param {string} [newName]
- * @param {string} [folderId]
- * @param {object} [user]
- * @returns {object}
- */
 export async function copyFile(fileId, newName = null, folderId = null, user = null) {
   const drive = getDriveClient(user);
   const res = await drive.files.copy({
@@ -107,12 +74,6 @@ export async function copyFile(fileId, newName = null, folderId = null, user = n
   return res.data;
 }
 
-/**
- * Export Google Doc to PDF
- * @param {string} fileId
- * @param {object} [user]
- * @returns {Buffer}
- */
 export async function exportToPdf(fileId, user = null) {
   const drive = getDriveClient(user);
   const res = await drive.files.export(
@@ -122,13 +83,6 @@ export async function exportToPdf(fileId, user = null) {
   return Buffer.from(res.data);
 }
 
-/**
- * List files in folder
- * @param {string} [folderId]
- * @param {object} [query]
- * @param {object} [user]
- * @returns {Array}
- */
 // Escape a value for inclusion in a single-quoted Google Drive query string.
 // Drive Query Language escapes \ and ' with a backslash; without this an
 // attacker-controlled name/id/mimeType could inject query operators.
@@ -162,32 +116,16 @@ export async function listFiles(folderId = null, query = {}, user = null) {
   return res.data.files || [];
 }
 
-/**
- * Delete file
- * @param {string} fileId
- * @param {object} [user]
- */
 export async function deleteFile(fileId, user = null) {
   const drive = getDriveClient(user);
   await drive.files.delete({ fileId });
 }
 
-/**
- * Get default root folder from config
- * @returns {string}
- */
 function getDefaultFolder() {
   const cfg = buildConfig();
   return cfg.drive.rootFolderId || 'root';
 }
 
-/**
- * Ensure folder exists, create if not
- * @param {string} name
- * @param {string} [parentId]
- * @param {object} [user]
- * @returns {string} folderId
- */
 export async function ensureFolder(name, parentId = null, user = null) {
   const drive = getDriveClient(user);
   const queryParts = [`name = '${escapeGQLString(name)}'`, "mimeType = 'application/vnd.google-apps.folder'"];

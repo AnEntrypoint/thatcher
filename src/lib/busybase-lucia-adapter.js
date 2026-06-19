@@ -1,4 +1,4 @@
-/**
+/*
  * Lucia v3 session adapter backed by busybase (replaces @lucia-auth/adapter-sqlite's
  * BetterSqlite3Adapter). Sessions live in the `sessions` table, users in `users`.
  *

@@ -1,46 +1,22 @@
-/**
- * Permission Service - Authorization logic
- * Adapted from moonlanding/src/services/permission.service.js
- */
+// Adapted from moonlanding/src/services/permission.service.js
 
 import { getCollaboratorRole, checkCollaboratorAccess } from '../services/collaborator-role.service.js';
 import { PermissionError } from '../lib/error-handler.js';
 import { getConfigEngineSync } from '../lib/config-generator-engine.js';
 
 class PermissionService {
-  /**
-   * Check if user can perform action on entity spec
-   * @param {object} user
-   * @param {object} spec
-   * @param {string} action
-   * @returns {boolean}
-   */
   can(user, spec, action) {
     if (!user) return false;
     if (!spec?.access?.[action]) return true; // No restriction defined = allow
     return spec.access[action].includes(user.role);
   }
 
-  /**
-   * Require permission (throw if denied)
-   * @param {object} user
-   * @param {object} spec
-   * @param {string} action
-   */
   require(user, spec, action) {
     if (!this.can(user, spec, action)) {
       throw new PermissionError(`Cannot ${action} ${spec?.name || 'unknown'}`);
     }
   }
 
-  /**
-   * Check field-level access
-   * @param {object} user
-   * @param {object} spec
-   * @param {string} fieldName
-   * @param {string} action - 'view' or 'edit'
-   * @returns {boolean}
-   */
   checkFieldAccess(user, spec, fieldName, action) {
     if (!user) return false;
     const perm = spec.fieldPermissions?.[fieldName];
@@ -50,13 +26,6 @@ class PermissionService {
     return Array.isArray(allowed) && allowed.includes(user.role);
   }
 
-  /**
-   * Check row-level access
-   * @param {object} user
-   * @param {object} spec
-   * @param {object} record
-   * @returns {boolean}
-   */
   checkRowAccess(user, spec, record) {
     if (!user) return false;
     const rowAccess = spec.rowAccess || spec.row_access;
@@ -97,25 +66,11 @@ class PermissionService {
     return true;
   }
 
-  /**
-   * Filter records by row access
-   * @param {object} user
-   * @param {object} spec
-   * @param {Array} records
-   * @returns {Array}
-   */
   filterRecords(user, spec, records) {
     if (!user || !Array.isArray(records)) return records;
     return records.filter(r => this.checkRowAccess(user, spec, r));
   }
 
-  /**
-   * Filter fields by field-level permissions
-   * @param {object} user
-   * @param {object} spec
-   * @param {object} record
-   * @returns {object}
-   */
   filterFields(user, spec, record) {
     if (!user) return record;
     const filtered = {};
@@ -128,12 +83,6 @@ class PermissionService {
     return filtered;
   }
 
-  /**
-   * Enforce edit permissions on data
-   * @param {object} user
-   * @param {object} spec
-   * @param {object} data
-   */
   enforceEditPermissions(user, spec, data) {
     if (!user) throw new PermissionError(`Cannot edit ${spec.name}`);
     if (!this.can(user, spec, 'edit')) throw new PermissionError(`Cannot edit ${spec.name}`);
@@ -145,33 +94,16 @@ class PermissionService {
     }
   }
 
-  /**
-   * Check if user owns record
-   * @param {object} user
-   * @param {object} spec
-   * @param {object} record
-   * @returns {boolean}
-   */
   checkOwnership(user, spec, record) {
     if (!record) return false;
     return record.created_by === user.id || record.user_id === user.id;
   }
 
-  /**
-   * Check assignment for client access
-   * @param {object} user
-   * @param {object} spec
-   * @param {object} record
-   * @returns {boolean}
-   */
   checkAssignment(user, spec, record) {
     // Simplified - check if user is assigned to record
     return record.assigned_to === user.id || record.team_id === user.team_id;
   }
 
-  /**
-   * Check collaborator-style permission
-   */
   async hasCollaboratorPermission(collaboratorId, permission) {
     return (await getCollaboratorRole(collaboratorId))?.permissions?.includes(permission);
   }

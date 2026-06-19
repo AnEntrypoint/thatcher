@@ -1,11 +1,3 @@
-/**
- * Core constants for Thatcher SDK
- * HTTP codes, status values, display limits, etc.
- */
-
-/**
- * HTTP status codes
- */
 export const HTTP = {
   OK: 200,
   CREATED: 201,
@@ -21,9 +13,6 @@ export const HTTP = {
   SERVICE_UNAVAILABLE: 503,
 };
 
-/**
- * Error message templates
- */
 export const ERROR_MESSAGES = {
   notFound: (entity = 'Resource') => `${entity} not found`,
   invalidRequest: (reason = 'Invalid request') => reason,
@@ -33,9 +22,6 @@ export const ERROR_MESSAGES = {
   },
 };
 
-/**
- * Success message templates
- */
 export const SUCCESS_MESSAGES = {
   created: (entity = 'Item') => `${entity} created successfully`,
   updated: (entity = 'Item') => `${entity} updated successfully`,
@@ -43,23 +29,14 @@ export const SUCCESS_MESSAGES = {
   saved: 'Changes saved successfully',
 };
 
-/**
- * Record status constants
- */
 export const RECORD_STATUS = {
   ACTIVE: 'active',
   DELETED: 'deleted',
   ARCHIVED: 'archived',
 };
 
-/**
- * Email status
- */
 export const EMAIL_STATUS = 'pending';
 
-/**
- * Display/UI constants
- */
 export const DISPLAY = {
   MAX_API_CALLS_HISTORY: 100,
   API_TIMEOUT_MS: 30000,
@@ -74,17 +51,11 @@ export const DISPLAY = {
   DEBOUNCE_FORM_CHANGE_MS: 500,
 };
 
-/**
- * Validation patterns
- */
 export const VALIDATION = {
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PASSWORD_MIN_LENGTH: 8,
 };
 
-/**
- * Log prefixes for structured logging
- */
 export const LOG_PREFIXES = {
   API: '[API]',
   DB: '[DB]',
@@ -97,9 +68,6 @@ export const LOG_PREFIXES = {
   database: '[DB]',
 };
 
-/**
- * SQL type mapping
- */
 export const SQL_TYPES = {
   id: 'TEXT PRIMARY KEY',
   text: 'TEXT',
@@ -116,9 +84,6 @@ export const SQL_TYPES = {
   enum: 'TEXT',
 };
 
-/**
- * Authentication scopes (Google, etc.)
- */
 export const AUTH_SCOPES = {
   google: [
     'https://www.googleapis.com/auth/userinfo.email',

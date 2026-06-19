@@ -1,8 +1,3 @@
-/**
- * CRUD Handlers - HTTP handler implementations for entity operations
- * This is where request/response handling, validation, auth, and business logic meet
- */
-
 import { createLogger } from './logger.js';
 import { get, listWithPagination, searchWithPagination, create, update, remove } from './busybase-store.js';
 
@@ -19,20 +14,12 @@ import { now } from './id-helpers.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { logAction } from './busybase-audit.js';
 
-/**
- * Build a complete set of CRUD handlers for an entity
- * @param {object} spec - Entity specification
- * @returns {object}
- */
 export function createCrudHandlers(entityName, spec) {
   if (!spec) {
     spec = getConfigEngineSync().generateEntitySpec(entityName);
   }
 
   return {
-    /**
-     * List entities (GET /api/:entity)
-     */
     list: async (req, context) => {
       const { user } = context;
       await requirePermission(user, spec, 'list');
@@ -78,9 +65,6 @@ export function createCrudHandlers(entityName, spec) {
       return paginated(filteredItems, pagination);
     },
 
-    /**
-     * Get single entity (GET /api/:entity/:id)
-     */
     get: async (id, req, context) => {
       const { user } = context;
       await requirePermission(user, spec, 'view');
@@ -97,9 +81,6 @@ export function createCrudHandlers(entityName, spec) {
       return ok(permissionService.filterFields(user, spec, item));
     },
 
-    /**
-     * Create entity (POST /api/:entity)
-     */
     create: async (req, context) => {
       const { user } = context;
       await requirePermission(user, spec, 'create');
@@ -118,7 +99,6 @@ export function createCrudHandlers(entityName, spec) {
       // Audit log (ported from moon)
       logAction(entityName, record.id, 'create', user?.id, null, record);
 
-      // Execute hooks
       executeHook(`create:${entityName}:after`, {
         entity: entityName,
         id: record.id,
@@ -129,9 +109,6 @@ export function createCrudHandlers(entityName, spec) {
       return created(permissionService.filterFields(user, spec, record));
     },
 
-    /**
-     * Update entity (PUT/PATCH /api/:entity/:id)
-     */
     update: async (id, req, context) => {
       const { user } = context;
       await requirePermission(user, spec, 'edit');
@@ -171,9 +148,6 @@ export function createCrudHandlers(entityName, spec) {
       return ok(permissionService.filterFields(user, spec, record));
     },
 
-    /**
-     * Delete entity (DELETE /api/:entity/:id)
-     */
     remove: async (id, req, context) => {
       const { user } = context;
       await requirePermission(user, spec, 'delete');
@@ -212,9 +186,6 @@ export function createCrudHandlers(entityName, spec) {
       return noContent();
     },
 
-    /**
-     * Custom action handler
-     */
     customAction: async (action, id, data, context) => {
       const { user } = context;
       await requirePermission(user, spec, 'edit'); // Simplified permission check
@@ -222,7 +193,6 @@ export function createCrudHandlers(entityName, spec) {
       const record = await get(entityName, id);
       if (!record) throw NotFoundError(entityName, id);
 
-      // Custom action logic (upload, manage_flags, etc.)
       if (action === 'upload_files') {
         const files = Array.isArray(data.files) ? data.files : [data.files];
         executeHook(`upload_files:${entityName}:after`, {
@@ -234,18 +204,11 @@ export function createCrudHandlers(entityName, spec) {
         return ok({ id, uploaded_files: files });
       }
 
-      // More actions can be added here
       throw new AppError(`Unknown action: ${action}`, 'BAD_REQUEST', HTTP.BAD_REQUEST);
     },
   };
 }
 
-/**
- * Coerce field value to correct type
- * @param {any} value
- * @param {string} type
- * @returns {any}
- */
 function coerceFieldValue(value, type) {
   if (value === null || value === undefined) return value;
 

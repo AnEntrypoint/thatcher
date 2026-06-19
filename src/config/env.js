@@ -1,29 +1,15 @@
-/**
- * Environment configuration
- * Provides typed access to environment variables with defaults
- */
-
-/**
- * Get environment variable with optional default
- */
 function getEnv(key, defaultValue = null) {
   const val = process.env[key];
   if (val === undefined || val === null) return defaultValue;
   return val;
 }
 
-/**
- * Get boolean from env
- */
 function getEnvBool(key, defaultValue = false) {
   const val = getEnv(key);
   if (val === null) return defaultValue;
   return val === 'true' || val === '1';
 }
 
-/**
- * Get number from env
- */
 function getEnvInt(key, defaultValue = 0) {
   const val = getEnv(key);
   if (val === null) return defaultValue;
@@ -31,9 +17,6 @@ function getEnvInt(key, defaultValue = 0) {
   return isNaN(num) ? defaultValue : num;
 }
 
-/**
- * Configuration object builder
- */
 export function buildConfig(overrides = {}) {
   const config = {
     db: {
@@ -107,34 +90,21 @@ export function buildConfig(overrides = {}) {
   return config;
 }
 
-/**
- * Check if Google OAuth is configured
- */
 export function hasGoogleAuth(config) {
   const cfg = config?.auth?.google || buildConfig().auth.google;
   return !!(cfg.clientId && cfg.clientSecret);
 }
 
-/**
- * Check if Drive integration is configured
- */
 export function hasDriveConfig(config) {
   const cfg = config?.drive || buildConfig().drive;
   return !!cfg.rootFolderId;
 }
 
-/**
- * Check if email sending is configured
- */
 export function hasEmailConfig(config) {
   const cfg = config?.email || buildConfig().email;
   return !!(cfg.smtp.user && cfg.smtp.password);
 }
 
-/**
- * Validate environment configuration
- * Returns array of warnings (non-fatal)
- */
 export function validateEnv(config = buildConfig()) {
   const warnings = [];
 

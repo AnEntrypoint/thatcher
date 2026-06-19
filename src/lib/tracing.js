@@ -1,8 +1,3 @@
-/**
- * Observability Tracing Core - OpenTelemetry-style distributed tracing for Thatcher
- * Provides trace/span lifecycle, async context propagation, and trace export
- */
-
 import { AsyncLocalStorage } from 'async_hooks';
 import { createLogger } from './logger.js';
 

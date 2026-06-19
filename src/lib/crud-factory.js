@@ -1,23 +1,14 @@
-/**
- * CRUD Factory - Creates per-entity CRUD handler objects
- * Adapted from moonlanding/src/lib/crud-factory.js
- */
+// Adapted from moonlanding/src/lib/crud-factory.js
 
 import { createCrudHandlers as buildHandlers } from './crud-handlers.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 
-/**
- * Create CRUD handlers for an entity
- * @param {string} entityName
- * @returns {object} Handler functions (GET, POST, PUT, PATCH, DELETE)
- */
 export function createCrudHandlers(entityName) {
   const configEngine = getConfigEngineSync();
   const spec = configEngine.generateEntitySpec(entityName);
 
   return {
     GET: async (request, context) => {
-      // Handle list or single get based on presence of id
       const { params } = context;
       const id = params?.id;
 
@@ -55,11 +46,6 @@ export function createCrudHandlers(entityName) {
   };
 }
 
-/**
- * Create generic controller for an entity
- * @param {string} entityName
- * @returns {object}
- */
 export function createEntityController(entityName) {
   const configEngine = getConfigEngineSync();
   const spec = configEngine.generateEntitySpec(entityName);
@@ -72,7 +58,6 @@ export function createEntityController(entityName) {
     update: handlers.update,
     delete: handlers.remove,
 
-    // Custom actions from config
     async customAction(action, request, context) {
       const { params } = context;
       const id = params?.id;

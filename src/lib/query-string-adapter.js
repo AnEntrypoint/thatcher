@@ -1,17 +1,9 @@
-/**
- * Query String Adapter - Parse URL query parameters into typed objects
- * Adapted from moonlanding/src/lib/query-string-adapter.js
- */
+// Adapted from moonlanding/src/lib/query-string-adapter.js
 
 // Thatcher uses a fixed default page size (no async config-engine lookup);
 // keeps QueryAdapter helpers synchronous to match existing call sites.
 const DEFAULT_PAGE_SIZE = 50;
 
-/**
- * Parse query string from URL
- * @param {object} request - Fetch Request or NextRequest-like
- * @returns {Promise<{q?: string, page?: number, pageSize?: number, filters?: object, sort?: object}>}
- */
 export async function parseQuery(request) {
   const url = request.url || (request._url ? `http://localhost${request._url}` : 'http://localhost/');
   const searchParams = new URL(url).searchParams;
@@ -45,11 +37,6 @@ export async function parseQuery(request) {
   return result;
 }
 
-/**
- * Coerce string to appropriate type
- * @param {string} value
- * @returns {any}
- */
 function coerceValue(value) {
   // Lowercase boolean strings
   if (value === 'true') return true;
@@ -63,11 +50,6 @@ function coerceValue(value) {
   return value;
 }
 
-/**
- * Get default value for config key
- * @param {string} key
- * @returns {any}
- */
 export function getDefault(key) {
   const defaults = {
     page: 1,
@@ -81,23 +63,14 @@ export function getDefault(key) {
   return defaults[key] ?? null;
 }
 
-/**
- * QueryAdapter - static helpers for parsing and building query strings.
- * Ported from moonlanding; methods kept synchronous to match thatcher call sites
- * (e.g. api.js destructures QueryAdapter.fromSearchParams(...) without await).
- */
+// Ported from moonlanding; methods kept synchronous to match thatcher call sites
+// (e.g. api.js destructures QueryAdapter.fromSearchParams(...) without await).
 export class QueryAdapter {
-  /**
-   * Parse a Request-like object. Delegates to thatcher's parseQuery so the
-   * returned shape ({ q, page, pageSize, filters, sort }) stays consistent.
-   */
+  // Delegates to thatcher's parseQuery so the returned shape stays consistent.
   static parse(request) {
     return parseQuery(request);
   }
 
-  /**
-   * Extract non-reserved filter params from a URLSearchParams instance.
-   */
   static extractFilters(searchParams) {
     const filters = {};
     const reserved = new Set(['q', 'page', 'pageSize', 'page_size', 'action', 'limit', 'offset', 'sort', 'sortBy', 'dir', 'direction', 'sortDir', 'domain']);
@@ -109,9 +82,6 @@ export class QueryAdapter {
     return filters;
   }
 
-  /**
-   * Build a URLSearchParams from a params object, dropping empty values.
-   */
   static build(params = {}) {
     const query = new URLSearchParams();
     Object.entries(params)
@@ -120,25 +90,16 @@ export class QueryAdapter {
     return query;
   }
 
-  /**
-   * Build a full URL from a base and params object.
-   */
   static buildUrl(baseUrl, params = {}) {
     const queryString = QueryAdapter.build(params).toString();
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   }
 
-  /**
-   * Get a default value for a config key (synchronous; delegates to getDefault).
-   */
   static getDefault(key) {
     return getDefault(key);
   }
 
-  /**
-   * Parse pagination params from a URLSearchParams instance OR a plain object.
-   * Synchronous so callers can destructure the result directly.
-   */
+  // Synchronous so callers can destructure the result directly.
   static fromSearchParams(searchParams, spec = null) {
     const get = (key) => {
       if (searchParams && typeof searchParams.get === 'function') {
@@ -154,9 +115,6 @@ export class QueryAdapter {
     };
   }
 
-  /**
-   * Serialize a params object to a query string.
-   */
   static toQueryString(params = {}) {
     return QueryAdapter.build(params).toString();
   }

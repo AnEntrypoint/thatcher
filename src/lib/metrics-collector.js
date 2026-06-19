@@ -1,6 +1,4 @@
-/**
- * Metrics Collector - Request metrics and stats
- *
+/*
  * Thatcher keeps its original lightweight request-summary API
  * (recordRequest/getMetrics/getSummary/resetMetrics) for backward compat.
  * Merged in the richer per-channel collector API consumed by

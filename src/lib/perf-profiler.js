@@ -1,8 +1,3 @@
-/**
- * Performance Profiler - Threshold-based profiling with regression detection
- * Per-operation p50/p95/p99 statistics with automatic alerting
- */
-
 import { createLogger } from './logger.js';
 
 const logger = createLogger('[PerfProfiler]');

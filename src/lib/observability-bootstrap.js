@@ -1,8 +1,3 @@
-/**
- * Observability Bootstrap - Initializes all observability subsystems on server startup
- * Starts tracing, registers debug exposures, begins metric collection
- */
-
 import { tracer } from './tracing.js';
 import { perfProfiler } from './perf-profiler.js';
 import { debugRegistry } from './debug-registry.js';

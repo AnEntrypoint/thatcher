@@ -1,4 +1,4 @@
-/**
+/*
  * BusyBase data store — async replacement for the better-sqlite3 query engine.
  *
  * busybase is a Supabase-style async document store (LanceDB) with no SQL joins or
@@ -20,7 +20,6 @@ import { genId, now } from './id-helpers.js';
 
 let _client = null;
 
-/** Set the initialised busybase client (embedded or remote). Called once at bootstrap. */
 export function setBusyBaseClient(client) {
   _client = client;
 }
@@ -30,7 +29,7 @@ function client() {
   return _client;
 }
 
-/** busybase uses the entity name as the table; map the special `user` -> `users`. */
+// busybase uses the entity name as the table; map the special `user` -> `users`.
 function tableName(entity) {
   return entity === 'user' ? 'users' : entity;
 }
@@ -40,11 +39,10 @@ function unwrap({ data, error }, op) {
   return data;
 }
 
-/**
- * Resolve ref "display" fields for a set of rows the way the old LEFT JOIN did:
- * for every ref field with a `display` spec, fetch the referenced rows and attach
- * `<field>_display`. Batched per ref-table to avoid N+1 within a single field.
- */
+// Resolve ref "display" fields for a set of rows the way the old LEFT JOIN did:
+// for every ref field with a `display` spec, fetch the referenced rows and attach
+// `<field>_display`. Batched per ref-table to avoid N+1 within a single field.
+//
 // getSpec returns null for raw infra tables (sessions, audit_logs, structured_logs,
 // password_reset_tokens, mwr_bridge_tokens, email, activity_log, ...) that aren't
 // config entities. Treat those as plain document tables: no ref-display, no
@@ -74,7 +72,7 @@ async function attachRefDisplays(entity, rows) {
   return rows;
 }
 
-/** Apply soft-delete / archive default filtering in memory (no SQL WHERE). */
+// Apply soft-delete / archive default filtering in memory (no SQL WHERE).
 function applyVisibility(spec, rows, where, options) {
   let out = rows;
   if (spec.fields?.status && !('status' in where) && !options.includeDeleted) {
@@ -93,7 +91,6 @@ function applyWhere(builder, where) {
   return builder;
 }
 
-/** List records (optionally filtered), with ref-display + visibility + sort/limit. */
 export async function list(entity, where = {}, options = {}) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
@@ -117,7 +114,6 @@ export async function list(entity, where = {}, options = {}) {
   return attachRefDisplays(entity, rows);
 }
 
-/** Count records matching `where` (after visibility filtering). */
 export async function count(entity, where = {}, options = {}) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
@@ -211,10 +207,8 @@ export async function bulkCreate(entity, records, user) {
   return out;
 }
 
-/**
- * Substring search across the entity's text-ish fields (busybase has no FTS, so this
- * is the in-memory equivalent of the old LIKE fallback). Returns visible rows only.
- */
+// Substring search across the entity's text-ish fields (busybase has no FTS,
+// so this is the in-memory equivalent of the old LIKE fallback). Returns visible rows only.
 export async function search(entity, query, where = {}, options = {}) {
   const spec = specOf(entity);
   const rows = await list(entity, where, { ...options, limit: undefined, offset: undefined });
@@ -242,13 +236,12 @@ export async function searchWithPagination(entity, query, where = {}, page = 1, 
   return { items, pagination: { page: finalPage, pageSize: finalPageSize, total, totalPages: Math.ceil(total / finalPageSize) } };
 }
 
-/** Children of a parent via foreign-key field (old: WHERE fk = ? AND status != deleted). */
+// Children of a parent via foreign-key field (old: WHERE fk = ? AND status != deleted).
 export async function getChildren(parentEntity, parentId, childDef) {
   const fk = childDef.fk || childDef.foreignKey || `${parentEntity}_id`;
   return list(childDef.entity, { [fk]: parentId });
 }
 
-/** Batch-fetch children for several child definitions. */
 export async function batchGetChildren(parentEntity, parentId, childSpecs) {
   const defs = Array.isArray(childSpecs)
     ? childSpecs.map(e => [e, { entity: e }])

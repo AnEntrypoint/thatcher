@@ -1,10 +1,5 @@
-/**
- * Public engine barrel (`@/engine`).
- *
- * Re-exports the busybase-backed data layer plus the auth helpers that API routes
- * and handlers import. Previously `@/engine` resolved to a non-existent module; this
- * file makes it concrete and points the data layer at busybase-store.
- */
+// Previously `@/engine` resolved to a non-existent module; this barrel makes it
+// concrete and points the data layer at busybase-store.
 
 // Data layer (busybase)
 export {

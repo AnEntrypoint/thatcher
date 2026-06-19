@@ -1,4 +1,4 @@
-/**
+/*
  * BusyBase-backed audit log — async replacement for the better-sqlite3 audit-logger's
  * logAction(). Writes an audit_logs document through the busybase store.
  *
@@ -13,20 +13,11 @@ const log = createLogger('[BusyBaseAudit]');
 
 let _client = null;
 
-/** Wire the busybase client (same instance as the store). Called at bootstrap. */
+// Wire the busybase client (same instance as the store). Called at bootstrap.
 export function setBusyBaseClient(client) {
   _client = client;
 }
 
-/**
- * Record an entity mutation. Fire-and-forget: does not block or throw into the caller.
- * @param {string} entityType
- * @param {string} entityId
- * @param {string} action - create | update | delete | archive | ...
- * @param {string|null} userId
- * @param {object|null} beforeState
- * @param {object|null} afterState
- */
 export function logAction(entityType, entityId, action, userId, beforeState, afterState) {
   const id = genId();
   const timestamp = now();

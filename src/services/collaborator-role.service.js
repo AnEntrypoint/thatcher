@@ -1,7 +1,4 @@
-/**
- * Collaborator Role Service - Role-based access control for review collaborators
- * Extracted from moonlanding/src/services/collaborator-role.service.js
- */
+// Extracted from moonlanding/src/services/collaborator-role.service.js
 
 import { list, get, update, create } from '../lib/busybase-store.js';
 import { AppError } from '../lib/error-handler.js';
@@ -23,11 +20,6 @@ const COLLABORATOR_ROLE_PERMISSIONS = {
   ],
 };
 
-/**
- * Get active collaborator role
- * @param {string} collaboratorId
- * @returns {object|null}
- */
 export async function getCollaboratorRole(collaboratorId) {
   if (!collaboratorId) return null;
   const collaborator = await get('collaborator', collaboratorId);
@@ -55,12 +47,6 @@ export async function getCollaboratorRole(collaboratorId) {
   return activeRole;
 }
 
-/**
- * Check if collaborator has permission for action
- * @param {string} collaboratorId
- * @param {string} permission
- * @returns {boolean}
- */
 export async function hasCollaboratorPermission(collaboratorId, permission) {
   const role = await getCollaboratorRole(collaboratorId);
   if (!role) return false;
@@ -68,13 +54,6 @@ export async function hasCollaboratorPermission(collaboratorId, permission) {
   return perms ? perms.includes(permission) : false;
 }
 
-/**
- * Check collaborator access for specific action (with optional record)
- * @param {string} collaboratorId
- * @param {string} action
- * @param {object} [record]
- * @returns {boolean}
- */
 export async function checkCollaboratorAccess(collaboratorId, action, record = null) {
   const role = await getCollaboratorRole(collaboratorId);
   if (!role) return false;
@@ -88,11 +67,6 @@ export async function checkCollaboratorAccess(collaboratorId, action, record = n
   return false;
 }
 
-/**
- * Get role history for collaborator
- * @param {string} collaboratorId
- * @returns {Array}
- */
 export async function getCollaboratorRoleHistory(collaboratorId) {
   if (!collaboratorId) return [];
   return (await list('collaborator_role'))
@@ -100,32 +74,14 @@ export async function getCollaboratorRoleHistory(collaboratorId) {
     .sort((a, b) => b.assigned_at - a.assigned_at);
 }
 
-/**
- * Get permissions for a role type
- * @param {string} roleType
- * @returns {Array<string>}
- */
 export function getCollaboratorRolePermissions(roleType) {
   return COLLABORATOR_ROLE_PERMISSIONS[roleType] || [];
 }
 
-/**
- * Check if user role can assign target role
- * @param {string} userRole
- * @param {string} targetRoleType
- * @returns {boolean}
- */
 export function canAssignRole(userRole, targetRoleType) {
   return ['partner', 'manager'].includes(userRole);
 }
 
-/**
- * Add a collaborator to a review
- * @param {string} reviewId
- * @param {string} email
- * @param {object} options
- * @returns {object}
- */
 export async function addCollaborator(reviewId, email, options = {}) {
   const { expiresAt, createdBy = 'system', reason = '' } = options;
   const nowSeconds = Math.floor(Date.now() / 1000);
@@ -149,11 +105,6 @@ export async function addCollaborator(reviewId, email, options = {}) {
   }, { id: createdBy, role: 'partner' });
 }
 
-/**
- * Get collaborators for a review
- * @param {string} reviewId
- * @returns {Array}
- */
 export async function getReviewCollaborators(reviewId) {
   const collaborators = await list('collaborator', { review_id: reviewId });
   const nowSeconds = Math.floor(Date.now() / 1000);
@@ -171,13 +122,6 @@ export async function getReviewCollaborators(reviewId) {
   }));
 }
 
-/**
- * Revoke collaborator access
- * @param {string} collaboratorId
- * @param {string} [reason='manual_revoke']
- * @param {string} [revokedBy='system']
- * @returns {boolean}
- */
 export async function revokeCollaborator(collaboratorId, reason = 'manual_revoke', revokedBy = 'system') {
   const collaborator = await get('collaborator', collaboratorId);
   if (!collaborator) throw new Error('Collaborator not found');

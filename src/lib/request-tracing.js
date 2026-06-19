@@ -1,8 +1,3 @@
-/**
- * Request Tracing Middleware - Instruments all HTTP requests with distributed tracing
- * Wraps handlers with automatic trace/span creation and context propagation
- */
-
 import { tracer } from './tracing.js';
 import { perfProfiler } from './perf-profiler.js';
 import { createLogger } from './logger.js';
