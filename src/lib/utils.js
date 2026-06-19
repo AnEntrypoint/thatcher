@@ -1,18 +1,7 @@
-/**
- * Utility Functions - Common helpers
- */
-
 import { list } from './busybase-store.js';
 import { getSpec } from '../config/spec-helpers.js';
 
-/**
- * Load ref-field options for a spec's form (ported from moonlanding).
- * For each `ref` field, fetch the referenced entity's rows and build
- * `{ value, label }` option lists. `engagement` refs get a richer label
- * and skip archived rows. Failures degrade to an empty option list.
- * @param {object} spec - Entity spec with a `fields` map
- * @returns {Promise<Record<string, Array<{value:any,label:string}>>>}
- */
+// Ported from moonlanding. engagement refs get a richer label and skip archived rows; failures degrade to [].
 export async function loadFormOptions(spec) {
   const options = {};
   for (const [key, field] of Object.entries(spec.fields || {})) {
@@ -40,9 +29,7 @@ export async function loadFormOptions(spec) {
   return options;
 }
 
-/**
- * Error thrown when an entity spec cannot be resolved (ported from moonlanding).
- */
+// Ported from moonlanding.
 export class SpecError extends Error {
   constructor(entity) {
     super(`Unknown entity: ${entity}`);
@@ -51,12 +38,7 @@ export class SpecError extends Error {
   }
 }
 
-/**
- * Resolve an entity spec, throwing a typed SpecError on failure (ported from
- * moonlanding). Uses thatcher's single-arg getSpec convention.
- * @param {string} entity
- * @returns {Promise<object>}
- */
+// Ported from moonlanding. Uses thatcher's single-arg getSpec convention.
 export async function resolveSpec(entity) {
   try {
     const spec = getSpec(entity);
@@ -68,21 +50,11 @@ export async function resolveSpec(entity) {
   }
 }
 
-/**
- * Get display name for user
- * @param {object} user - User with name or email
- * @returns {string}
- */
 export function getDisplayName(user) {
   if (!user) return 'Unknown';
   return user.name || user.email || user.id || 'Unknown';
 }
 
-/**
- * Get initials from name or email
- * @param {string|object} userOrName
- * @returns {string}
- */
 export function getInitials(userOrName) {
   let name = typeof userOrName === 'string' ? userOrName : getDisplayName(userOrName);
   const parts = name.trim().split(/\s+/);
@@ -92,20 +64,10 @@ export function getInitials(userOrName) {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-/**
- * Get user role
- * @param {object} user
- * @returns {string}
- */
 export function getUserRole(user) {
   return user?.role || 'user';
 }
 
-/**
- * Slugify string (URL-safe)
- * @param {string} str
- * @returns {string}
- */
 export function slugify(str) {
   return str
     .toLowerCase()
@@ -115,25 +77,12 @@ export function slugify(str) {
     .replace(/^-+|-+$/g, '');
 }
 
-/**
- * Truncate text
- * @param {string} text
- * @param {number} maxLength
- * @param {string} suffix
- * @returns {string}
- */
 export function truncate(text, maxLength = 50, suffix = '...') {
   if (!text) return '';
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - suffix.length) + suffix;
 }
 
-/**
- * Deep merge objects
- * @param {object} target
- * @param {object} source
- * @returns {object}
- */
 export function deepMerge(target, source) {
   const output = { ...target };
   for (const key of Object.keys(source)) {
@@ -146,10 +95,6 @@ export function deepMerge(target, source) {
   return output;
 }
 
-/**
- * Generate a random color
- * @returns {string} Hex color
- */
 export function randomColor() {
   const colors = [
     '#228be6', '#40c057', '#fab005', '#fa5252', '#15aabf',
@@ -158,13 +103,7 @@ export function randomColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-/**
- * Determine whether a user record is active (ported from moonlanding).
- * Treats explicit inactive/disabled/suspended status, falsy `is_active`,
- * or a set `deleted_at` as inactive.
- * @param {object} user
- * @returns {boolean}
- */
+// Ported from moonlanding. inactive/disabled/suspended status, falsy is_active, or set deleted_at all count as inactive.
 export function isUserActive(user) {
   if (!user) return false;
   if (user.is_active === false || user.is_active === 0) return false;

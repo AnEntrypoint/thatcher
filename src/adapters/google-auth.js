@@ -9,10 +9,6 @@ import path from 'path';
 let _oauth2Client = null;
 let _jwtClient = null;
 
-/**
- * Initialize Google auth clients
- * @param {object} [config] - Optional config override
- */
 export function initGoogleAuth(config = null) {
   const cfg = config || buildConfig();
   const scopes = [
@@ -50,29 +46,16 @@ export function initGoogleAuth(config = null) {
   return { oauth2: _oauth2Client, jwt: _jwtClient };
 }
 
-/**
- * Get OAuth2 client
- * @returns {OAuth2Client|null}
- */
 export function getOAuth2Client() {
   if (!_oauth2Client) initGoogleAuth();
   return _oauth2Client;
 }
 
-/**
- * Get JWT client (service account)
- * @returns {JWT|null}
- */
 export function getJWTClient() {
   if (!_jwtClient) initGoogleAuth();
   return _jwtClient;
 }
 
-/**
- * Generate OAuth2 authorization URL
- * @param {object} options - state, access_type, prompt, etc.
- * @returns {string}
- */
 export function generateAuthUrl(options = {}) {
   const client = getOAuth2Client();
   if (!client) throw new Error('Google OAuth not configured');
@@ -90,11 +73,6 @@ export function generateAuthUrl(options = {}) {
   });
 }
 
-/**
- * Exchange code for tokens
- * @param {string} code
- * @returns {Promise<object>} tokens
- */
 export async function exchangeCode(code) {
   const client = getOAuth2Client();
   if (!client) throw new Error('Google OAuth not configured');
@@ -103,22 +81,12 @@ export async function exchangeCode(code) {
   return tokens;
 }
 
-/**
- * Get user info from Google
- * @param {string} accessToken
- * @returns {Promise<object>}
- */
 export async function getUserInfo(accessToken) {
   const oauth2 = google.oauth2({ version: 'v2', auth: `Bearer ${accessToken}` });
   const res = await oauth2.userinfo.get();
   return res.data;
 }
 
-/**
- * Verify ID token
- * @param {string} idToken
- * @returns {Promise<object>}
- */
 export async function verifyIdToken(idToken) {
   const client = getOAuth2Client();
   if (!client) throw new Error('Google OAuth not configured');
@@ -130,11 +98,6 @@ export async function verifyIdToken(idToken) {
   return ticket.getPayload();
 }
 
-/**
- * Create OAuth2 client with refresh token
- * @param {string} refreshToken
- * @returns {OAuth2Client}
- */
 export function createClientWithRefresh(refreshToken) {
   const client = new google.auth.OAuth2(
     buildConfig().auth.google.clientId,

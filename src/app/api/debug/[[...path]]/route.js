@@ -1,8 +1,3 @@
-/**
- * Debug API Routes - Comprehensive observability endpoints
- * Exposes all subsystem state as JSON for debugging and monitoring
- */
-
 import { tracer } from '@/lib/tracing.js';
 import { perfProfiler } from '@/lib/perf-profiler.js';
 import { debugRegistry } from '@/lib/debug-registry.js';

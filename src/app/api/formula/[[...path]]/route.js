@@ -1,7 +1,3 @@
-/**
- * Formula API Routes - HyperFormula operations via HTTP
- */
-
 import { getHyperFormulaService, createHyperFormulaService } from '@/lib/hyperformula-service.js';
 import { createLogger } from '@/lib/logger.js';
 

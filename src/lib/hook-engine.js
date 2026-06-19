@@ -16,9 +16,6 @@ export class HookEngine {
     return this;
   }
 
-  /**
-   * Alias for register
-   */
   on(name, callback, options = {}) {
     return this.register(name, callback, options);
   }
@@ -86,7 +83,6 @@ export class HookEngine {
   }
 }
 
-// Global singleton
 export const hookEngine = new HookEngine();
 
 export async function executeHook(name, data = {}, options = {}) {

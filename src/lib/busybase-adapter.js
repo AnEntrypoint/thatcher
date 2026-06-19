@@ -1,8 +1,3 @@
-/**
- * BusyBase Database Adapter - Supabase-compatible database layer for Thatcher
- * Supports embedded mode (in-process) and remote mode (HTTP client)
- */
-
 import { createLogger } from './logger.js';
 import { hookEngine } from './hook-engine.js';
 

@@ -1,13 +1,3 @@
-/**
- * Field Registry - Type coercion and field utilities
- */
-
-/**
- * Coerce value to field type
- * @param {any} value
- * @param {string} type
- * @returns {any}
- */
 export function coerceFieldValue(value, type) {
   if (value === null || value === undefined) return value;
 
@@ -31,22 +21,10 @@ export function coerceFieldValue(value, type) {
   }
 }
 
-/**
- * Serialize field value for database
- * @param {any} value
- * @param {string} type
- * @returns {any}
- */
 export function serializeField(value, type) {
   return coerceFieldValue(value, type);
 }
 
-/**
- * Deserialize field value from database
- * @param {any} value
- * @param {string} type
- * @returns {any}
- */
 export function deserializeField(value, type) {
   if (value === null) return null;
 

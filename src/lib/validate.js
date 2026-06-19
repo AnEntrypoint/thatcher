@@ -1,7 +1,4 @@
-/**
- * Validation System - Field and entity validation
- * Adapted from moonlanding/src/lib/validate.js
- */
+// Adapted from moonlanding/src/lib/validate.js
 
 import { getSpec } from '../config/spec-helpers.js';
 import { isValidEmail as checkEmailFormat, isValidEmail } from './validators.js';
@@ -13,22 +10,10 @@ export { isValidEmail };
 
 const HTML_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
-/**
- * Sanitize HTML
- * @param {string} str
- * @returns {string}
- */
 function sanitizeHtml(str) {
   return typeof str === 'string' ? str.replace(/[&<>"']/g, c => HTML_ESC[c]) : str;
 }
 
-/**
- * Validate a single field
- * @param {object} fieldDef
- * @param {any} value
- * @param {object} options
- * @returns {Promise<{valid: boolean, error?: string}>}
- */
 export async function validateField(fieldDef, value, options = {}) {
   const { fieldName, entityName, existingValue } = options;
 
@@ -81,13 +66,6 @@ export async function validateField(fieldDef, value, options = {}) {
   return { valid: true };
 }
 
-/**
- * Validate type of value
- * @param {object} fieldDef
- * @param {any} value
- * @param {string} fieldName
- * @returns {string|null}
- */
 function validateType(fieldDef, value, fieldName) {
   const { type, min, max } = fieldDef;
 
@@ -112,12 +90,6 @@ function validateType(fieldDef, value, fieldName) {
   return null;
 }
 
-/**
- * Resolve enum options from field definition
- * @param {object} fieldDef
- * @param {string} entityName
- * @returns {Array<string>}
- */
 function resolveEnumOptions(fieldDef, entityName) {
   if (Array.isArray(fieldDef.options)) {
     return fieldDef.options.map(o => typeof o === 'object' ? o.value : o);
@@ -136,13 +108,6 @@ function resolveEnumOptions(fieldDef, entityName) {
   return [];
 }
 
-/**
- * Validate all fields for an entity
- * @param {string} entityName
- * @param {object} data
- * @param {object} existingRecord
- * @returns {Promise<object>} Errors object keyed by field name
- */
 export async function validateEntity(entityName, data, existingRecord = null) {
   const spec = getSpec(entityName);
   const errors = {};
@@ -170,14 +135,6 @@ export async function validateEntity(entityName, data, existingRecord = null) {
   return errors;
 }
 
-/**
- * Enforce a field's `unique` constraint against the datastore.
- * Returns an error string if a duplicate exists, otherwise null.
- * @param {object} fieldDef
- * @param {any} value
- * @param {object} options - { fieldName, entityName, existingRecord }
- * @returns {Promise<string|null>}
- */
 async function checkUnique(fieldDef, value, { fieldName, entityName, existingRecord }) {
   if (!fieldDef.unique) return null;
   if (value == null || value === '') return null;
@@ -196,13 +153,6 @@ async function checkUnique(fieldDef, value, { fieldName, entityName, existingRec
   return null;
 }
 
-/**
- * Validate update (only changed fields)
- * @param {string} entityName
- * @param {object} changes
- * @param {object} existingRecord
- * @returns {Promise<object>}
- */
 export async function validateUpdate(entityName, changes, existingRecord) {
   const spec = getSpec(entityName);
   const errors = {};
@@ -232,23 +182,10 @@ export async function validateUpdate(entityName, changes, existingRecord) {
   return errors;
 }
 
-/**
- * Check if errors object has any errors
- * @param {object} errors
- * @returns {boolean}
- */
 export function hasErrors(errors) {
   return errors && Object.keys(errors).length > 0;
 }
 
-/**
- * Validate a status/stage transition is permitted.
- * Uses thatcher's STAGE_TRANSITIONS graph via getValidTransitions.
- * @param {string} entityType
- * @param {string} currentStatus
- * @param {string} newStatus
- * @returns {{valid: boolean, reason?: string}}
- */
 export function validateStatusTransition(entityType, currentStatus, newStatus) {
   if (!currentStatus || !newStatus) {
     return { valid: false, reason: 'Status values required' };
@@ -264,13 +201,6 @@ export function validateStatusTransition(entityType, currentStatus, newStatus) {
   return { valid: true };
 }
 
-/**
- * Validate that an end date is not before a start date.
- * @param {number} startSeconds - Unix timestamp (seconds)
- * @param {number} endSeconds - Unix timestamp (seconds)
- * @param {string} label
- * @returns {{valid: boolean, reason?: string}}
- */
 export function validateDateRange(startSeconds, endSeconds, label = 'date') {
   if (!startSeconds || !endSeconds) return { valid: true };
   if (isBeforeDate(endSeconds, startSeconds)) {
@@ -279,13 +209,6 @@ export function validateDateRange(startSeconds, endSeconds, label = 'date') {
   return { valid: true };
 }
 
-/**
- * Validate a deadline: required, not before a reference date, within maxYears.
- * @param {number} deadlineSeconds - Unix timestamp (seconds)
- * @param {number} [referenceSeconds] - Unix timestamp (seconds)
- * @param {number} [maxYears=2]
- * @returns {{valid: boolean, reason?: string}}
- */
 export function validateDeadline(deadlineSeconds, referenceSeconds, maxYears = 2) {
   if (!deadlineSeconds) return { valid: false, reason: 'Deadline is required' };
   if (referenceSeconds && isBeforeDate(deadlineSeconds, referenceSeconds)) {
@@ -302,12 +225,6 @@ export function validateDeadline(deadlineSeconds, referenceSeconds, maxYears = 2
   return { valid: true };
 }
 
-/**
- * Sanitize string/text fields of a record using the entity spec.
- * @param {object} data
- * @param {object} spec
- * @returns {object} Sanitized shallow copy
- */
 export function sanitizeData(data, spec) {
   const sanitized = { ...data };
   for (const [fieldName, value] of Object.entries(sanitized)) {

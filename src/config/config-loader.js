@@ -1,20 +1,13 @@
-/**
- * Configuration loading and management
- * Adapted from moonlanding/src/config/
- */
+// Adapted from moonlanding/src/config/
 
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 
-/**
- * Load configuration from YAML file or object
- */
 export async function loadConfig(configSource) {
   let config;
 
   if (typeof configSource === 'string') {
-    // File path
     const configPath = path.resolve(process.cwd(), configSource);
     if (!fs.existsSync(configPath)) {
       throw new Error(`Configuration file not found: ${configPath}`);
@@ -22,7 +15,6 @@ export async function loadConfig(configSource) {
     const content = fs.readFileSync(configPath, 'utf-8');
     config = yaml.load(content);
   } else if (typeof configSource === 'object') {
-    // Raw object
     config = configSource;
   } else {
     throw new Error('Config must be a file path or object');
@@ -31,9 +23,6 @@ export async function loadConfig(configSource) {
   return config;
 }
 
-/**
- * Validate required configuration sections
- */
 export function validateConfig(config) {
   const errors = [];
 
@@ -42,7 +31,6 @@ export function validateConfig(config) {
     return errors;
   }
 
-  // Check required sections
   const requiredSections = ['entities', 'roles', 'permission_templates'];
   for (const section of requiredSections) {
     if (!config[section]) {
@@ -50,7 +38,6 @@ export function validateConfig(config) {
     }
   }
 
-  // Validate roles
   if (config.roles) {
     const roleNames = Object.keys(config.roles);
     if (roleNames.length === 0) {
@@ -58,7 +45,6 @@ export function validateConfig(config) {
     }
   }
 
-  // Validate entities
   if (config.entities) {
     for (const [entityName, entityDef] of Object.entries(config.entities)) {
       if (!entityDef.fields && !entityDef.children) {
@@ -70,9 +56,6 @@ export function validateConfig(config) {
   return errors;
 }
 
-/**
- * Get configuration with defaults applied
- */
 export function getConfigWithDefaults(userConfig) {
   const defaults = {
     system: {
@@ -96,9 +79,6 @@ export function getConfigWithDefaults(userConfig) {
   return deepMerge(defaults, userConfig);
 }
 
-/**
- * Deep merge utility
- */
 function deepMerge(target, source) {
   const result = { ...target };
   for (const key of Object.keys(source)) {

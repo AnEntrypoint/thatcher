@@ -1,4 +1,4 @@
-/**
+/*
  * BusyBase-backed audit READ API — replaces the SQLite audit-logger read functions.
  * busybase has no SQL GROUP BY / aggregates, so stats are computed in JS over the
  * audit_logs and permission_audit tables.

@@ -6,8 +6,10 @@ import { loadEnv, setupProcessGuards, setupHotReload, loadModule as _loadModule,
 import { registerGlobals, NextRequest, readBody, normalizeHeaderName } from './src/lib/next-compat.js';
 import { serveStatic, html404 } from './src/lib/static-server.js';
 import { resolveRoute } from './src/lib/route-resolver.js';
+import { createLogger } from './src/lib/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const log = createLogger('[Server]');
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const SERVER_START = Date.now();
 
@@ -50,7 +52,7 @@ async function ensureMetrics() {
 const genId = () => `${Date.now().toString(36)}-${(++_reqCounter).toString(36)}`;
 const track = (req, code, t0) => {
   if (_recordRequest) _recordRequest(req.url.split('?')[0], req.method, Date.now() - t0, code);
-  console.log(`[${req.method}] ${req.url} ${code} ${Date.now() - t0}ms rid=${req._reqId || '-'}`);
+  log.info(`${req.method} ${req.url} ${code} ${Date.now() - t0}ms rid=${req._reqId || '-'}`);
 };
 
 const server = http.createServer(async (req, res) => {
@@ -72,7 +74,7 @@ const server = http.createServer(async (req, res) => {
       const { getConfigEngineSync } = await import('./src/lib/config-generator-engine.js');
       await loadPlugins(getConfigEngineSync());
       systemInitialized = true;
-      console.log('[Server] System initialized');
+      log.info('System initialized');
     }
 
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -116,8 +118,7 @@ const server = http.createServer(async (req, res) => {
           track(req, 200, t0); return;
         }
       } catch (err) {
-        console.error('[Page Handler] Error:', err.message);
-        if (err.stack) console.error(err.stack);
+        log.error('Page handler error:', { message: err.message, stack: err.stack });
         if (res.headersSent) return;
       }
     }
@@ -174,7 +175,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(response.status, headerObj); res.end(bodyOut);
         track(req, response.status, t0);
       } catch (err) {
-        console.error('[API] Handler error:', err.message || err);
+        log.error('API handler error:', { message: err.message || String(err) });
         const e = JSON.stringify({ error: err.message || String(err) });
         res.writeHead(500, { 'Content-Length': Buffer.byteLength(e, 'utf-8') }); res.end(e);
         track(req, 500, t0);
@@ -189,7 +190,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(404); res.end(body); track(req, 404, t0);
     }
   } catch (err) {
-    console.error('[Server] Error:', err);
+    log.error('Request error:', { message: err.message, stack: err.stack });
     if (!res.headersSent) {
       const msg = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
       const e = JSON.stringify({ error: msg });
@@ -203,7 +204,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '0.0.0.0', async () => {
   try { const { validateEnv } = await import('./src/config/env.js'); validateEnv(); } catch {}
-  console.log(`\n▲ Zero-Build Runtime Server\n- Local: http://localhost:${PORT}\n✓ Ready in ${Date.now() - SERVER_START}ms\n`);
+  log.info(`Zero-Build Runtime Server ready on http://localhost:${PORT} (${Date.now() - SERVER_START}ms)`);
 
   try {
     const { hookEngine } = await import('./src/lib/hook-engine.js');
@@ -212,5 +213,5 @@ server.listen(PORT, '0.0.0.0', async () => {
   } catch {}
 
   try { const { startLifecycle } = await import('./src/lib/dr-lifecycle.js'); startLifecycle(server); }
-  catch (err) { console.error('[Server] DR lifecycle init failed:', err.message); }
+  catch (err) { log.error('DR lifecycle init failed:', { message: err.message }); }
 });

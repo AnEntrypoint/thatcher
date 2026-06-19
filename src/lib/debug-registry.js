@@ -1,8 +1,3 @@
-/**
- * Debug Registry - Comprehensive globalThis.__debug__ registry for all Thatcher subsystems
- * Modules register on import/init; supports nested namespaces and live data
- */
-
 import { createLogger } from './logger.js';
 
 const logger = createLogger('[DebugRegistry]');

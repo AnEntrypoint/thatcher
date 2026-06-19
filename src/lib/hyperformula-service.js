@@ -1,8 +1,3 @@
-/**
- * HyperFormula Compute Engine - Spreadsheet formula evaluation for Thatcher
- * Provides calculated fields, business rules, and data transformations
- */
-
 import { HyperFormula } from 'hyperformula';
 import { createLogger } from './logger.js';
 

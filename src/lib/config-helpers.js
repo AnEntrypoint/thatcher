@@ -1,11 +1,3 @@
-/**
- * Configuration Helpers - Utilities for config processing
- * LRUCache, deep cloning, freezing, recursive resolution
- */
-
-/**
- * LRU Cache implementation
- */
 export class LRUCache {
   constructor(maxSize = 100) {
     this.maxSize = maxSize;
@@ -39,9 +31,6 @@ export class LRUCache {
   }
 }
 
-/**
- * Deep freeze object (immutable)
- */
 export function deepFreeze(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Object.isFrozen(obj)) return obj;
@@ -55,9 +44,6 @@ export function deepFreeze(obj) {
   return obj;
 }
 
-/**
- * Deep clone object
- */
 export function deepClone(obj) {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(deepClone);
@@ -69,10 +55,6 @@ export function deepClone(obj) {
   return cloned;
 }
 
-/**
- * Recursively resolve string template references in config
- * Replaces ${ref.path} with value from config
- */
 export function recursiveResolve(value, config) {
   if (typeof value === 'string') {
     return value.replace(/\$\{([^}]+)\}/g, (_, path) => {
@@ -104,9 +86,6 @@ export function recursiveResolve(value, config) {
   return value;
 }
 
-/**
- * Merge objects deeply
- */
 export function deepMerge(target, source) {
   const output = { ...target };
   for (const key of Object.keys(source)) {

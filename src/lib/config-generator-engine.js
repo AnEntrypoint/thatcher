@@ -1,8 +1,4 @@
-/**
- * Config Generator Engine - Resolves entity specs from YAML config
- * Core of Thatcher's configuration-driven architecture
- * Adapted from moonlanding/src/lib/config-generator-engine.js
- */
+// Adapted from moonlanding/src/lib/config-generator-engine.js
 
 import yaml from 'js-yaml';
 import { LRUCache, deepFreeze, deepClone, recursiveResolve } from './config-helpers.js';
@@ -17,9 +13,6 @@ export class ConfigGeneratorEngine {
     this._plugins = new Map();
   }
 
-  /**
-   * Register a plugin to extend an entity
-   */
   registerPlugin(entityName, plugin = {}) {
     if (!entityName || typeof entityName !== 'string') {
       throw new Error('[ConfigGeneratorEngine] registerPlugin: entityName required');
@@ -232,10 +225,6 @@ export class ConfigGeneratorEngine {
     return this;
   }
 
-  /**
-   * Generate complete entity specification from config
-   * This is the main method that builds the spec used by CRUD, UI, etc.
-   */
   generateEntitySpec(entityName) {
     if (!entityName) throw new Error('[config] generateEntitySpec: entityName required');
 
@@ -291,17 +280,14 @@ export class ConfigGeneratorEngine {
       options: {},
     };
 
-    // Merge field overrides
     if (entityDef.field_overrides) {
       spec.field_overrides = recursiveResolve(entityDef.field_overrides, config);
     }
 
-    // Build fields from definition + overrides + plugin additions
     const baseFields = entityDef.fields || {};
     const plugin = this._plugins.get(entityName);
     const pluginFields = plugin?.fields || {};
 
-    // Combine and process fields
     const allFields = {
       ...baseFields,
       ...spec.field_overrides,
@@ -323,7 +309,6 @@ export class ConfigGeneratorEngine {
       if (!(key in allFields)) allFields[key] = field;
     }
 
-    // Ensure required metadata (label, type defaults)
     for (const [key, field] of Object.entries(allFields)) {
       spec.fields[key] = {
         type: field.type || 'text',
@@ -345,7 +330,6 @@ export class ConfigGeneratorEngine {
       };
     }
 
-    // Permission matrix
     if (entityDef.permission_template) {
       const matrix = this.getPermissionTemplate(entityDef.permission_template);
       const access = {};
@@ -364,7 +348,6 @@ export class ConfigGeneratorEngine {
       spec.permissions = roleActions;
     }
 
-    // Workflow binding
     if (entityDef.workflow) {
       const wf = this.getWorkflow(entityDef.workflow);
       spec.workflow = wf;
@@ -383,7 +366,6 @@ export class ConfigGeneratorEngine {
       spec.variants = deepClone(entityDef.variants);
     }
 
-    // List options
     if (entityDef.list) {
       spec.list = {
         defaultSort: entityDef.list.defaultSort || { field: 'created_at', dir: 'desc' },
@@ -421,9 +403,6 @@ export class ConfigGeneratorEngine {
   }
 }
 
-/**
- * Get or create singleton config engine
- */
 let _singleton = null;
 
 export function getConfigEngineSync() {
@@ -444,11 +423,6 @@ export async function getConfigEngine() {
   return getConfigEngineSync();
 }
 
-/**
- * Initialize config engine from config source
- * @param {string|object} configSource
- * @returns {ConfigGeneratorEngine}
- */
 export async function initConfig(configSource) {
   const { loadConfig } = await import('../config/config-loader.js');
   const { validateConfig, getConfigWithDefaults } = await import('../config/config-loader.js');
@@ -465,20 +439,14 @@ export async function initConfig(configSource) {
   return _singleton;
 }
 
-/**
- * Set the singleton config engine directly (used by the bootstrap in index.js,
- * which constructs the engine from an already-parsed config object). This is what
- * makes getConfigEngineSync() resolve for the server/plugin/spec paths.
- * @param {ConfigGeneratorEngine} engine
- */
+// Used by the bootstrap in index.js which constructs the engine from an already-parsed
+// config object; makes getConfigEngineSync() resolve for the server/plugin/spec paths.
 export function setConfigEngine(engine) {
   _singleton = engine;
   return _singleton;
 }
 
-/**
- * Reset singleton (for hot reload)
- */
+// Called during hot reload to force re-initialization.
 export function resetConfigEngine() {
   _singleton = null;
 }

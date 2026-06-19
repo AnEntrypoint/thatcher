@@ -1,8 +1,3 @@
-/**
- * Status Helpers - Status enumerations and transition maps
- * These are the standard status values used by moonlanding parity entities
- */
-
 import { getConfigEngineSync } from './config-generator-engine.js';
 
 // Engagement statuses
@@ -73,20 +68,10 @@ export const STAGE_TRANSITIONS = {
   closeout: 'closed',
 };
 
-/**
- * Get next stage in standard lifecycle
- * @param {string} currentStage
- * @returns {string|null}
- */
 export function getNextStage(currentStage) {
   return STAGE_TRANSITIONS[currentStage] || null;
 }
 
-/**
- * Get all valid transitions for an engagement
- * @param {string} currentStage
- * @returns {Array<string>}
- */
 export function getValidTransitions(currentStage) {
   const transitions = [];
   for (const [from, to] of Object.entries(STAGE_TRANSITIONS)) {
@@ -131,14 +116,11 @@ function buildEnumFromWorkflow(workflowName) {
   return result;
 }
 
-/**
- * Human-readable labels for status/stage values.
- * Built from thatcher's own enums so labels track thatcher's enum model.
- */
 function titleCase(v) {
   return String(v).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Built from thatcher's own enums so labels track thatcher's enum model.
 export const STATUS_LABELS = {
   ...Object.fromEntries(Object.values(ENGAGEMENT_STATUS).map((v) => [v, titleCase(v)])),
   ...Object.fromEntries(Object.values(ENGAGEMENT_STAGE).map((v) => [v, titleCase(v)])),
@@ -149,44 +131,22 @@ export const STATUS_LABELS = {
   ...Object.fromEntries(Object.values(HIGHLIGHT_STATUS).map((v) => [v, titleCase(v)])),
 };
 
-/**
- * Get the display label for a status/stage value.
- * @param {string} value
- * @returns {string}
- */
 export function getStatusLabel(value) {
   return STATUS_LABELS[value] || value;
 }
 
-/**
- * Resolve engagement stages from config workflow, falling back to ENGAGEMENT_STAGE.
- * @returns {Object}
- */
 export function getEngagementStages() {
   return buildEnumFromWorkflow('engagement_lifecycle') || ENGAGEMENT_STAGE;
 }
 
-/**
- * Resolve RFI states from config workflow, falling back to RFI_STATUS.
- * @returns {Object}
- */
 export function getRfiStates() {
   return buildEnumFromWorkflow('rfi_type_standard') || RFI_STATUS;
 }
 
-/**
- * Resolve review stages from config workflow, falling back to REVIEW_STATUS.
- * @returns {Object}
- */
 export function getReviewStages() {
   return buildEnumFromWorkflow('review_lifecycle') || REVIEW_STATUS;
 }
 
-/**
- * Resolve the engagement stage transition map from config, falling back to
- * thatcher's static STAGE_TRANSITIONS.
- * @returns {Object<string,string>}
- */
 export function getStageTransitions() {
   const stages = getCachedConfig()?.workflows?.engagement_lifecycle?.stages;
   if (!stages) return STAGE_TRANSITIONS;
@@ -199,13 +159,6 @@ export function getStageTransitions() {
   return result;
 }
 
-/**
- * Check whether a transition between two states is valid for an entity type.
- * @param {string} entityType
- * @param {string} from
- * @param {string} to
- * @returns {boolean}
- */
 export function isValidTransition(entityType, from, to) {
   if (entityType === 'engagement') {
     const transitions = getStageTransitions();
@@ -218,9 +171,7 @@ export function isValidTransition(entityType, from, to) {
   return false;
 }
 
-/**
- * Clear the cached config snapshot (call after a config hot-reload).
- */
+// Call after a config hot-reload to force re-read.
 export function clearCachedConfig() {
   _cachedConfig = null;
 }

@@ -1,8 +1,3 @@
-/**
- * Observability Export Sink - Streams traces and metrics to external systems
- * Supports file, HTTP (OTLP), and stdout targets with batching and retry
- */
-
 import fs from 'fs';
 import path from 'path';
 import { createLogger } from './logger.js';
