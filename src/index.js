@@ -1,12 +1,10 @@
-/**
- * Thatcher SDK - Configuration-Driven Application Framework
- */
-
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { createLogger } from './lib/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const log = createLogger('[Thatcher]');
 
 // Forward-declare so we can set later
 let _configEngine = null;
@@ -15,11 +13,6 @@ let _pluginsLoaded = false;
 let _server = null;
 let _hotReloadWatchers = [];
 
-/**
- * Resolve a path relative to this package's src directory as an import URL
- * @param {string} relative - Path like './src/lib/database-core.js'
- * @returns {string} file:// URL
- */
 function resolveModule(relative) {
   const abs = path.resolve(__dirname, relative);
   return pathToFileURL(abs).href;
@@ -32,9 +25,6 @@ function databasePathToDir(p) {
   return /\.(db|sqlite|sqlite3)$/i.test(p) ? path.dirname(p) : p;
 }
 
-/**
- * Thatcher class - main API
- */
 export class Thatcher {
   constructor(options = {}) {
     this.options = this.normalizeOptions(options);
@@ -58,9 +48,6 @@ export class Thatcher {
     };
   }
 
-  /**
-   * Initialize the system (config, DB, plugins)
-   */
   async init() {
     if (this.initialized) return this;
 
@@ -85,9 +72,6 @@ export class Thatcher {
     return this;
   }
 
-  /**
-   * Load master configuration
-   */
   async loadConfig() {
     const { config } = this.options;
     let masterConfig;
@@ -145,11 +129,6 @@ export class Thatcher {
     this.config = masterConfig;
   }
 
-  /**
-   * Initialize the data layer (busybase embedded) and wire it into the store + audit
-   * log. busybase is schemaless, so there is no SQL migrate step; tables are created
-   * lazily on first insert.
-   */
   async initDatabase() {
     if (_databaseInitialized) return;
     const { createEmbedded } = await import('busybase/embedded');
@@ -175,9 +154,6 @@ export class Thatcher {
     _databaseInitialized = true;
   }
 
-  /**
-   * Load .plugin.js files
-   */
   async loadPlugins() {
     if (_pluginsLoaded) return;
 
@@ -204,7 +180,7 @@ export class Thatcher {
               _configEngine.registerPlugin(plugin.entityName, plugin);
             }
           } catch (e) {
-            console.error(`[plugins] Failed to load ${file}:`, e.message);
+            log.error(`plugins: failed to load ${file}: ${e.message}`);
           }
         }
       }
@@ -213,9 +189,6 @@ export class Thatcher {
     _pluginsLoaded = true;
   }
 
-  /**
-   * Setup hot reload watchers
-   */
   setupHotReload() {
     const dirs = [
       path.resolve(process.cwd(), 'config'),
@@ -229,13 +202,13 @@ export class Thatcher {
       try {
         const watcher = fs.watch(dir, { recursive: true }, (_, filename) => {
           if (filename && (filename.endsWith('.js') || filename.endsWith('.jsx') || filename.endsWith('.yml'))) {
-            console.log(`[HotReload] ${filename} changed`);
+            log.info(`hot reload: ${filename} changed`);
             this.invalidateCache();
           }
         });
         _hotReloadWatchers.push(watcher);
       } catch (err) {
-        console.warn(`[HotReload] Failed to watch ${dir}:`, err.message);
+        log.warn(`hot reload: failed to watch ${dir}: ${err.message}`);
       }
     }
   }
@@ -246,9 +219,6 @@ export class Thatcher {
     }
   }
 
-  /**
-   * Start HTTP server
-   */
   async startServer(opts = {}) {
     if (!this.initialized) throw new Error('Call init() first');
 
@@ -272,9 +242,6 @@ export class Thatcher {
     });
   }
 
-  /**
-   * Stop server
-   */
   async stop() {
     if (_server) {
       _server.close();
@@ -284,30 +251,18 @@ export class Thatcher {
     _hotReloadWatchers = [];
   }
 
-  /**
-   * Get config engine
-   */
   getConfigEngine() {
     return _configEngine;
   }
 
-  /**
-   * Get entity spec
-   */
   getEntitySpec(name) {
     return _configEngine?.generateEntitySpec(name);
   }
 
-  /**
-   * List all entities
-   */
   getAllEntities() {
     return _configEngine?.getAllEntities() || [];
   }
 
-  /**
-   * Get workflow definition
-   */
   getWorkflow(name) {
     return _configEngine?.getWorkflow(name);
   }
@@ -384,16 +339,10 @@ export class Thatcher {
   }
 }
 
-/**
- * Create thatcher instance
- */
 export function createThatcher(options) {
   return new Thatcher(options);
 }
 
-/**
- * Quick-start helper
- */
 export async function startThatcher(options = {}) {
   const t = new Thatcher(options);
   await t.init();

@@ -1,5 +1,5 @@
-import { retryWithBackoff, withCircuitBreaker, checkpoint, restoreCheckpoint, logRecovery, normalizeError } from '@/lib/error-handler';
-import { AppError } from '@/lib/errors';
+import { retryWithBackoff, withCircuitBreaker, checkpoint, restoreCheckpoint, logRecovery } from '@/lib/error-resilience';
+import { normalizeError, AppError } from '@/lib/error-handler';
 import { HTTP } from '@/config/constants';
 
 const recoveryState = { supervisors: new Map(), lastHealthCheck: null };

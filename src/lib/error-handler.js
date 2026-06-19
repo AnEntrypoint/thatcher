@@ -1,7 +1,3 @@
-/**
- * Error Handling - Centralized error types and utilities
- */
-
 // AppError stays a real class (base error type; `instanceof AppError` works).
 export class AppError extends Error {
   constructor(message, code = 'APP_ERROR', status = 500, details = null) {
@@ -44,11 +40,6 @@ export function BadRequestError(message = 'Invalid request') {
   const e = new AppError(message, 'BAD_REQUEST', 400); e.name = 'BadRequestError'; return e;
 }
 
-/**
- * Create an error logger
- * @param {string} context
- * @returns {object}
- */
 export function createErrorLogger(context = '') {
   return {
     error: (msg, meta = {}) => {
@@ -66,18 +57,7 @@ export function createErrorLogger(context = '') {
   };
 }
 
-/**
- * Normalize an arbitrary thrown value into one of thatcher's AppError-class
- * instances. AppError instances (and anything already shaped like one — a
- * numeric `status` + a `code`) pass through untouched; common low-level
- * errors are mapped to the appropriate thatcher error class.
- *
- * (Ported from moonlanding, adapted to thatcher's class-based hierarchy and
- * its `status`/`code`/`details` shape. Kept import-free so the module stays
- * loadable under the plain-node test runner.)
- * @param {unknown} error
- * @returns {AppError}
- */
+// Ported from moonlanding; kept import-free so this module loads under the plain-node test runner.
 export function normalizeError(error) {
   if (error instanceof AppError) {
     return error;
@@ -112,13 +92,7 @@ export function normalizeError(error) {
   });
 }
 
-/**
- * Build a JSON-serializable error response body from any thrown value.
- * (Ported from moonlanding, adapted to thatcher's error shape.)
- * @param {unknown} error
- * @param {boolean} [includeStack=false]
- * @returns {object}
- */
+// Ported from moonlanding.
 export function formatErrorResponse(error, includeStack = false) {
   const normalized = normalizeError(error);
   const response = {

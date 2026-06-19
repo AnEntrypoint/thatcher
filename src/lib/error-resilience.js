@@ -1,6 +1,5 @@
 import { HTTP } from '@/config/constants';
-import { AppError } from '@/lib/errors';
-import { normalizeError } from '@/lib/error-handler';
+import { AppError, normalizeError } from '@/lib/error-handler';
 
 const errorState = { errors: [], circuitBreakers: new Map(), checkpoints: new Map() };
 

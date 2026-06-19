@@ -1,8 +1,3 @@
-/**
- * Workflow Engine - State machine management for entity lifecycle transitions
- * Handles validation of state transitions and available actions
- */
-
 import { get, update, create } from './busybase-store.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { executeHook } from './hook-engine.js';
@@ -12,11 +7,6 @@ import { HTTP } from '../config/constants.js';
 const LOCKOUT_SECONDS = 300; // 5 minutes default
 const workflowCache = new Map();
 
-/**
- * Get workflow definition from config
- * @param {string} workflowName
- * @returns {object}
- */
 function getWorkflowDef(workflowName) {
   if (workflowCache.has(workflowName)) {
     return workflowCache.get(workflowName);
@@ -43,15 +33,6 @@ function getWorkflowDef(workflowName) {
   return def;
 }
 
-/**
- * Validate a state transition
- * @param {string} workflowName
- * @param {string} fromState
- * @param {string} toState
- * @param {object} user
- * @returns {{forward: boolean, backward: boolean}}
- * @throws {AppError} if transition invalid
- */
 export function validateTransition(workflowName, fromState, toState, user) {
   const def = getWorkflowDef(workflowName);
   const fromCfg = def.stageMap[fromState];
@@ -71,18 +52,15 @@ export function validateTransition(workflowName, fromState, toState, user) {
     );
   }
 
-  // Role requirement check
   const requiresRole = toCfg.requires_role || [];
   if (requiresRole.length > 0 && user && !requiresRole.includes(user.role)) {
     throw new AppError(`Role "${user.role}" cannot enter state "${toState}"`, 'INSUFFICIENT_PERMISSIONS', HTTP.FORBIDDEN);
   }
 
-  // Entry constraint (e.g., partner_only)
   if (toCfg.entry === 'partner_only' && user?.role !== 'partner') {
     throw new AppError(`Only partners can enter "${toState}"`, 'ENTRY_CONSTRAINT', HTTP.FORBIDDEN);
   }
 
-  // Readonly check
   if (toCfg.readonly) {
     throw new AppError(`State "${toState}" is read-only`, 'STATE_READONLY', HTTP.FORBIDDEN);
   }
@@ -93,14 +71,6 @@ export function validateTransition(workflowName, fromState, toState, user) {
   };
 }
 
-/**
- * Get available transitions for current state
- * @param {string} workflowName
- * @param {string} currentState
- * @param {object} user
- * @param {object} [record]
- * @returns {Array<{stage: string, label: string, forward: boolean, backward: boolean}>}
- */
 export function getAvailableTransitions(workflowName, currentState, user, record = null) {
   const def = getWorkflowDef(workflowName);
   const currentCfg = def.stageMap[currentState];
@@ -112,7 +82,6 @@ export function getAvailableTransitions(workflowName, currentState, user, record
 
   for (const stateName of candidates) {
     try {
-      // Lockout check based on last_transition_at
       if (record?.last_transition_at) {
         const elapsed = (Date.now() / 1000) - record.last_transition_at;
         if (elapsed < LOCKOUT_SECONDS) continue;
@@ -127,18 +96,13 @@ export function getAvailableTransitions(workflowName, currentState, user, record
         backward: (cfg.order || 0) < currentOrder,
       });
     } catch {
-      // Skip invalid transitions
+      // skip
     }
   }
 
   return available;
 }
 
-/**
- * Get transition lockout status
- * @param {object} record
- * @returns {{inLockout: boolean, minutesRemaining: number, failedGates: Array}}
- */
 export function getTransitionStatus(record) {
   let inLockout = false;
   let minutesRemaining = 0;
@@ -154,24 +118,12 @@ export function getTransitionStatus(record) {
   return { inLockout, minutesRemaining, failedGates: [] };
 }
 
-/**
- * Execute a state transition
- * @param {string} entityType
- * @param {string} entityId
- * @param {string} workflowName
- * @param {string} toState
- * @param {object} user
- * @param {string} [reason='']
- * @returns {Promise<object>} Updated record
- */
 export async function transition(entityType, entityId, workflowName, toState, user, reason = '') {
-  // Validate transition
   const record = await get(entityType, entityId);
   if (!record) throw new AppError('Record not found', 'NOT_FOUND', HTTP.NOT_FOUND);
 
   validateTransition(workflowName, record.status || record.stage, toState, user);
 
-  // Update record
   const updates = {
     status: toState,
     updated_at: Math.floor(Date.now() / 1000),
@@ -185,7 +137,6 @@ export async function transition(entityType, entityId, workflowName, toState, us
   const { update: updateRecord } = await import('./busybase-store.js');
   const updated = await updateRecord(entityType, entityId, updates, user);
 
-  // Execute hooks
   executeHook(`transition:${entityType}`, {
     entity: entityType,
     id: entityId,
@@ -198,21 +149,11 @@ export async function transition(entityType, entityId, workflowName, toState, us
   return updated;
 }
 
-/**
- * Get state field name for workflow (usually 'status' or 'stage')
- * @param {string} workflowName
- * @returns {string}
- */
 export function getStateField(workflowName) {
   const def = getWorkflowDef(workflowName);
   return def.state_field || 'status';
 }
 
-/**
- * Get stage labels mapping
- * @param {string} workflowName
- * @returns {object}
- */
 export function getStageLabels(workflowName) {
   const def = getWorkflowDef(workflowName);
   const labels = {};
@@ -224,12 +165,6 @@ export function getStageLabels(workflowName) {
   return labels;
 }
 
-/**
- * Get locked fields for a state (readonly fields)
- * @param {string} workflowName
- * @param {string} state
- * @returns {string[]}
- */
 export function getStateLocks(workflowName, state) {
   const def = getWorkflowDef(workflowName);
   const stage = def.stageMap[state];
@@ -237,12 +172,6 @@ export function getStateLocks(workflowName, state) {
   return stage.locks || [];
 }
 
-/**
- * Get actions available in a state
- * @param {string} workflowName
- * @param {string} state
- * @returns {string[]}
- */
 export function getStateActions(workflowName, state) {
   const def = getWorkflowDef(workflowName);
   const stage = def.stageMap[state];
