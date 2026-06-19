@@ -1,4 +1,7 @@
 import { list, get, count } from '@/lib/busybase-store.js';
+import { createLogger } from '@/lib/logger.js';
+
+const log = createLogger('[PageHandlerHelpers]');
 import { getConfigEngineSync } from '@/lib/config-generator-engine.js';
 
 export function resolveEnumOptions(spec) {
@@ -84,12 +87,13 @@ export async function getAuditData() {
 
 export async function getClientDashboardStats(clientId) {
   try {
-    const engagements = (await list('engagement', {})).filter(e => e.client_id === clientId);
-    const rfis = (await list('rfi', {})).filter(r => engagements.some(e => e.id === r.engagement_id));
-    const reviews = (await list('review', {})).filter(r => engagements.some(e => e.id === r.engagement_id));
-    const users = (await list('user', {})).filter(u => u.client_id === clientId);
+    const engagements = await list('engagement', { client_id: clientId });
+    const engIds = new Set(engagements.map(e => e.id));
+    const rfis = (await list('rfi', {})).filter(r => engIds.has(r.engagement_id));
+    const reviews = (await list('review', {})).filter(r => engIds.has(r.engagement_id));
+    const users = await list('user', { client_id: clientId });
     return { engagements: engagements.length, activeRfis: rfis.filter(r => r.status !== 'closed' && r.status !== 'completed').length, users: users.length, reviews: reviews.length, engagementList: engagements.slice(0, 10) };
-  } catch { return { engagements: 0, activeRfis: 0, users: 0, reviews: 0, engagementList: [] }; }
+  } catch (err) { log.error('getClientDashboardStats failed', { clientId, message: err?.message || String(err) }); return { engagements: 0, activeRfis: 0, users: 0, reviews: 0, engagementList: [] }; }
 }
 
 export async function getSystemHealth() {

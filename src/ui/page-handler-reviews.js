@@ -1,5 +1,8 @@
 import { list, get } from '@/lib/busybase-store.js';
+import { createLogger } from '@/lib/logger.js';
 import { getSpec } from '@/config/spec-helpers.js';
+
+const log = createLogger('[PageHandlerReviews]');
 import { renderEntityList, renderAccessDenied } from '@/ui/renderer.js';
 import { renderSectionReport, renderReviewListTabbed } from '@/ui/review-renderer.js';
 import { renderChecklistDetails, renderChecklistsHome } from '@/ui/checklist-renderer.js';
@@ -23,11 +26,11 @@ async function lazyRenderer(name) {
 export async function handleFilteredReviewList(user, filter) {
   if (!canList(user, 'review')) return renderAccessDenied(user, 'review', 'list');
   const spec = getSpec('review'); if (!spec) return null;
-  let items = await list('review', {});
+  const where = filter === 'archive' ? { status: 'archived' } : {};
+  let items = await list('review', where);
   if (filter === 'active') items = items.filter(r => r.status === 'active' || r.status === 'open');
   else if (filter === 'priority') { const pids = user.priority_reviews || []; items = items.filter(r => pids.includes(r.id)); }
   else if (filter === 'history') items = items.filter(r => r.status === 'closed' || r.status === 'completed');
-  else if (filter === 'archive') items = items.filter(r => r.status === 'archived');
   return renderEntityList('review', resolveRefFields(items, spec), spec, user);
 }
 
@@ -50,7 +53,7 @@ export async function handleReviewRoutes(normalized, segments, user, req) {
     const review = await get('review', reviewId);
     if (!review) return null;
     let sections = [];
-    try { sections = (await list('review_section', {})).filter(s => s.review_id === reviewId); } catch (e) { console.error('Failed to fetch sections', e); }
+    try { sections = (await list('review_section', { review_id: reviewId })); } catch (e) { log.error('Failed to fetch sections', { reviewId, message: e?.message || String(e) }); }
     return renderSectionReport(user, review, sections);
   }
 

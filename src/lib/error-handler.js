@@ -1,3 +1,5 @@
+import { createLogger } from './logger.js';
+
 // AppError stays a real class (base error type; `instanceof AppError` works).
 export class AppError extends Error {
   constructor(message, code = 'APP_ERROR', status = 500, details = null) {
@@ -41,20 +43,8 @@ export function BadRequestError(message = 'Invalid request') {
 }
 
 export function createErrorLogger(context = '') {
-  return {
-    error: (msg, meta = {}) => {
-      console.error(`[${context}] ${msg}`, meta);
-    },
-    warn: (msg, meta = {}) => {
-      console.warn(`[${context}] ${msg}`, meta);
-    },
-    info: (_msg, _meta = {}) => {},
-    debug: (msg, meta = {}) => {
-      if (process.env.DEBUG) {
-        console.debug(`[${context}] Debug:`, msg, meta);
-      }
-    },
-  };
+  const log = createLogger(`[${context}]`);
+  return { error: log.error, warn: log.warn, info: (_msg, _meta = {}) => {}, debug: log.debug };
 }
 
 // Ported from moonlanding; kept import-free so this module loads under the plain-node test runner.

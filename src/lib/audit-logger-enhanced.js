@@ -55,13 +55,14 @@ export const logError = (error, context = {}) =>
 const t = (r) => r.timestamp || 0;
 
 export const searchLogs = async (filters = {}, page = 1, pageSize = 100) => {
-  let rows = await list('structured_logs', {});
-  if (filters.level) rows = rows.filter(r => r.level === filters.level);
-  if (filters.operation) rows = rows.filter(r => r.operation === filters.operation);
-  if (filters.entityType) rows = rows.filter(r => r.entity_type === filters.entityType);
-  if (filters.entityId) rows = rows.filter(r => r.entity_id === filters.entityId);
-  if (filters.userId) rows = rows.filter(r => r.user_id === filters.userId);
-  if (filters.action) rows = rows.filter(r => r.action === filters.action);
+  const where = {};
+  if (filters.level) where.level = filters.level;
+  if (filters.operation) where.operation = filters.operation;
+  if (filters.entityType) where.entity_type = filters.entityType;
+  if (filters.entityId) where.entity_id = filters.entityId;
+  if (filters.userId) where.user_id = filters.userId;
+  if (filters.action) where.action = filters.action;
+  let rows = await list('structured_logs', where);
   if (filters.fromDate) rows = rows.filter(r => t(r) >= filters.fromDate);
   if (filters.toDate) rows = rows.filter(r => t(r) <= filters.toDate);
   if (filters.searchText) {

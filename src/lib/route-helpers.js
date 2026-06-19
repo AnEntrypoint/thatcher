@@ -1,3 +1,4 @@
+import { createLogger } from '@/lib/logger.js';
 import { getSpec, getNavItems } from '@/config/spec-helpers';
 import { get, getChildren } from '@/engine';
 import { can } from '@/services/permission.service';
@@ -25,7 +26,8 @@ export async function getFormContext(entityName, id = null, action = 'create') {
 
 export const getPageProps = (user, spec) => ({ user, nav: getNavItems(), canCreate: can(user, spec, 'create'), canEdit: can(user, spec, 'edit'), canDelete: can(user, spec, 'delete') });
 
-const createMeta = (fn) => (...args) => { try { return fn(...args); } catch { return { title: 'Not Found' }; } };
+const log = createLogger('[RouteHelpers]');
+const createMeta = (fn) => (...args) => { try { return fn(...args); } catch (err) { log.warn('metadata error:', { message: err?.message || String(err) }); return { title: 'Not Found' }; } };
 
 export const listMetadata = createMeta((entity) => ({ title: getSpec(entity).labelPlural }));
 export const detailMetadata = createMeta((entity, id) => { const spec = getSpec(entity), data = get(entity, id); return { title: data?.name || data?.email || spec.label }; });
