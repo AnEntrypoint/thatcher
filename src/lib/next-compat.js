@@ -1,9 +1,23 @@
 const MAX_BODY_SIZE = 10 * 1024 * 1024;
 
+// Wrap node's raw (plain-object, lowercased) headers so both the Fetch-style
+// `headers.get('x')` API and direct `headers['x']` index access work. Node
+// already lowercases header names; `.get()` lowercases its argument to match.
+function wrapHeaders(raw) {
+  const h = raw || {};
+  return new Proxy(h, {
+    get(target, prop) {
+      if (prop === 'get') return (name) => target[String(name).toLowerCase()] ?? null;
+      if (prop === 'has') return (name) => String(name).toLowerCase() in target;
+      return target[prop];
+    },
+  });
+}
+
 export class NextRequest {
   constructor(req, body, url) {
     this.method = req.method;
-    this.headers = req.headers;
+    this.headers = wrapHeaders(req.headers);
     this.url = url;
     this.body = body;
   }
