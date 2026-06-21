@@ -1,6 +1,7 @@
 import { page } from '@/ui/layout.js';
 import { canCreate } from '@/ui/permissions-ui.js';
-import { esc, stagePill, statusPill, progressBar, STAGE_CONFIG, TABLE_SCRIPT } from '@/ui/render-helpers.js';
+import { esc, stagePill, statusPill, progressBar, STAGE_CONFIG, TABLE_SCRIPT, emptyRow } from '@/ui/render-helpers.js';
+import { SPACING } from '@/ui/spacing-system.js';
 
 function engRow(e) {
   const name = esc(e.name || e.client_name || 'Untitled');
@@ -38,10 +39,10 @@ export function renderEngagementGrid(user, engagements, options = {}) {
   engagements.forEach(e => { if (stageCounts[e.stage] !== undefined) stageCounts[e.stage]++; });
 
   const stageStats = `<div class="stats-row">${STAGE_CONFIG.map(s =>
-    `<div class="stat-card stat-card-clickable" data-action="filterByStage" data-args='["${s.key}"]' id="stage-card-${s.key}">
+    `<button type="button" class="stat-card stat-card-clickable" data-action="filterByStage" data-args='["${s.key}"]' id="stage-card-${s.key}" aria-label="Filter by ${s.label} stage (${stageCounts[s.key]||0} engagements)">
       <div class="stat-card-value">${stageCounts[s.key]||0}</div>
       <div class="stat-card-label">${s.label}</div>
-    </div>`
+    </button>`
   ).join('')}</div>`;
 
   const tabs = [
@@ -63,7 +64,7 @@ export function renderEngagementGrid(user, engagements, options = {}) {
   const yearOpts = years.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
 
   const rows = engagements.map(e => engRow(e)).join('') ||
-    `<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--color-text-muted)">No engagements found</td></tr>`;
+    emptyRow(11, 'No engagements found');
 
   const emailReceiveDialog = `<div id="email-receive-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="email-receive-dialog-title" data-dialog-close="email-receive-dialog">
     <div class="dialog-panel" style="max-width:540px">
@@ -73,13 +74,13 @@ export function renderEngagementGrid(user, engagements, options = {}) {
         <div id="email-receive-result" style="display:none;margin-top:8px"></div>
       </div>
       <div class="dialog-footer">
-        <button class="btn btn-ghost btn-sm" data-dialog-close="email-receive-dialog">Cancel</button>
-        <button class="btn btn-primary btn-sm" data-action="submitEmailReceive">Process Email</button>
+        <button type="button" class="btn-ghost-clean" data-dialog-close="email-receive-dialog">Cancel</button>
+        <button type="button" class="btn-primary-clean" data-action="submitEmailReceive">Process Email</button>
       </div>
     </div>
   </div>`;
 
-  const emailReceiveScript = `window.submitEmailReceive=async function(){var content=document.getElementById('email-receive-content').value.trim();var res=document.getElementById('email-receive-result');if(!content){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">Email content required.</div>';return}res.style.display='block';res.innerHTML='<div style="font-size:13px">Processing...</div>';try{var r=await fetch('/api/email/receive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content})});var d=await r.json();if(r.ok&&d.success){res.innerHTML='<div style="color:var(--color-success);font-size:13px">Email processed successfully.'+(d.engagement_id?' Matched engagement: '+d.engagement_id:'')+(d.message?' '+d.message:'')+'</div>'}else{res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||d.message||'Failed to process email')+'</div>'}}catch(e){res.innerHTML='<div style="color:var(--color-danger);font-size:13px">Error: '+e.message+'</div>'}};`;
+  const emailReceiveScript = `window.submitEmailReceive=async function(){var content=document.getElementById('email-receive-content').value.trim();var res=document.getElementById('email-receive-result');if(!content){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px;margin-top:${SPACING.sm}">Email content required.</div>';return}res.style.display='block';res.innerHTML='<div style="font-size:13px;margin-top:${SPACING.sm}">Processing...</div>';try{var r=await fetch('/api/email/receive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:content})});var d=await r.json();if(r.ok&&d.success){res.innerHTML='<div style="color:var(--color-success);font-size:13px;margin-top:${SPACING.sm}">Email processed successfully.'+(d.engagement_id?' Matched engagement: '+d.engagement_id:'')+(d.message?' '+d.message:'')+'</div>'}else{res.innerHTML='<div style="color:var(--color-danger);font-size:13px;margin-top:${SPACING.sm}">'+(d.error||d.message||'Failed to process email')+'</div>'}}catch(e){res.innerHTML='<div style="color:var(--color-danger);font-size:13px;margin-top:${SPACING.sm}">Error: '+e.message+'</div>'}};`;
 
   const content = `<div class="page-header">
         <div><h1 class="page-title">Engagements</h1><p class="page-subtitle">${engagements.length} total engagements</p></div>
@@ -89,18 +90,18 @@ export function renderEngagementGrid(user, engagements, options = {}) {
       <div class="table-wrap eng-table-mobile-scroll">
         <div class="table-toolbar">
           <div class="table-search"><input id="search-input" type="text" placeholder="Search engagements..."></div>
-          ${stageOpts ? `<div class="table-filter"><select data-filter="stage-raw" id="filter-stage"><option value="">All Stages</option>${stageOpts}</select></div>` : ''}
-          ${teamOpts ? `<div class="table-filter"><select data-filter="team" id="filter-team"><option value="">All Teams</option>${teamOpts}</select></div>` : ''}
-          ${yearOpts ? `<div class="table-filter"><select data-filter="year" id="filter-year"><option value="">All Years</option>${yearOpts}</select></div>` : ''}
+          ${stageOpts ? `<div class="table-filter"><select data-filter="stage-raw" id="filter-stage" aria-label="Filter by stage"><option value="">All Stages</option>${stageOpts}</select></div>` : ''}
+          ${teamOpts ? `<div class="table-filter"><select data-filter="team" id="filter-team" aria-label="Filter by team"><option value="">All Teams</option>${teamOpts}</select></div>` : ''}
+          ${yearOpts ? `<div class="table-filter"><select data-filter="year" id="filter-year" aria-label="Filter by year"><option value="">All Years</option>${yearOpts}</select></div>` : ''}
           <button class="btn btn-ghost btn-sm" data-action="openDialog" data-args='["email-receive-dialog"]'>Receive Email</button>
           <span class="table-count" id="row-count">${engagements.length} items</span>
         </div>
-        <table class="data-table">
+        <table class="data-table" role="grid">
           <thead><tr>
-            <th data-sort="name">Name</th><th data-sort="client">Client</th><th data-sort="type" class="eng-col-type">Type</th>
-            <th data-sort="year" class="eng-col-year">Year</th><th data-sort="team" class="eng-col-team">Team</th><th data-sort="stage-raw">Stage</th>
-            <th style="display:none"></th><th data-sort="status">Status</th><th data-sort="deadline">Deadline</th>
-            <th data-sort="rfi" class="eng-col-rfi" style="text-align:center">RFI</th><th class="eng-col-progress">Progress</th>
+            <th data-sort="name" aria-label="Sort by Name">Name</th><th data-sort="client" aria-label="Sort by Client">Client</th><th data-sort="type" class="eng-col-type" aria-label="Sort by Type">Type</th>
+            <th data-sort="year" class="eng-col-year" aria-label="Sort by Year">Year</th><th data-sort="team" class="eng-col-team" aria-label="Sort by Team">Team</th><th data-sort="stage-raw" aria-label="Sort by Stage">Stage</th>
+            <th style="display:none"></th><th data-sort="status" aria-label="Sort by Status">Status</th><th data-sort="deadline" aria-label="Sort by Deadline">Deadline</th>
+            <th data-sort="rfi" class="eng-col-rfi" style="text-align:center" aria-label="Sort by RFI">RFI</th><th class="eng-col-progress" aria-label="Progress">Progress</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
