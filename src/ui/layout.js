@@ -4,7 +4,20 @@ import { TOAST_SCRIPT, AVATAR_COLORS, esc } from '@/ui/render-helpers.js'
 import { FETCH_JSON_SCRIPT } from '@/ui/fetch-json.js'
 import { aria, role, skipLink, liveRegion } from '@/lib/accessibility'
 
+// Normalize a page title so the app-name suffix is config-driven, not hardcoded
+// per call site. A caller may pass either a bare title ("Engagements") or one
+// with a legacy suffix ("Engagements | Thatcher"); both resolve to
+// "Engagements | <APP_NAME>" so a consuming app sets APP_NAME once instead of
+// editing every renderer. APP_NAME is read at call time (not module load) so it
+// reflects the env after the consuming app's loadEnv() runs.
+function withAppName(title) {
+  const appName = process.env.APP_NAME || 'Thatcher App'
+  const base = String(title ?? '').replace(/\s*\|\s*[^|]*$/, '').trim() || appName
+  return base === appName ? base : `${base} | ${appName}`
+}
+
 export function generateHtml(title, bodyContent, scripts = [], pathname = '/') {
+  title = withAppName(title)
   const scriptTags = scripts.map(s =>
     typeof s === 'string' ? `<script>${s.replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--')}</script>` : `<script type="module" src="${s.src}"></script>`
   ).join('\n')
