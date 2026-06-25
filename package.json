@@ -50,13 +50,13 @@
   },
   "dependencies": {
     "arctic": "^1.9.2",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "busybase": "^1.0.0",
-    "googleapis": "^140.0.0",
+    "googleapis": "^173.0.0",
     "hyperformula": "^3.2.0",
     "js-yaml": "^4.1.1",
     "lucia": "^3.2.2",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^9.0.1",
     "webjsx": "^0.0.73",
     "xstate": "^5.0.0"
   },
