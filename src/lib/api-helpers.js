@@ -15,7 +15,7 @@ export function ensureDb() {
   if (!dbInit) {
     migrate();
     dbInit = true;
-
+  }
 }
 
 const withMetadata = (data, status = HTTP.OK, type = 'success') => ({
