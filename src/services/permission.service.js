@@ -37,17 +37,22 @@ class PermissionService {
     const clientUserRole = Object.keys(roles).find(r => r === 'client_user');
 
     const scope = rowAccess.scope || rowAccess;
+    // The owner field defaults to 'assigned_to' but is configurable, so an app
+    // whose ownership column is named differently (e.g. casey's case.assignee) can
+    // use scope=assigned without renaming its schema: row_access: { scope: assigned,
+    // field: assignee }.
+    const ownerField = (typeof rowAccess === 'object' && rowAccess.field) || 'assigned_to';
 
     if (scope === 'team' && record.team_id && user.team_id && record.team_id !== user.team_id) {
       return false;
     }
 
-    if (scope === 'assigned' && record.assigned_to && record.assigned_to !== user.id && user.role !== partnerRole) {
+    if (scope === 'assigned' && record[ownerField] && record[ownerField] !== user.id && user.role !== partnerRole) {
       return false;
     }
 
     if (scope === 'assigned_or_team' && user.role !== partnerRole) {
-      const assignedMatch = record.assigned_to && record.assigned_to === user.id;
+      const assignedMatch = record[ownerField] && record[ownerField] === user.id;
       const teamMatch = record.team_id && user.team_id && record.team_id === user.team_id;
       if (!assignedMatch && !teamMatch) return false;
     }

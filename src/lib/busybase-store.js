@@ -84,9 +84,53 @@ function applyVisibility(spec, rows, where, options) {
   return out;
 }
 
+// Compile a where-object onto the busybase query builder. A scalar value is an
+// equality (the original behaviour); an operator object opens range/set/negation
+// filters the builder already supports (sdk.js eq/neq/gt/gte/lt/lte/in/like/ilike,
+// and a top-level $or clause). This lets a config-driven query express "today"
+// (created_at between), "near me" (a lat/lon bounding box), and "open" (status in
+// the non-terminal set) without the caller hand-rolling JS filters. Operators are a
+// small fixed allowlist; an unknown operator key throws rather than silently
+// matching everything (a wrong filter must fail loud, not leak rows).
+const WHERE_OPS = {
+  $eq: (b, k, v) => b.eq(k, v),
+  $ne: (b, k, v) => b.neq(k, v),
+  $gt: (b, k, v) => b.gt(k, v),
+  $gte: (b, k, v) => b.gte(k, v),
+  $lt: (b, k, v) => b.lt(k, v),
+  $lte: (b, k, v) => b.lte(k, v),
+  $in: (b, k, v) => b.in(k, Array.isArray(v) ? v : [v]),
+  $like: (b, k, v) => b.like(k, v),
+  $ilike: (b, k, v) => b.ilike(k, v),
+};
 function applyWhere(builder, where) {
   for (const [k, v] of Object.entries(where)) {
-    if (v !== undefined && v !== null) builder = builder.eq(k, v);
+    if (v === undefined || v === null) continue;
+    // Top-level $or: an array of {field: value|operator-object} sub-clauses,
+    // OR-joined (e.g. find a case the worker reported OR is assigned to).
+    if (k === '$or' && Array.isArray(v)) {
+      const clause = v.map(sub => Object.entries(sub).map(([sk, sv]) => {
+        if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
+          const [op, ov] = Object.entries(sv)[0];
+          const bare = op.replace(/^\$/, '');
+          return `${bare}.${sk}.${Array.isArray(ov) ? ov.join(',') : ov}`;
+        }
+        return `eq.${sk}.${sv}`;
+      }).join(',')).join(',');
+      builder = builder.or(clause);
+      continue;
+    }
+    // An operator object: { $gte: x, $lt: y } applies each supported operator.
+    if (typeof v === 'object' && !Array.isArray(v)) {
+      for (const [op, ov] of Object.entries(v)) {
+        const fn = WHERE_OPS[op];
+        if (!fn) throw new Error(`busybase applyWhere: unsupported operator ${op} on field ${k}`);
+        builder = fn(builder, k, ov);
+      }
+      continue;
+    }
+    // A bare array value is an IN set; a scalar is equality.
+    builder = Array.isArray(v) ? builder.in(k, v) : builder.eq(k, v);
   }
   return builder;
 }
@@ -97,13 +141,33 @@ export async function list(entity, where = {}, options = {}) {
   let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'list');
   rows = applyVisibility(spec, rows, where, options);
 
-  const sort = options.sort || spec.list?.defaultSort;
-  if (sort && sort.field && spec.fields?.[sort.field]) {
-    const desc = (sort.dir || 'ASC').toUpperCase() === 'DESC';
+  // Row-access scoping: when a caller passes options.user AND the entity declares
+  // rowAccess, restrict the rows to what that user may see (their assigned cases,
+  // their team, etc.). Opt-in -- no user means the read is unchanged, so internal
+  // and admin callers are unaffected. This makes a config row_access spec actually
+  // enforced on the read path (previously list() took no user, so the spec was
+  // inert and a scoped enquiry would leak every row).
+  if (options.user && (spec.rowAccess || spec.row_access)) {
+    const { permissionService } = await import('../services/permission.service.js');
+    rows = permissionService.filterRecords(options.user, spec, rows);
+  }
+
+  // Sort accepts a single {field,dir} (the original) OR an ARRAY of them for
+  // tie-broken order (e.g. [{field:'priority',dir:'DESC'},{field:'last_event_at',
+  // dir:'DESC'}]) -- so a recency-with-tiebreak list is config, not a JS sort in
+  // the caller. Each key is guarded against spec.fields; unknown keys are skipped.
+  const sortSpec = options.sort || spec.list?.defaultSort;
+  const sortKeys = (Array.isArray(sortSpec) ? sortSpec : sortSpec ? [sortSpec] : [])
+    .filter(s => s && s.field && spec.fields?.[s.field]);
+  if (sortKeys.length) {
     rows.sort((a, b) => {
-      const av = a[sort.field], bv = b[sort.field];
-      if (av === bv) return 0;
-      return (av > bv ? 1 : -1) * (desc ? -1 : 1);
+      for (const s of sortKeys) {
+        const av = a[s.field], bv = b[s.field];
+        if (av === bv) continue;
+        const desc = (s.dir || 'ASC').toUpperCase() === 'DESC';
+        return (av > bv ? 1 : -1) * (desc ? -1 : 1);
+      }
+      return 0;
     });
   }
   if (options.offset || options.limit) {
