@@ -27,11 +27,6 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Checkout busybase sibling
-        # busybase is a file:../busybase dependency (npm publishing is blocked until
-        # the NPM_TOKEN secret is set, so the sibling checkout is the source of truth).
-        run: git clone --depth 1 https://github.com/AnEntrypoint/busybase.git ../busybase
-
       - name: Install dependencies
         run: bun install || npm install --no-audit --no-fund
 
