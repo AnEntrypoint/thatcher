@@ -108,14 +108,34 @@ function applyWhere(builder, where) {
     if (v === undefined || v === null) continue;
     // Top-level $or: an array of {field: value|operator-object} sub-clauses,
     // OR-joined (e.g. find a case the worker reported OR is assigned to).
+    // LIMITATION: busybase's or() parser splits the compiled clause string on
+    // ',' (between sub-filters) and '.' (between field/op/value), and there is
+    // no escaping mechanism -- a value containing either character (e.g.
+    // 'Underberg, KZN' or '1.5') cannot be represented and would corrupt the
+    // clause into bogus sub-filters that silently leak or miss rows. Fail loud
+    // instead: reject such values here. Callers needing them must use a
+    // non-$or filter (eq/like) or restructure the query.
     if (k === '$or' && Array.isArray(v)) {
+      const assertOrSafe = (val) => {
+        const s = String(val);
+        if (s.includes(',') || s.includes('.')) {
+          throw new Error(
+            `busybase applyWhere: $or sub-clause value ${JSON.stringify(s)} contains ',' or '.', ` +
+            `which busybase's or() delimiter syntax cannot escape; use a non-$or filter for this value`
+          );
+        }
+        return s;
+      };
+      // busybase's or() parser reads PostgREST order: field.op.value (NOT
+      // op.field.value -- a mismatched sub-clause parses to null and is
+      // silently dropped, making the $or match everything).
       const clause = v.map(sub => Object.entries(sub).map(([sk, sv]) => {
         if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
           const [op, ov] = Object.entries(sv)[0];
           const bare = op.replace(/^\$/, '');
-          return `${bare}.${sk}.${Array.isArray(ov) ? ov.join(',') : ov}`;
+          return `${sk}.${bare}.${Array.isArray(ov) ? ov.map(assertOrSafe).join(',') : assertOrSafe(ov)}`;
         }
-        return `eq.${sk}.${sv}`;
+        return `${sk}.eq.${assertOrSafe(sv)}`;
       }).join(',')).join(',');
       builder = builder.or(clause);
       continue;

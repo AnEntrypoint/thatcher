@@ -144,6 +144,36 @@ await test('7. BusyBase Adapter - instantiation', async () => {
   assert(!adapter.initialized, 'Not initialized yet');
 });
 
+await test('7b. BusyBase store - $or returns exactly the union', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { createEmbedded } = await import('busybase/embedded');
+  const store = await import('./src/lib/busybase-store.js');
+  const client = await createEmbedded({ dir: mkdtempSync(join(tmpdir(), 'thatcher-or-')) });
+  store.setBusyBaseClient(client);
+  // No config engine is booted in this suite; make getSpec() resolve or_probe as
+  // a raw (non-entity) table instead of throwing on the missing singleton.
+  const prevEngine = globalThis.__thatcherConfigEngine;
+  globalThis.__thatcherConfigEngine = { generateEntitySpec: () => { throw new Error('Unknown entity'); } };
+  try {
+  await client.from('or_probe').insert([
+    { id: '1', status: 'A', name: 'one' },
+    { id: '2', status: 'B', name: 'two' },
+    { id: '3', status: 'C', name: 'three' },
+  ]);
+  const rows = await store.list('or_probe', { $or: [{ status: 'A' }, { status: 'B' }] });
+  const ids = rows.map(r => r.id).sort();
+  assert(rows.length === 2, `$or A|B returns 2 rows (got ${rows.length})`);
+  assert(ids.join(',') === '1,2', `$or A|B returns exactly ids 1,2 (got ${ids.join(',')})`);
+  let threw = false;
+  try { await store.list('or_probe', { $or: [{ name: 'Underberg, KZN' }] }); } catch { threw = true; }
+  assert(threw, "$or value containing ','/'.' throws (fail loud, never silently wrong)");
+  } finally {
+    globalThis.__thatcherConfigEngine = prevEngine;
+  }
+});
+
 await test('8. Observability Bootstrap', async () => {
   const results = await bootstrapObservability();
   assert(results.registry === true, 'Registry initialized');
