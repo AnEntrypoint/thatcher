@@ -48,4 +48,4 @@ export function cleanupExpiredCSRFTokens() {
   }
 }
 
-setInterval(cleanupExpiredCSRFTokens, 60 * 60 * 1000);
+setInterval(cleanupExpiredCSRFTokens, 60 * 60 * 1000).unref();

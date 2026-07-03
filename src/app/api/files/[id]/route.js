@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Permission denied' }, { status: HTTP.FORBIDDEN });
     }
 
-    const fileRecord = get('file', id);
+    const fileRecord = await get('file', id);
     if (!fileRecord) {
       return notFound('File not found');
     }

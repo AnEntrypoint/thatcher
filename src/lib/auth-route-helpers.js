@@ -11,7 +11,7 @@ setInterval(() => {
       oauthStateStore.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 export function validateOAuthProvider(provider) {
   if (!provider) {

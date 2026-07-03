@@ -83,6 +83,14 @@ const DOMAINS = ['friday', 'mwr'];
 
 export function resolveRoute(__dirname, pathname, url) {
   const pathParts = pathname.slice(5).split('/').filter(Boolean);
+
+  // Reject any '..' or '.' segment before it can reach a filesystem path
+  // join or a dynamic import -- otherwise a crafted URL can traverse out of
+  // src/app/api into arbitrary files on disk.
+  if (pathParts.some(seg => seg === '..' || seg === '.')) {
+    return { routeFile: null, params: {}, isDomain: false, firstPart: pathParts[0], pathParts };
+  }
+
   const firstPart = pathParts[0];
   const isDomain = DOMAINS.includes(firstPart);
   let routeFile = null;

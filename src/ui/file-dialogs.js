@@ -48,7 +48,8 @@ export function quickViewAttachment() {
       <div class="dialog-footer"><a id="qv-download" href="#" download class="btn btn-primary btn-sm">Download</a><button class="btn btn-ghost btn-sm" data-dialog-close="quick-view">Close</button></div>
     </div></div>
   <script>
-  window.quickView=function(url,name,type){document.getElementById('quick-view').style.display='flex';document.getElementById('quick-view-title').textContent=name||'Preview';document.getElementById('qv-download').href=url;var c=document.getElementById('qv-content');if(type&&type.startsWith('image/')){c.innerHTML='<img src="'+url+'" alt="'+(name||'File preview')+'" style="max-width:100%;max-height:70vh"/>'}else if(type==='application/pdf'){c.innerHTML='<iframe src="'+url+'" style="width:100%;height:70vh;border:none"></iframe>'}else{c.innerHTML='<div class="py-8 text-gray-500"><div style="display:flex;justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="mt-2">'+name+'</div><div class="text-xs mt-1">Preview not available</div></div>'}};
+  ${FD_ESC}
+  window.quickView=function(url,name,type){document.getElementById('quick-view').style.display='flex';document.getElementById('quick-view-title').textContent=name||'Preview';document.getElementById('qv-download').href=url;var c=document.getElementById('qv-content');if(type&&type.startsWith('image/')){c.innerHTML='<img src="'+url+'" alt="'+fdEsc(name||'File preview')+'" style="max-width:100%;max-height:70vh"/>'}else if(type==='application/pdf'){c.innerHTML='<iframe src="'+url+'" style="width:100%;height:70vh;border:none"></iframe>'}else{c.innerHTML='<div class="py-8 text-gray-500"><div style="display:flex;justify-content:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="mt-2">'+fdEsc(name)+'</div><div class="text-xs mt-1">Preview not available</div></div>'}};
   </script>`;
 }
 export function fetchCachedPdf(fileId) {
@@ -67,9 +68,15 @@ export function fetchCachedPdf(fileId) {
   };
   </script>`;
 }
+function fdEscServer(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 export function fileAttachmentBar(files = []) {
   if (!files.length) return '';
-  const items = files.map(f => `<div class="flex items-center gap-2 p-1 rounded hover:bg-gray-100 cursor-pointer" data-action="quickView" data-args='["/api/file/${f.id}/download","${(f.name || '').replace(/"/g, '&quot;')}","${f.mime_type || ''}"]'><span style="display:inline-flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><span class="text-xs truncate" style="max-width:120px">${f.name || 'file'}</span></div>`).join('');
+  const items = files.map(f => `<div class="flex items-center gap-2 p-1 rounded hover:bg-gray-100 cursor-pointer" data-action="quickView" data-args='["/api/file/${fdEscServer(f.id)}/download","${fdEscServer(f.name || '')}","${fdEscServer(f.mime_type || '')}"]'><span style="display:inline-flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span><span class="text-xs truncate" style="max-width:120px">${fdEscServer(f.name || 'file')}</span></div>`).join('');
   return `<div class="flex flex-wrap gap-1 mt-2">${items}</div>`;
 }
 export function fileLinksBar(links = []) {

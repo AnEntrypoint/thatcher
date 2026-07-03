@@ -25,23 +25,24 @@ export const GET = async (request) => {
     const start = process.hrtime.bigint()
 
     // busybase liveness probe (replaces the SQLite SELECT 1 + wal_checkpoint).
-    try { await count('user', {}); } catch { /* table may not exist yet; still alive */ }
+    let dbConnected = true
+    try { await count('user', {}); } catch (e) { dbConnected = false; log.warn('db probe failed', { message: e?.message }) }
 
     const dbLatency = Number(process.hrtime.bigint() - start) / 1000000
     const url = new URL(request.url)
     const detailed = url.searchParams.get('detailed') === 'true'
 
     const health = {
-      status: 'ok',
+      status: dbConnected ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       uptime_ms: Math.round(process.uptime() * 1000),
       last_sync_at: getLastSyncAt(),
       database: {
-        connected: true,
+        connected: dbConnected,
         latency: dbLatency
       },
-      db: 'ok'
+      db: dbConnected ? 'ok' : 'error'
     }
 
     if (detailed) {
@@ -65,7 +66,7 @@ export const GET = async (request) => {
     return new Response(
       JSON.stringify(health, null, 2),
       {
-        status: 200,
+        status: dbConnected ? 200 : 503,
         headers: { 'Content-Type': 'application/json' }
       }
     )

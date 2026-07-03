@@ -28,4 +28,4 @@ setInterval(() => {
       delete global.rateLimitStore[key];
     }
   }
-}, 60000);
+}, 60000).unref();

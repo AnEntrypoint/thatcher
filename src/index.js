@@ -332,12 +332,18 @@ export class Thatcher {
 
   // === Database transaction ===
 
+  /**
+   * Non-atomic passthrough: busybase has no transaction primitive, so this simply
+   * invokes the callback with NO rollback guarantee on partial failure. Callers
+   * must not rely on withTransaction() for atomicity; check supportsTransactions
+   * to detect this at runtime.
+   */
   async withTransaction(callback) {
-    // busybase has no transaction primitive; the old query-engine's withTransaction
-    // was a pass-through, so preserve that contract rather than import a dead file.
     return callback();
   }
 }
+
+Thatcher.prototype.supportsTransactions = false;
 
 export function createThatcher(options) {
   return new Thatcher(options);

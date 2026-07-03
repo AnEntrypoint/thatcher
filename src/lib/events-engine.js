@@ -3,7 +3,7 @@ import { hookEngine } from '@/lib/hook-engine.js';
 
 const log = createLogger('[EventsEngine]');
 import { list, get, update, create, remove } from '@/engine.js';
-import { queueEmail } from '@/engine/notification-engine';
+import { queueEmail } from '@/services/notification-engine.js';
 import { safeJsonParse } from '@/lib/safe-json.js';
 import { validateTransition } from '@/lib/workflow-engine.js';
 import { AppError } from '@/lib/error-handler';
