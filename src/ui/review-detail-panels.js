@@ -14,7 +14,7 @@ export function highlightRow(h) {
   try { tags = JSON.parse(h.tags || '[]') || []; } catch {}
   const isFlagged = flags.includes('flagged');
 
-  const flagBtn = `<button data-action="toggleFlag" data-args='["${esc(h.id)}","${isFlagged}"]' title="${isFlagged ? 'Unflag' : 'Flag'}" style="background:none;border:none;cursor:pointer;padding:2px 4px;font-size:15px;line-height:1;color:${isFlagged ? 'var(--color-warning)' : 'var(--color-text-muted)'}">${isFlagged ? '⚑' : '⚐'}</button>`;
+  const flagBtn = `<button data-action="toggleFlag" data-args='["${esc(h.id)}","${isFlagged}"]' title="${isFlagged ? 'Unflag' : 'Flag'}" style="background:none;border:none;cursor:pointer;padding:2px 4px;font-size:15px;line-height:1;color:${isFlagged ? 'var(--color-warning)' : 'var(--color-text-muted)'}">${isFlagged ? 'Unflag' : 'Flag'}</button>`;
   const tagPills = tags.map(t => `<span style="display:inline-flex;align-items:center;gap:3px;background:var(--color-info-bg,#eff6ff);color:var(--color-info,#1e40af);font-size:11px;padding:2px 8px;border-radius:9999px;font-weight:500">${esc(t)}<button data-action="removeTag" data-args='["${esc(h.id)}","${esc(t)}"]' style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;font-size:11px;color:var(--color-text-muted);line-height:1">&times;</button></span>`).join(' ');
   const addTagBtn = `<button data-action="openAddTag" data-args='["${esc(h.id)}"]' style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--color-text-muted);padding:1px 5px;border:1px dashed var(--color-border,#e5e7eb);border-radius:9999px">+tag</button>`;
   const tagsCell = `<div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-width:80px">${tagPills}${addTagBtn}</div>`;

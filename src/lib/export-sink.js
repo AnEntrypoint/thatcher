@@ -21,11 +21,12 @@ export class ExportSink {
     this._exportCount = 0;
     this._errorCount = 0;
     this._lastError = null;
+    this._options = options;
   }
 
   async init() {
     if (this.target === 'file') {
-      this._filePath = options.filePath || process.env.OBSERVABILITY_EXPORT_FILE || path.join(process.cwd(), 'observability.jsonl');
+      this._filePath = this._options.filePath || process.env.OBSERVABILITY_EXPORT_FILE || path.join(process.cwd(), 'observability.jsonl');
       logger.info('File export sink initialized', { path: this._filePath });
     } else if (this.target === 'http') {
       if (!this.url) {

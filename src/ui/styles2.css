@@ -880,11 +880,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .review-row-name { font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 767px) { .review-row-name { max-width: 140px; } }
 
-/* ═══════════════════════════════════════════════════════════
-   TAILWIND-COMPATIBLE UTILITY CLASSES
+/* ---- TAILWIND-COMPATIBLE UTILITY CLASSES ----
    Required because rippleui.css is PurgeCSS-built without
-   general utilities. These cover all classes used in UI files.
-   ═══════════════════════════════════════════════════════════ */
+   general utilities. These cover all classes used in UI files. */
 
 /* Display */
 .flex { display: flex; }
@@ -1336,9 +1334,7 @@ tr.is-read td { color: rgb(var(--base-content, 30 30 35) / 0.7); }
 .italic { font-style: italic; }
 .not-italic { font-style: normal; }
 
-/* ═══════════════════════════════════════════════════════════
-   VISUAL POLISH & IMPROVED COMPONENT STYLES
-   ═══════════════════════════════════════════════════════════ */
+/* ---- VISUAL POLISH & IMPROVED COMPONENT STYLES ---- */
 
 /* Nav separator hidden */
 .nav-sep { display: none; }

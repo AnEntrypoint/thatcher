@@ -212,6 +212,4 @@ server.listen(PORT, '0.0.0.0', async () => {
     globalThis.__hookEngine = hookEngine;
   } catch {}
 
-  try { const { startLifecycle } = await import('./src/lib/dr-lifecycle.js'); startLifecycle(server); }
-  catch (err) { log.error('DR lifecycle init failed:', { message: err.message }); }
 });

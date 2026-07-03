@@ -58,6 +58,7 @@
     "lucia": "^3.2.2",
     "nodemailer": "^9.0.1",
     "webjsx": "^0.0.73",
+    "ws": "^8.13.0",
     "xstate": "^5.0.0"
   },
   "devDependencies": {

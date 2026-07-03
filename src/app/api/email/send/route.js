@@ -1,12 +1,20 @@
 import { NextResponse } from '@/lib/next-polyfills';
 import { createLogger } from '@/lib/logger.js';
 import { now } from '@/lib/id-helpers';
+import { timingSafeEqual } from 'node:crypto';
 
 const log = createLogger('[Email]');
 import { list, update } from '@/engine';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 import { EMAIL_STATUS } from '@/config/constants';
 import { sendSingleEmail, checkFailureRate } from '@/lib/email-sender';
+
+function isValidCronSecret(token) {
+  const secret = process.env.CRON_SECRET;
+  const tokenBuf = Buffer.from(token || '', 'utf8');
+  const secretBuf = Buffer.from(secret || '', 'utf8');
+  return !!secret && !!token && tokenBuf.length === secretBuf.length && timingSafeEqual(tokenBuf, secretBuf);
+}
 
 let emailConfig = null;
 
@@ -20,7 +28,7 @@ async function getEmailConfig() {
 
 export async function POST(request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token || token !== process.env.CRON_SECRET)
+  if (!isValidCronSecret(token))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -61,7 +69,7 @@ export async function POST(request) {
 
 export async function GET(request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token || token !== process.env.CRON_SECRET)
+  if (!isValidCronSecret(token))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

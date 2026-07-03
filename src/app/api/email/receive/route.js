@@ -2,10 +2,18 @@ import { NextResponse } from '@/lib/next-polyfills';
 import { createLogger } from '@/lib/logger.js';
 import { genId, now } from '@/lib/id-helpers';
 import { create } from '@/engine';
+import { timingSafeEqual } from 'node:crypto';
 
 const log = createLogger('[EmailReceive]');
 import path from 'path';
 import fs from 'fs';
+
+function isValidWebhookSecret(token) {
+  const secret = process.env.EMAIL_WEBHOOK_SECRET;
+  const tokenBuf = Buffer.from(token || '', 'utf8');
+  const secretBuf = Buffer.from(secret || '', 'utf8');
+  return !!secret && !!token && tokenBuf.length === secretBuf.length && timingSafeEqual(tokenBuf, secretBuf);
+}
 
 const EMAIL_ATTACHMENTS_DIR = path.resolve(process.cwd(), 'data', 'temp_email_attachments');
 
@@ -17,7 +25,7 @@ export async function POST(request) {
   try {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
-    if (!token || token !== process.env.EMAIL_WEBHOOK_SECRET) {
+    if (!isValidWebhookSecret(token)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

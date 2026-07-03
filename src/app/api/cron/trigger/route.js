@@ -1,51 +1,38 @@
 import { createLogger } from '@/lib/logger.js';
-import { runDueJobs } from '@/engine/job-engine';
+import { timingSafeEqual } from 'node:crypto';
 
 const log = createLogger('[Cron]');
-import { create } from '@/engine';
 
 export const runtime = 'nodejs';
 
-export async function POST(request) {
-  const startTime = Date.now();
+function isValidCronSecret(token) {
+  const secret = process.env.CRON_SECRET;
+  const tokenBuf = Buffer.from(token || '', 'utf8');
+  const secretBuf = Buffer.from(secret || '', 'utf8');
+  return !!secret && !!token && tokenBuf.length === secretBuf.length && timingSafeEqual(tokenBuf, secretBuf);
+}
 
+export async function POST(request) {
   try {
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.replace('Bearer ', '');
 
-    if (!token || token !== process.env.CRON_SECRET) {
+    if (!isValidCronSecret(token)) {
       return new Response(
         JSON.stringify({ status: 'error', message: 'Unauthorized' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const results = await runDueJobs();
-    const duration = Date.now() - startTime;
-
-    await create('job_execution_log', {
-      timestamp: Math.floor(Date.now() / 1000),
-      total_jobs: results.total || 0,
-      executed_jobs: results.executed || 0,
-      failed_jobs: results.failed || 0,
-      duration_ms: duration,
-      status: results.failed > 0 ? 'partial_failure' : 'success',
-      error_details: results.errors || null
-    }).catch(err => log.error('log error:', { message: err.message }));
-
+    // job-engine was removed (the module never existed in this repo); this
+    // endpoint is not wired to a real job runner, so return a clean 501
+    // instead of crashing on a dead import.
     return new Response(
-      JSON.stringify({
-        status: 'success',
-        timestamp: new Date().toISOString(),
-        total_jobs: results.total,
-        executed_jobs: results.executed,
-        failed_jobs: results.failed,
-        duration_ms: duration,
-        details: results.details || []
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ status: 'error', message: 'cron trigger not implemented' }),
+      { status: 501, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    log.error('cron trigger error:', { message: error.message });
     return new Response(
       JSON.stringify({ status: 'error', message: error.message, timestamp: new Date().toISOString() }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
