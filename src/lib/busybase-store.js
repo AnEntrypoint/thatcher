@@ -254,15 +254,42 @@ export async function create(entity, data, user) {
   return record;
 }
 
-export async function update(entity, id, data) {
+// opts.expectedVersion: optional optimistic-concurrency guard. When supplied,
+// the write is conditioned on the row's internal _version counter still
+// matching the value the caller last read (a plain read-then-write otherwise
+// has no way to detect a concurrent writer landing in between -- whichever
+// caller writes second wins outright, silently discarding the first caller's
+// change). A stale expectedVersion throws a distinguishable 'conflict' error
+// instead of clobbering; the caller re-reads and retries or surfaces the
+// conflict. _version increments on every write regardless of whether the
+// guard is used, so a caller can always read the CURRENT _version to guard
+// its NEXT write. A dedicated counter, not updated_at, because updated_at
+// (now(), second-precision epoch) can collide within the same second under a
+// genuine fast race, silently defeating the guard exactly when it matters
+// most; _version is a plain integer increment with no precision ceiling.
+// Backward compatible: omitting opts.expectedVersion is the exact prior
+// unconditional-write behaviour, unchanged for every existing caller; _version
+// is added as a new column, ignored by every reader that doesn't ask for it.
+export async function update(entity, id, data, opts = {}) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
 
   const existing = await get(entity, id);
   if (!existing) throw new Error(`${entity} with id ${id} not found`);
 
-  const patch = { ...data, updated_at: now() };
-  unwrap(await client().from(tbl).update(patch).eq('id', id), 'update');
+  const currentVersion = Number(existing._version) || 0;
+  const patch = { ...data, updated_at: now(), _version: currentVersion + 1 };
+  let builder = client().from(tbl).update(patch).eq('id', id);
+  if (opts.expectedVersion != null) {
+    builder = builder.eq('_version', opts.expectedVersion);
+  }
+  const { data: rows, error } = await builder;
+  if (error) throw new Error(`BusyBase update failed: ${error.message || error}`);
+  if (opts.expectedVersion != null && Array.isArray(rows) && rows.length === 0) {
+    const conflictErr = new Error(`${entity} ${id} was modified by another writer since it was last read`);
+    conflictErr.code = 'conflict';
+    throw conflictErr;
+  }
   return get(entity, id);
 }
 
