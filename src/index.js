@@ -284,9 +284,15 @@ export class Thatcher {
     return create(entity, data, user);
   }
 
-  async update(entity, id, data, user) {
+  // opts.expectedVersion: optional optimistic-concurrency guard (see
+  // busybase-store.js update()) -- a caller that read the row's _version can
+  // pass it here to detect (via a thrown {code:'conflict'} error) a concurrent
+  // writer landing in between, instead of silently clobbering it. `user` stays
+  // its own positional param (unused by the store today, kept for API
+  // stability with existing callers); opts is a new, optional 5th param.
+  async update(entity, id, data, user, opts = {}) {
     const { update } = await import(resolveModule('./lib/busybase-store.js'));
-    return update(entity, id, data, user);
+    return update(entity, id, data, opts);
   }
 
   async delete(entity, id) {
