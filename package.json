@@ -1,6 +1,6 @@
 {
   "name": "thatcher",
-  "version": "1.0.38",
+  "version": "1.0.39",
   "description": "A config-driven application framework for building data-intensive web apps without code.",
   "main": "src/index.js",
   "type": "module",
