@@ -1,6 +1,6 @@
 // Adapted from moonlanding/src/lib/config-generator-engine.js
 
-import yaml from 'js-yaml';
+import { load as yamlLoad } from 'js-yaml';
 import { LRUCache, deepFreeze, deepClone, recursiveResolve } from './config-helpers.js';
 import { generateFieldsFromOverrides, ensureFieldLabels } from './config-field-helpers.js';
 

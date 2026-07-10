@@ -54,7 +54,7 @@
     "busybase": "^1.0.2",
     "googleapis": "^173.0.0",
     "hyperformula": "^3.2.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^5.2.1",
     "lucia": "^3.2.2",
     "nodemailer": "^9.0.1",
     "webjsx": "^0.0.73",

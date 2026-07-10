@@ -82,8 +82,8 @@ export class Thatcher {
         throw new Error(`Configuration file not found: ${configPath}`);
       }
       const content = fs.readFileSync(configPath, 'utf-8');
-      const { default: yaml } = await import('js-yaml');
-      masterConfig = yaml.load(content);
+      const { load: yamlLoad } = await import('js-yaml');
+      masterConfig = yamlLoad(content);
     } else if (typeof config === 'object') {
       masterConfig = config;
     } else {
@@ -96,8 +96,8 @@ export class Thatcher {
         if (fs.existsSync(p)) {
           this.options.config = p;
           const content = fs.readFileSync(p, 'utf-8');
-          const { default: yaml } = await import('js-yaml');
-          masterConfig = yaml.load(content);
+          const { load: yamlLoad } = await import('js-yaml');
+          masterConfig = yamlLoad(content);
           break;
         }
       }
