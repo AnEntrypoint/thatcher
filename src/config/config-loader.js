@@ -2,7 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import yaml from 'js-yaml';
+import { load as yamlLoad } from 'js-yaml';
 
 export async function loadConfig(configSource) {
   let config;
@@ -13,7 +13,7 @@ export async function loadConfig(configSource) {
       throw new Error(`Configuration file not found: ${configPath}`);
     }
     const content = fs.readFileSync(configPath, 'utf-8');
-    config = yaml.load(content);
+    config = yamlLoad(content);
   } else if (typeof configSource === 'object') {
     config = configSource;
   } else {
