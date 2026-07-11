@@ -76,11 +76,10 @@ workflows:
       - active
       - completed
 
-thresholds:
-  system:
-    pagination:
-      default_page_size: 20
-      max_page_size: 100
+system:
+  pagination:
+    default_page_size: 20
+    max_page_size: 100
 ```
 
 That's it. Start the server and you have:
