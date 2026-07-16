@@ -1,9 +1,19 @@
+// Merged from request-tracing.js (span/OTel-shaped tracing over the shared
+// tracer + perfProfiler) and request-tracker.js (simple duration/status
+// request+error recording into metrics-collector.js's recordRequest/
+// recordError channel). Two request-scoped tracking layers, same concern,
+// kept side by side with their original exported names unchanged.
+
 import { tracer } from './tracing.js';
-import { perfProfiler } from './perf-profiler.js';
+import { perfProfiler } from './perf.js';
 import { createLogger } from './logger.js';
+import { recordRequest, recordError } from './metrics-collector.js';
 
 const logger = createLogger('[RequestTracing]');
 
+// ---------------------------------------------------------------------------
+// From request-tracing.js
+// ---------------------------------------------------------------------------
 export function withTracing(handler) {
   return async (req, ...rest) => {
     const method = req.method || 'UNKNOWN';
@@ -209,3 +219,48 @@ export function createTracingMiddleware() {
 }
 
 export default withTracing;
+
+// ---------------------------------------------------------------------------
+// From request-tracker.js
+// ---------------------------------------------------------------------------
+function wrapHandler(handler, metadata = {}) {
+  return async (request, context) => {
+    const start = process.hrtime.bigint();
+    const method = request.method;
+    const path = new URL(request.url).pathname;
+
+    try {
+      const response = await handler(request, context);
+      const duration = Number(process.hrtime.bigint() - start) / 1000000;
+      const status = response.status || 200;
+
+      recordRequest(path, method, duration, status);
+
+      return response;
+    } catch (err) {
+      const duration = Number(process.hrtime.bigint() - start) / 1000000;
+
+      recordRequest(path, method, duration, 500);
+      recordError(path, method, err.message, err.stack);
+
+      throw err;
+    }
+  };
+}
+
+function trackRequest(path, method, duration, status) {
+  recordRequest(path, method, duration, status);
+}
+
+function trackError(path, method, error, stack) {
+  recordError(path, method, error, stack);
+}
+
+export { wrapHandler, trackRequest, trackError };
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.__requestTracker = {
+    trackRequest,
+    trackError
+  };
+}

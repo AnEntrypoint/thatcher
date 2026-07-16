@@ -1,7 +1,7 @@
 // Extracted from moonlanding/src/services/collaborator-role.service.js
 
-import { list, get, update, create } from '../lib/busybase-store.js';
-import { AppError } from '../lib/error-handler.js';
+import { list, get, update, create } from '../lib/busybase/store.js';
+import { AppError } from '../lib/errors/index.js';
 import { HTTP } from '../config/constants.js';
 
 const COLLABORATOR_ROLE_PERMISSIONS = {

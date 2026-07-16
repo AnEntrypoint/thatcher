@@ -1,4 +1,4 @@
-export * from '@/lib/busybase-store';
+export * from '@/lib/busybase/store';
 export * from '@/lib/validate';
 export * from '@/lib/field-types';
 export * from '@/lib/field-iterator';
@@ -20,11 +20,11 @@ export {
   normalizeError,
   formatErrorResponse,
   createErrorLogger,
-} from '@/lib/error-handler';
+} from '@/lib/errors';
 export { createApiHandler } from '@/lib/api';
 export { genId, now } from '@/lib/id-helpers';
-export { setBusyBaseClient } from '@/lib/busybase-store';
-export { logAction } from '@/lib/busybase-audit';
+export { setBusyBaseClient } from '@/lib/busybase/store';
+export { logAction } from '@/lib/busybase/audit';
 export * from '@/lib/realtime-server';
 export * from '@/lib/hook-engine';
 export * from '@/lib/events-engine';

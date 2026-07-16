@@ -1,9 +1,8 @@
 import { requireAuth, requirePermission } from '@/lib/auth-middleware';
-import { getAuditHistory, getActionStats, getUserStats } from '@/lib/busybase-audit-reads';
+import { getAuditHistory, getActionStats, getUserStats } from '@/lib/busybase/audit-reads';
 import { getSpec } from '@/config/spec-helpers';
 import { paginated, ok } from '@/lib/response-formatter';
-import { withErrorHandler } from '@/lib/with-error-handler';
-import { AppError } from '@/lib/error-handler';
+import { withErrorHandler, AppError } from '@/lib/errors';
 import { HTTP } from '@/config/constants';
 import { parse as parseQuery } from '@/lib/query-string-adapter';
 

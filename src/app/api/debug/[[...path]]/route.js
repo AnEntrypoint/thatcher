@@ -1,10 +1,10 @@
 import { tracer } from '@/lib/tracing.js';
-import { perfProfiler } from '@/lib/perf-profiler.js';
+import { perfProfiler } from '@/lib/perf.js';
 import { debugRegistry } from '@/lib/debug-registry.js';
 import { getExportSink } from '@/lib/export-sink.js';
 import { getXStateWorkflowEngine } from '@/lib/xstate-workflow-engine.js';
 import { getHyperFormulaService } from '@/lib/hyperformula-service.js';
-import { getBusyBaseAdapter } from '@/lib/busybase-adapter.js';
+import { getBusyBaseAdapter } from '@/lib/busybase/adapter.js';
 import { hookEngine } from '@/lib/hook-engine.js';
 import { createLogger } from '@/lib/logger.js';
 

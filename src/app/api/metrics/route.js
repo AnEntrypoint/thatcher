@@ -1,7 +1,6 @@
 import { getAllMetrics, clearMetrics } from '@/lib/metrics-collector.js'
 import { getRecentAlerts } from '@/lib/alert-manager.js'
-import { getDatabaseStats } from '@/lib/db-monitor.js'
-import { getCurrentResources } from '@/lib/resource-monitor.js'
+import { getDatabaseStats, getCurrentResources } from '@/lib/monitor.js'
 import { getLogs } from '@/lib/log-aggregator.js'
 
 export const GET = async (request) => {

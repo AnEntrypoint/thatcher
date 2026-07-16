@@ -1,7 +1,7 @@
 // Adapted from moonlanding/src/services/permission.service.js
 
 import { getCollaboratorRole, checkCollaboratorAccess } from '../services/collaborator-role.service.js';
-import { PermissionError } from '../lib/error-handler.js';
+import { PermissionError } from '../lib/errors/index.js';
 import { getConfigEngineSync } from '../lib/config-generator-engine.js';
 
 class PermissionService {

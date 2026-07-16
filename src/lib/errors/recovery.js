@@ -1,10 +1,120 @@
-import { createLogger } from './logger.js';
-import { retryWithBackoff, withCircuitBreaker, checkpoint, restoreCheckpoint, logRecovery } from '@/lib/error-resilience';
+import { createLogger } from '../logger.js';
+import { retryWithBackoff } from './wrap.js';
+import { normalizeError, AppError } from './types.js';
+import { HTTP } from '../../config/constants.js';
 
 const log = createLogger('[Recovery]');
-import { normalizeError, AppError } from '@/lib/error-handler';
-import { HTTP } from '@/config/constants';
+const resilienceLog = createLogger('[Resilience]');
 
+// ---------------------------------------------------------------------------
+// Ported from error-resilience.js — circuit breaker + checkpoint primitives.
+// These are used directly, and also passed as strategies into withRecovery()
+// below rather than living as a second parallel wrapper module.
+// ---------------------------------------------------------------------------
+const errorState = { errors: [], circuitBreakers: new Map(), checkpoints: new Map() };
+
+export function createCircuitBreaker(name, options = {}) {
+  const { threshold = 5, resetTimeout = 30000 } = options;
+
+  if (!errorState.circuitBreakers.has(name)) {
+    errorState.circuitBreakers.set(name, {
+      failures: 0,
+      state: 'closed',
+      lastFailure: null,
+      nextAttempt: null,
+      threshold,
+      resetTimeout
+    });
+  }
+
+  return errorState.circuitBreakers.get(name);
+}
+
+export async function withCircuitBreaker(name, fn, options = {}) {
+  const breaker = createCircuitBreaker(name, options);
+
+  if (breaker.state === 'open') {
+    const now = Date.now();
+    if (breaker.nextAttempt && now < breaker.nextAttempt) {
+      throw new AppError(`Service unavailable: ${name}`, 'CIRCUIT_OPEN', HTTP.SERVICE_UNAVAILABLE, { nextAttempt: breaker.nextAttempt });
+    }
+    breaker.state = 'half-open';
+  }
+
+  try {
+    const result = await fn();
+    if (breaker.state === 'half-open') {
+    }
+    breaker.failures = 0;
+    breaker.state = 'closed';
+    return result;
+  } catch (error) {
+    breaker.failures++;
+    breaker.lastFailure = Date.now();
+
+    if (breaker.failures >= breaker.threshold) {
+      breaker.state = 'open';
+      breaker.nextAttempt = Date.now() + breaker.resetTimeout;
+      resilienceLog.error(`circuit ${name} opened after ${breaker.failures} failures`);
+    }
+
+    throw error;
+  }
+}
+
+export function checkpoint(name, state) {
+  errorState.checkpoints.set(name, {
+    state: JSON.parse(JSON.stringify(state)),
+    timestamp: Date.now()
+  });
+}
+
+export function restoreCheckpoint(name) {
+  const cp = errorState.checkpoints.get(name);
+  if (cp) {
+    return cp.state;
+  }
+  return null;
+}
+
+export function logRecovery(context, action) {
+  errorState.errors.push({
+    type: 'recovery',
+    context,
+    action,
+    timestamp: new Date().toISOString()
+  });
+  if (errorState.errors.length > 1000) errorState.errors.shift();
+}
+
+export function getErrorStats() {
+  const recent = errorState.errors.slice(-100);
+  const byType = {};
+
+  for (const err of recent) {
+    byType[err.type || 'error'] = (byType[err.type || 'error'] || 0) + 1;
+  }
+
+  return {
+    total: errorState.errors.length,
+    recent: recent.length,
+    byType,
+    circuitBreakers: Array.from(errorState.circuitBreakers.entries()).map(([name, state]) => ({
+      name,
+      state: state.state,
+      failures: state.failures,
+      lastFailure: state.lastFailure ? new Date(state.lastFailure).toISOString() : null
+    })),
+    checkpoints: Array.from(errorState.checkpoints.keys())
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Ported from error-recovery.js — supervisor / degraded-mode / health-check
+// strategies, now composed with the circuit-breaker + retry primitives above
+// (and wrap.js's retryWithBackoff) rather than importing a second sibling
+// wrapper module.
+// ---------------------------------------------------------------------------
 const recoveryState = { supervisors: new Map(), lastHealthCheck: null };
 
 export function createSupervisor(name, fn, options = {}) {
@@ -190,4 +300,10 @@ if (typeof global !== 'undefined') {
   global.getSupervisorStats = getSupervisorStats;
   global.supervise = supervise;
   global.healthCheck = healthCheck;
+  global.errorState = errorState;
+  global.getErrorStats = getErrorStats;
+  global.retryWithBackoff = retryWithBackoff;
+  global.withCircuitBreaker = withCircuitBreaker;
+  global.checkpoint = checkpoint;
+  global.restoreCheckpoint = restoreCheckpoint;
 }

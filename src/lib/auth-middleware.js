@@ -3,7 +3,7 @@
 import { getUser, getLucia } from '../engine.server.js';
 import { getSpec } from '../config/spec-helpers.js';
 import { can } from '../services/permission.service.js';
-import { UnauthorizedError, PermissionError, NotFoundError } from './error-handler.js';
+import { UnauthorizedError, PermissionError, NotFoundError } from './errors/index.js';
 
 const actionMap = {
   list: 'list',

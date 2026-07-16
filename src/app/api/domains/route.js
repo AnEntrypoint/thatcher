@@ -3,7 +3,7 @@ import { getDomainLoader } from '@/lib/domain-loader';
 
 const log = createLogger('[DomainsAPI]');
 import { ok } from '@/lib/response-formatter';
-import { withErrorHandler } from '@/lib/with-error-handler';
+import { withErrorHandler } from '@/lib/errors';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 
 export const GET = withErrorHandler(async (request) => {

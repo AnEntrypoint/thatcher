@@ -1,8 +1,7 @@
 import { getDomainLoader } from '@/lib/domain-loader';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 import { ok } from '@/lib/response-formatter';
-import { withErrorHandler } from '@/lib/with-error-handler';
-import { AppError, NotFoundError } from '@/lib/error-handler';
+import { withErrorHandler, AppError, NotFoundError } from '@/lib/errors';
 import { HTTP } from '@/config/constants';
 
 export const GET = withErrorHandler(async (request, context) => {

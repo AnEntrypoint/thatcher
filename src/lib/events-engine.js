@@ -6,7 +6,7 @@ import { list, get, update, create, remove } from '@/engine.js';
 import { queueEmail } from '@/services/notification-engine.js';
 import { safeJsonParse } from '@/lib/safe-json.js';
 import { validateTransition } from '@/lib/workflow-engine.js';
-import { AppError } from '@/lib/error-handler';
+import { AppError } from '@/lib/errors';
 import { HTTP } from '@/config/constants';
 
 const logActivity = (t, id, act, msg, u, d) =>

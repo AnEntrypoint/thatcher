@@ -3,7 +3,7 @@ import { getBy, verifyPassword, migrate } from '@/engine';
 
 const log = createLogger('[Login]');
 import { initializeSystemConfig } from '@/config/system-config-loader';
-import { withErrorHandler } from '@/lib/with-error-handler';
+import { withErrorHandler } from '@/lib/errors';
 import { lucia } from '@/engine.server';
 
 let initialized = false;
