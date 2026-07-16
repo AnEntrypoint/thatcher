@@ -5,10 +5,9 @@ import { can } from '@/services/permission.service';
 import { get, create, update, remove, listWithPagination, search } from '@/lib/busybase/store';
 import { validateEntity, validateUpdate, hasErrors } from '@/lib/validate';
 import { broadcastUpdate } from '@/lib/realtime-server';
-import { UnauthorizedError, PermissionError, NotFoundError, ValidationError, AppError } from '@/lib/errors';
+import { UnauthorizedError, PermissionError, NotFoundError, ValidationError, AppError, withErrorHandler } from '@/lib/errors';
 import { ok, created, paginated } from '@/lib/response-formatter';
 import { QueryAdapter } from '@/lib/query-string-adapter';
-import { withErrorHandler } from '@/lib/with-error-handler';
 import { HTTP } from '@/config/constants';
 
 const createHandler = (entity, action) => async (request, { params, searchParams }) => {
