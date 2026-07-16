@@ -1,6 +1,6 @@
 import { page } from '@/ui/layout.js';
 import { canEdit } from '@/ui/permissions-ui.js';
-import { reviewZoneNav } from '@/ui/review-zone-nav.js';
+import { reviewZoneNav } from '@/ui/review/zone-nav.js';
 import { esc } from '@/ui/render-helpers.js';
 import { SPACING, renderStatsRow, renderPageHeader, renderButton, renderEmptyState } from '@/ui/spacing-system.js';
 

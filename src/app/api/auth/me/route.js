@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { getUser, setCurrentRequest } from '@/engine.server';
 import { HTTP } from '@/config/constants';
 

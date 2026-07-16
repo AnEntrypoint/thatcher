@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import {
   detectXSS,
   detectSQLInjection,
@@ -7,7 +7,7 @@ import {
   rateLimitCheck,
   validateCSRFToken
 } from '@/lib/validation';
-import { validateEntity, validateUpdate, hasErrors } from '@/lib/validate';
+import { validateEntity, validateUpdate, hasErrors } from '@/lib/validation/entity-validators';
 
 export async function validateRequest(request, options = {}) {
   const { requireCSRF = true, rateLimit = { max: 100, window: 60000 }, entityName = null } = options;

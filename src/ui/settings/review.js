@@ -1,33 +1,21 @@
-import { TOAST_SCRIPT, settingsPage, settingsBack, inlineTable } from '@/ui/settings-renderer.js';
-import { esc } from '@/ui/render-helpers.js';
+/*
+ * Behaviour/config settings pages: audit-log (recreation) view, integrations,
+ * notifications, review settings, file-review settings, and MWR permissions.
+ * Ported unchanged from settings-renderer-advanced.js (renderSettingsRecreation,
+ * renderSettingsIntegrations, renderSettingsNotifications) and
+ * settings-renderer-advanced2.js (renderSettingsReviewSettings,
+ * renderSettingsFileReview, renderSettingsMwrPermissions).
+ */
+import { TOAST_SCRIPT, settingsPage, settingsBack, inlineTable, bc, esc, icon } from '@/ui/settings/shared.js';
 
-const hdr = (title, addHref, addLabel) => `${settingsBack()}<div class="flex justify-between items-center mb-6">
-  <h1 class="text-2xl font-bold">${title}</h1>
-  <a href="${addHref}" class="btn btn-primary btn-sm">${addLabel}</a>
-</div>`;
-const bc = (label) => [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }, { label }];
-const editBtn = (href) => `<a href="${href}" data-stop-propagation="true" class="btn btn-ghost btn-xs">Edit</a>`;
-const trClick = (url) => `class="hover cursor-pointer" data-navigate="${url}"`;
-
-export function renderSettingsTemplates(user, templates = []) {
-  const rows = templates.map(t => `<tr ${trClick('/review_template/'+t.id)}>
-    <td class="text-sm font-medium">${esc(t.name||'-')}</td>
-    <td><span class="badge badge-flat-primary text-xs">${esc(t.type||'standard')}</span></td>
-    <td>${t.is_active ? '<span class="badge badge-success badge-flat-success text-xs">Active</span>' : '<span class="badge badge-flat-secondary text-xs">Inactive</span>'}</td>
-    <td>${editBtn('/review_template/'+t.id+'/edit')}</td>
-  </tr>`).join('');
-  return settingsPage(user, 'Templates - Settings', bc('Templates'), hdr('Templates', '/review_template/new', '+ Add Template') + inlineTable(['Name', 'Type', 'Status', 'Actions'], rows, 'No templates found'));
-}
-
-export function renderSettingsChecklists(user, checklists = []) {
-  const rows = checklists.map(c => `<tr ${trClick('/checklist/'+c.id)}>
-    <td class="text-sm font-medium">${esc(c.name||'-')}</td>
-    <td class="text-sm">${esc(c.type||'-')}</td>
-    <td class="text-sm text-base-content/70">${esc(c.review_id||'-')}</td>
-    <td>${editBtn('/checklist/'+c.id+'/edit')}</td>
-  </tr>`).join('');
-  return settingsPage(user, 'Checklists - Settings', bc('Checklists'), hdr('Checklists', '/checklist/new', '+ Add Checklist') + inlineTable(['Name', 'Type', 'Review', 'Actions'], rows, 'No checklists found'));
-}
+// Module-level togRow (base-content/80) backs renderSettingsReviewSettings and
+// renderSettingsFileReview, ported from settings-renderer-advanced2.js's
+// module-level togRow. renderSettingsNotifications below defines its OWN
+// togRowLocal (base-content/70) -- the two were never actually the same
+// helper in the original files (advanced.js's was function-scoped inside
+// renderSettingsNotifications with a different opacity class), so they stay
+// separate here rather than being incorrectly merged into one shared const.
+const togRow = tg => `<div class="flex justify-between items-center py-3 border-b border-base-200"><div><div class="text-sm font-semibold">${tg.label}</div><div class="text-xs text-base-content/80">${tg.desc}</div></div><input type="checkbox" name="${tg.id}" ${tg.checked ? 'checked' : ''} class="checkbox checkbox-primary"/></div>`;
 
 export function renderSettingsRecreation(user, _logs = [], _users = []) {
   const filters = `<div class="card-clean" style="margin-bottom:1rem"><div class="card-clean-body">
@@ -115,7 +103,7 @@ export function renderSettingsNotifications(user, config = {}) {
   const t = config.thresholds || {};
   const rfi = t.rfi || {};
   const notif = t.notification || {};
-  const togRow = tg => `<div class="flex justify-between items-center py-3 border-b border-base-200"><div><div class="text-sm font-semibold">${tg.label}</div><div class="text-xs text-base-content/70">${tg.desc}</div></div><input type="checkbox" name="${tg.id}" ${tg.checked ? 'checked' : ''} class="checkbox checkbox-primary"/></div>`;
+  const togRowLocal = tg => `<div class="flex justify-between items-center py-3 border-b border-base-200"><div><div class="text-sm font-semibold">${tg.label}</div><div class="text-xs text-base-content/70">${tg.desc}</div></div><input type="checkbox" name="${tg.id}" ${tg.checked ? 'checked' : ''} class="checkbox checkbox-primary"/></div>`;
   const toggles = [
     { id: 'rfi_reminders', label: 'RFI Reminders', desc: 'Send reminders for outstanding RFIs', checked: true },
     { id: 'deadline_alerts', label: 'Deadline Alerts', desc: 'Alert when deadlines are approaching', checked: true },
@@ -137,7 +125,7 @@ export function renderSettingsNotifications(user, config = {}) {
   </div>`;
   const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">Notifications</h1>
     <form id="notif-form"><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-2">Notification Toggles</h2>${toggles.map(togRow).join('')}</div></div>
+      <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-2">Notification Toggles</h2>${toggles.map(togRowLocal).join('')}</div></div>
       <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-4">Configuration</h2>
         <div class="form-group mb-3"><label class="label"><span class="label-text font-semibold">RFI Notification Days</span></label><input type="text" name="notification_days" class="input input-solid max-w-full" value="${(rfi.notification_days || [7,3,1,0]).join(', ')}"/></div>
         <div class="form-group mb-3"><label class="label"><span class="label-text font-semibold">Escalation Delay (hours)</span></label><input type="number" name="escalation_delay_hours" class="input input-solid max-w-full" value="${rfi.escalation_delay_hours || 24}"/></div>
@@ -166,33 +154,106 @@ loadTriggers();`;
   return settingsPage(user, 'Notifications - Settings', bc('Notifications'), content, [script]);
 }
 
-function renderTypeList(user, items, entityKey, title) {
-  const rows = items.map(t => `<tr class="hover">
-    <td class="font-medium text-sm">${esc(t.name || '-')}</td>
-    <td class="text-xs text-base-content/70">${t.created_at ? new Date(t.created_at).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : '-'}</td>
-    <td><div class="flex gap-2">
-      <button type="button" class="btn btn-ghost btn-xs type-edit-btn" data-id="${esc(t.id)}" data-name="${esc(t.name||'')}">Edit</button>
-      <button type="button" class="btn btn-error btn-xs type-del-btn" data-id="${esc(t.id)}">Delete</button>
-    </div></td>
-  </tr>`).join('');
+export function renderSettingsReviewSettings(user, config = {}) {
+  const review = config.review || {};
+  const toggles = [
+    { id: 'auto_save', label: 'Auto-save', desc: 'Automatically save review changes', checked: review.auto_save !== false },
+    { id: 'highlight_notifications', label: 'Highlight Notifications', desc: 'Notify on new highlights', checked: review.highlight_notifications !== false },
+    { id: 'require_resolution', label: 'Require Resolution', desc: 'All highlights resolved before closing', checked: !!review.require_resolution },
+    { id: 'allow_private', label: 'Allow Private Reviews', desc: 'Enable private review visibility', checked: review.allow_private !== false },
+    { id: 'enable_sections', label: 'Enable Sections', desc: 'Allow reviews organized into sections', checked: review.enable_sections !== false },
+    { id: 'enable_wip_value', label: 'Enable WIP Value', desc: 'Track work-in-progress value', checked: !!review.enable_wip_value },
+  ];
+  const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">Review Settings</h1>
+    <form id="review-settings-form"><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-2">Review Options</h2>${toggles.map(togRow).join('')}</div></div>
+      <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-4">Defaults</h2>
+        <div class="form-group mb-3"><label class="label"><span class="label-text font-semibold">Default Status</span></label><select name="default_status" class="select select-solid max-w-full"><option value="active" ${review.default_status==='active'?'selected':''}>Active</option><option value="draft" ${review.default_status==='draft'?'selected':''}>Draft</option></select></div>
+        <div class="form-group mb-3"><label class="label"><span class="label-text font-semibold">Max Highlights Per Review</span></label><input type="number" name="max_highlights" class="input input-solid max-w-full" value="${review.max_highlights || 500}" min="1"/></div>
+        <div class="form-group"><label class="label"><span class="label-text font-semibold">Default Currency</span></label><select name="default_currency" class="select select-solid max-w-full"><option value="ZAR" ${!review.default_currency||review.default_currency==='ZAR'?'selected':''}>ZAR</option><option value="USD" ${review.default_currency==='USD'?'selected':''}>USD</option><option value="EUR" ${review.default_currency==='EUR'?'selected':''}>EUR</option><option value="GBP" ${review.default_currency==='GBP'?'selected':''}>GBP</option></select></div>
+      </div></div>
+    </div><button type="submit" class="btn btn-primary">Save Review Settings</button></form>`;
+  const script = `${TOAST_SCRIPT}document.getElementById('review-settings-form').addEventListener('submit',async(e)=>{e.preventDefault();const fd=new FormData(e.target);const data={};for(const[k,v]of fd.entries())data[k]=v;document.querySelectorAll('#review-settings-form input[type=checkbox]').forEach(cb=>{data[cb.name]=cb.checked});document.querySelectorAll('#review-settings-form input[type=number]').forEach(n=>{if(data[n.name])data[n.name]=Number(data[n.name])});try{const res=await fetch('/api/admin/settings/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(res.ok){showToast('Settings saved','success')}else{showToast('Save failed','error')}}catch(e){showToast('Error: '+e.message,'error')}})`;
+  return settingsPage(user, 'Review Settings', bc('Review Settings'), content, [script]);
+}
+
+export function renderSettingsFileReview(user, config = {}, frSettings = {}) {
+  const fr = config.fileReview || {};
+  const reviewFlags = frSettings.review_flags || [];
+  const tenderFlags = frSettings.tender_flags || [];
+  const flagManagers = frSettings.flags_managers || [];
+  const tempAccess = frSettings.temp_review_access_period || 0;
+  const toggles = [
+    { id: 'auto_pdf_cache', label: 'Auto-cache PDFs', desc: 'Cache PDF files for faster loading', checked: fr.auto_pdf_cache !== false },
+    { id: 'allow_annotations', label: 'Allow Annotations', desc: 'Enable PDF annotation tools', checked: fr.allow_annotations !== false },
+    { id: 'mobile_resize', label: 'Mobile Resize', desc: 'Enable mobile-friendly resizable highlights', checked: fr.mobile_resize !== false },
+    { id: 'coordinate_snap', label: 'Coordinate Snap', desc: 'Snap highlight coordinates to text boundaries', checked: !!fr.coordinate_snap },
+  ];
+  const flagChips = (flags, type) => flags.map(f => `<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">${esc(f)}<button type="button" data-action="removeFlag" data-args='${esc(JSON.stringify([type, f]))}' aria-label="Remove flag" style="background:none;border:none;cursor:pointer;line-height:1;color:inherit;display:inline-flex">${icon('close',16)}</button></span>`).join('');
+  const content = `${settingsBack()}<h1 class="text-2xl font-bold mb-6">File Review Settings</h1>
+  <div id="fr-review-flags" data-flags='${JSON.stringify(reviewFlags)}'></div>
+  <div id="fr-tender-flags" data-flags='${JSON.stringify(tenderFlags)}'></div>
+  <form id="file-review-settings-form">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-2">File Review Options</h2>${toggles.map(togRow).join('')}</div></div>
+    <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-4">Access &amp; Limits</h2>
+      <div class="form-group mb-3"><label class="label"><span class="label-text font-semibold">Temp Access Period (days)</span></label><input type="number" name="temp_review_access_period" class="input input-solid max-w-full" value="${tempAccess}" min="0"/></div>
+      <div class="form-group mb-3"><label class="label"><span class="label-text font-semibold">Max File Size (MB)</span></label><input type="number" name="max_file_size_mb" class="input input-solid max-w-full" value="${fr.max_file_size_mb || 50}" min="1"/></div>
+      <div class="form-group"><label class="label"><span class="label-text font-semibold">Allowed File Types</span></label><input type="text" name="allowed_types" class="input input-solid max-w-full" value="${fr.allowed_types || 'pdf,doc,docx,xls,xlsx,png,jpg'}"/></div>
+    </div></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-3">Review Flags</h2>
+      <div id="review-flags-list" class="flex flex-wrap gap-2 mb-3">${flagChips(reviewFlags, 'review')}</div>
+      <div class="flex gap-2"><input type="text" id="new-review-flag" class="input input-solid" placeholder="New flag label..." style="flex:1"/><button type="button" data-action="addFlag" data-args='["review"]' class="btn btn-primary btn-sm">Add</button></div>
+    </div></div>
+    <div class="card-clean"><div class="card-clean-body"><h2 class="card-title text-base mb-3">Tender Flags</h2>
+      <div id="tender-flags-list" class="flex flex-wrap gap-2 mb-3">${flagChips(tenderFlags, 'tender')}</div>
+      <div class="flex gap-2"><input type="text" id="new-tender-flag" class="input input-solid" placeholder="New flag label..." style="flex:1"/><button type="button" data-action="addFlag" data-args='["tender"]' class="btn btn-primary btn-sm">Add</button></div>
+    </div></div>
+  </div>
+  <button type="submit" class="btn btn-primary">Save File Review Settings</button></form>`;
   const script = `${TOAST_SCRIPT}
-var _eid='';
-var _typeFormTrigger=null;
-function openAdd(){_eid='';_typeFormTrigger=document.activeElement;document.getElementById('type-name').value='';document.getElementById('type-form').style.display='block';var n=document.getElementById('type-name');if(n)n.focus()}
-function openEdit(id,name){_eid=id;_typeFormTrigger=document.activeElement;document.getElementById('type-name').value=name;document.getElementById('type-form').style.display='block';var n=document.getElementById('type-name');if(n)n.focus()}
-function cancelForm(){document.getElementById('type-form').style.display='none';if(_typeFormTrigger&&typeof _typeFormTrigger.focus==='function')_typeFormTrigger.focus();_typeFormTrigger=null}
-async function saveType(){const name=document.getElementById('type-name').value.trim();if(!name){showToast('Name required','error');return}const url=_eid?'/api/${entityKey}/'+_eid:'/api/${entityKey}';const method=_eid?'PUT':'POST';try{const r=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(r.ok){showToast(_eid?'Updated':'Created','success');setTimeout(()=>location.reload(),400)}else showToast('Failed','error')}catch(e){showToast('Error','error')}}
-async function delType(id){if(!(await window.gmConfirm({title:'Please confirm',message:'Delete?',danger:true,confirmLabel:'OK'})))return;try{const r=await fetch('/api/${entityKey}/'+id,{method:'DELETE'});if(r.ok){showToast('Deleted','success');setTimeout(()=>location.reload(),400)}else showToast('Failed','error')}catch(e){showToast('Error','error')}}
-document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.type-edit-btn').forEach(b=>b.addEventListener('click',function(){openEdit(this.dataset.id,this.dataset.name)}));document.querySelectorAll('.type-del-btn').forEach(b=>b.addEventListener('click',function(){delType(this.dataset.id)}));document.querySelectorAll('.type-add-btn').forEach(b=>b.addEventListener('click',openAdd))});`;
-  const formHtml = `<div id="type-form" class="card-clean mb-4" style="display:none"><div class="card-clean-body"><div class="flex flex-wrap gap-2 items-end"><div class="form-group" style="flex:1;min-width:0"><label class="label"><span class="label-text font-medium">Name</span></label><input id="type-name" type="text" class="input input-solid w-full" placeholder="Name"/></div><button data-action="saveType" class="btn btn-primary btn-sm">Save</button><button data-action="cancelForm" class="btn btn-ghost btn-sm">Cancel</button></div></div></div>`;
-  const content = `${settingsBack()}<div class="flex justify-between items-center mb-4"><h1 class="text-2xl font-bold">${title}</h1><button class="btn btn-primary btn-sm type-add-btn">Add</button></div>${formHtml}<div class="card-clean"><div class="card-clean-body" style="padding:0">${inlineTable(['Name','Created','Actions'],rows,'No items found.')}</div></div>`;
-  return settingsPage(user, `${title} - Settings`, bc(title), content, [script]);
+var _rvFlags=${JSON.stringify(reviewFlags)};
+var _tdFlags=${JSON.stringify(tenderFlags)};
+function _escFlag(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function renderFlags(type){const list=type==='review'?_rvFlags:_tdFlags;const el=document.getElementById(type+'-flags-list');if(!el)return;el.innerHTML=list.map(f=>'<span class="pill pill-neutral" style="display:inline-flex;align-items:center;gap:4px">'+_escFlag(f)+'<button type="button" data-action="removeFlag" data-args=\\''+_escFlag(JSON.stringify([type,f]))+'\\' aria-label="Remove flag" style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;color:inherit">&times;</button></span>').join('')}
+window.addFlag=function(type){const inp=document.getElementById('new-'+type+'-flag');const val=(inp?.value||'').trim();if(!val)return;if(type==='review'){_rvFlags=[..._rvFlags,val]}else{_tdFlags=[..._tdFlags,val]};inp.value='';renderFlags(type)};
+window.removeFlag=function(type,flag){if(type==='review'){_rvFlags=_rvFlags.filter(f=>f!==flag)}else{_tdFlags=_tdFlags.filter(f=>f!==flag)};renderFlags(type)};
+document.getElementById('file-review-settings-form').addEventListener('submit',async(e)=>{e.preventDefault();const fd=new FormData(e.target);const data={};for(const[k,v]of fd.entries())data[k]=v;document.querySelectorAll('#file-review-settings-form input[type=checkbox]').forEach(cb=>{data[cb.name]=cb.checked});document.querySelectorAll('#file-review-settings-form input[type=number]').forEach(n=>{if(data[n.name])data[n.name]=Number(data[n.name])});data.review_flags=_rvFlags;data.tender_flags=_tdFlags;try{const res=await fetch('/api/admin/settings/file-review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(res.ok){showToast('Settings saved','success')}else{showToast('Save failed','error')}}catch(err){showToast('Error: '+err.message,'error')}})`;
+  return settingsPage(user, 'File Review Settings', bc('File Review Settings'), content, [script]);
 }
 
-export function renderSettingsEntityTypes(user, items = []) {
-  return renderTypeList(user, items, 'entity_type', 'Entity Types');
-}
-
-export function renderSettingsEngagementTypes(user, items = []) {
-  return renderTypeList(user, items, 'engagement_type', 'Engagement Types');
+export function renderSettingsMwrPermissions(user, permissions = []) {
+  const rows = permissions.map(p => `<tr>
+    <td class="text-sm">${esc(p.entity_type||'-')}</td>
+    <td class="text-sm">${esc(p.entity_id||'-')}</td>
+    <td class="text-sm">${esc(p.user_id||'-')}</td>
+    <td class="text-sm">${esc(p.permission_type||'-')}</td>
+    <td class="text-sm">${p.granted_at ? new Date(p.granted_at * 1000).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'}) : '-'}</td>
+    <td><button type="button" class="btn btn-error btn-xs btn-outline" data-action="revokePermission" data-args='${esc(JSON.stringify([p.id]))}'>Revoke</button></td>
+  </tr>`).join('');
+  const content = `${settingsBack()}<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">MWR Permissions</h1>
+    <button class="btn btn-primary btn-sm" data-action="openDialog" data-args='["grant-perm-dialog"]'>+ Grant Permission</button>
+  </div>
+  ${inlineTable(['Entity Type','Entity ID','User ID','Permission','Granted','Actions'], rows, 'No permissions configured')}
+  <div id="grant-perm-dialog" class="dialog-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="gp-dialog-title" data-dialog-close="grant-perm-dialog">
+    <div class="dialog-panel" style="max-width:min(460px,90vw)">
+      <div class="dialog-header"><span class="dialog-title" id="gp-dialog-title">Grant Permission</span><button class="dialog-close" data-dialog-close="grant-perm-dialog" aria-label="Close">&times;</button></div>
+      <div class="dialog-body">
+        <div class="modal-form-group"><label>Entity Type</label><input id="gp-entity-type" class="form-input" placeholder="e.g. review"/></div>
+        <div class="modal-form-group"><label>Entity ID</label><input id="gp-entity-id" class="form-input" placeholder="e.g. 1a2b3c"/></div>
+        <div class="modal-form-group"><label>User ID</label><input id="gp-user-id" class="form-input" placeholder="e.g. user_42"/></div>
+        <div class="modal-form-group"><label>Permission Type</label><select id="gp-perm-type" class="form-input"><option value="view">view</option><option value="edit">edit</option><option value="admin">admin</option></select></div>
+        <div id="gp-result" style="display:none;margin-top:8px"></div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-ghost btn-sm" data-dialog-close="grant-perm-dialog">Cancel</button>
+        <button class="btn btn-primary btn-sm" data-action="grantPermission">Grant</button>
+      </div>
+    </div>
+  </div>`;
+  const script = `${TOAST_SCRIPT}window.grantPermission=async function(){var body={entity_type:document.getElementById('gp-entity-type').value.trim(),entity_id:document.getElementById('gp-entity-id').value.trim(),user_id:document.getElementById('gp-user-id').value.trim(),permission_type:document.getElementById('gp-perm-type').value};var res=document.getElementById('gp-result');if(!body.entity_type||!body.entity_id||!body.user_id){res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">All fields required.</div>';return}try{var r=await fetch('/api/mwr/permissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var d=await r.json();if(r.ok&&d.success){showToast('Permission granted','success');(window.closeDialog?window.closeDialog('grant-perm-dialog'):document.getElementById('grant-perm-dialog').style.display='none');setTimeout(function(){location.reload()},500)}else{res.style.display='block';res.innerHTML='<div style="color:var(--color-danger);font-size:13px">'+(d.error||'Failed')+'</div>'}}catch(e){showToast('Error: '+e.message,'error')}};window.revokePermission=async function(id){if(!(await window.gmConfirm({title:'Revoke permission',message:'Revoke this permission?',confirmLabel:'Revoke',danger:true})))return;try{var r=await fetch('/api/permission/'+id,{method:'DELETE'});if(r.ok){showToast('Revoked','success');setTimeout(function(){location.reload()},500)}else{showToast('Failed','error')}}catch(e){showToast('Error: '+e.message,'error')}}`;
+  return settingsPage(user, 'MWR Permissions', bc('MWR Permissions'), content, [script]);
 }

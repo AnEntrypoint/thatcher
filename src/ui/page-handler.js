@@ -1,7 +1,7 @@
 import { getUser, setCurrentRequest } from '@/engine.server.js';
 import { hasGoogleAuth } from '@/config/env.js';
 import { getSpec } from '@/config/spec-helpers.js';
-import { list, get } from '@/lib/busybase-store.js';
+import { list, get } from '@/lib/busybase/store.js';
 import { renderLogin, renderDashboard, renderEntityList, renderEntityDetail, renderEntityForm, renderAccessDenied, renderPasswordReset, renderPasswordResetConfirm, REDIRECT } from '@/ui/renderer.js';
 import { renderClientDashboard, renderClientList } from '@/ui/client-renderer.js';
 import { canList, canView, canCreate, canEdit, isPartner, isClerk, isClientUser, canClientAccessEntity } from '@/ui/permissions-ui.js';
@@ -152,7 +152,7 @@ export async function handlePage(pathname, req, res) {
     } catch {}
     const all = [...myReviews, ...sharedReviews];
     const stats = { myReviews, sharedReviews, recentActivity, totalReviews: all.length, activeReviews: all.filter(r => (r.status||'open') !== 'archived' && (r.status||'open') !== 'completed' && (r.status||'open') !== 'closed').length, flaggedReviews: all.filter(r => r.flagged).length, overdueReviews: 0 };
-    const { renderMwrHome } = await lazyRenderer('review-mwr-renderer.js');
+    const { renderMwrHome } = await lazyRenderer('review/mwr.js');
     return renderMwrHome(user, stats);
   }
   const reviewResult = await handleReviewRoutes(normalized, segments, user, req);

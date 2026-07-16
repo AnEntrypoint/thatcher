@@ -3,7 +3,7 @@
 import { create, update, remove } from '@/engine';
 import { requireUser, check } from '@/engine.server';
 import { getSpec } from '@/config/spec-helpers';
-import { revalidatePath } from '@/lib/next-polyfills';
+import { revalidatePath } from '@/lib/next-shim';
 
 export async function serverCreateEntity(entityName, data) {
   const user = await requireUser();

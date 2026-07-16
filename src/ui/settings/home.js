@@ -1,35 +1,10 @@
-import { page } from '@/ui/layout.js';
-import { TOAST_SCRIPT, TABLE_SCRIPT, statusBadge as _statusBadge, esc } from '@/ui/render-helpers.js';
-import { icon } from '@/ui/format-helpers.js';
-import { SPACING, renderCard } from '@/ui/spacing-system.js';
-
-export { TOAST_SCRIPT } from '@/ui/render-helpers.js';
-
-export function settingsPage(user, title, bc, content, scripts = []) {
-  return page(user, title, bc, content, scripts);
-}
-
-export function settingsBack() {
-  return `<a href="/admin/settings" class="btn btn-ghost btn-sm gap-1 mb-4">Back to Settings</a>`;
-}
-
-export function inlineTable(headers, rows, emptyMsg) {
-  const ths = headers.map(h => `<th>${h}</th>`).join('');
-  const empty = `<tr><td colspan="${headers.length}" class="text-center py-8 text-base-content/40 text-sm">${emptyMsg}</td></tr>`;
-  return `<div class="table-wrap"><table class="data-table"><thead><tr>${ths}</tr></thead><tbody>${rows || empty}</tbody></table></div>`;
-}
-
-const KNOWN_ROLE_LABELS = { admin:'Admin', partner:'Partner', manager:'Manager', clerk:'Clerk', user:'User', auditor:'Auditor', client_admin:'Client Admin', client_user:'Client User' };
-
-export function roleBadge(role) {
-  const r = (role || '').toLowerCase();
-  const pillMap = { admin:'pill pill-danger', partner:'pill pill-info', manager:'pill pill-success', clerk:'pill pill-warning', user:'pill pill-neutral', auditor:'pill pill-neutral', client_admin:'pill pill-info', client_user:'pill pill-neutral' };
-  const cls = pillMap[r] || 'pill pill-neutral';
-  const label = KNOWN_ROLE_LABELS[r] || (r.length > 20 ? 'Staff' : (r.charAt(0).toUpperCase() + r.slice(1))) || 'Staff';
-  return `<span class="${cls}">${label}</span>`;
-}
-
-function statusBadge(status) { return _statusBadge(status); }
+/*
+ * Settings landing page + system info + users list. Ported unchanged (function
+ * bodies verbatim) from the original settings-renderer.js, which also carried
+ * the shared page-shell helpers (now settings/shared.js) and re-exported teams/
+ * rfi-sections (now settings/teams.js, imported directly by callers instead).
+ */
+import { settingsPage, settingsBack, icon, SPACING, esc, TABLE_SCRIPT, roleBadge, statusBadge } from '@/ui/settings/shared.js';
 
 const SETTINGS_CARDS = [
   { key: 'system', icon: 'gear', title: 'System Info', desc: 'Database, server, cache configuration', href: '/admin/settings/system' },
@@ -163,5 +138,3 @@ export function renderSettingsUsers(user, users = []) {
   </div>`;
   return settingsPage(user, 'Users - Settings', [{ href: '/', label: 'Dashboard' }, { href: '/admin/settings', label: 'Settings' }, { label: 'Users' }], content, [TABLE_SCRIPT]);
 }
-
-export { renderSettingsTeams, renderSettingsRfiSections } from '@/ui/settings-renderer-teams.js';

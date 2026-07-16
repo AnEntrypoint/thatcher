@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { count } from '@/engine';
 
 export async function GET() {

@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 
 // The data layer is busybase (LanceDB), not SQLite — the old pragma/page-count probe
 // no longer applies. This endpoint now reports the configured store kind.

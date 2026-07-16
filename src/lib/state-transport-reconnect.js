@@ -1,3 +1,8 @@
+// state-sync channel (reconnect logic): exponential-backoff + polling-fallback
+// manager consumed by state-transport-client.js, part of the state-protocol.js
+// quartet. See the header comment in state-protocol.js for the full
+// ws-broadcast vs state-sync distinction. Zero real importers repo-wide
+// outside this quartet's own internal cross-imports as of this writing.
 import Protocol from './state-protocol.js'
 
 const CONFIG = {

@@ -1,4 +1,5 @@
 import { STAGE_COLORS, STATUS_COLORS } from './render-helpers.js';
+export { esc } from './render-helpers.js';
 
 export function formatDate(ts, opts) {
   if (!ts) return '-';
@@ -128,8 +129,4 @@ export function emptyState(message, iconName) {
     <div style="display:flex;justify-content:center;margin-bottom:12px">${ico}</div>
     <div style="font-size:0.88rem;font-weight:500">${message || 'No items found'}</div>
   </div>`;
-}
-
-export function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

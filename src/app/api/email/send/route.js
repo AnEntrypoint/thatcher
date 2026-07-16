@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { createLogger } from '@/lib/logger.js';
 import { now } from '@/lib/id-helpers';
 import { timingSafeEqual } from 'node:crypto';

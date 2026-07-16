@@ -1,3 +1,11 @@
+// state-sync channel (server side): real `ws`-backed WebSocketServer with
+// connection-guard IP/rate limiting, part of the state-protocol.js quartet.
+// See the header comment in state-protocol.js for the full picture -- this is
+// a structured, reconnect-aware state-sync protocol, DIFFERENT from and not a
+// replacement for realtime-server.js's simple in-process pub/sub
+// (the "ws-broadcast" channel actually used by the CRUD write path). As of
+// this writing this file has zero real importers repo-wide; nothing
+// constructs a StateTransportServer today.
 import { WebSocketServer } from 'ws'
 import { EventEmitter } from 'events'
 import Protocol from '@/lib/state-protocol.js'

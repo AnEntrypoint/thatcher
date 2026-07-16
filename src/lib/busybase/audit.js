@@ -6,8 +6,8 @@
  * forget: it returns immediately and swallows/logs write errors rather than throwing.
  */
 
-import { createLogger } from './logger.js';
-import { genId, now } from './id-helpers.js';
+import { createLogger } from '../logger.js';
+import { genId, now } from '../id-helpers.js';
 
 const log = createLogger('[BusyBaseAudit]');
 

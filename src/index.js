@@ -141,9 +141,9 @@ export class Thatcher {
       || 'busybase_data';
     const client = await createEmbedded({ dir });
 
-    const store = await import(resolveModule('./lib/busybase-store.js'));
+    const store = await import(resolveModule('./lib/busybase/store.js'));
     store.setBusyBaseClient(client);
-    const audit = await import(resolveModule('./lib/busybase-audit.js'));
+    const audit = await import(resolveModule('./lib/busybase/audit.js'));
     audit.setBusyBaseClient(client);
 
     this.busybase = client;
@@ -270,38 +270,38 @@ export class Thatcher {
   // === CRUD operations ===
 
   async list(entity, where = {}, opts = {}) {
-    const { list } = await import(resolveModule('./lib/busybase-store.js'));
+    const { list } = await import(resolveModule('./lib/busybase/store.js'));
     return list(entity, where, opts);
   }
 
   async get(entity, id) {
-    const { get } = await import(resolveModule('./lib/busybase-store.js'));
+    const { get } = await import(resolveModule('./lib/busybase/store.js'));
     return get(entity, id);
   }
 
   async create(entity, data, user) {
-    const { create } = await import(resolveModule('./lib/busybase-store.js'));
+    const { create } = await import(resolveModule('./lib/busybase/store.js'));
     return create(entity, data, user);
   }
 
   // opts.expectedVersion: optional optimistic-concurrency guard (see
-  // busybase-store.js update()) -- a caller that read the row's _version can
+  // busybase/store.js update()) -- a caller that read the row's _version can
   // pass it here to detect (via a thrown {code:'conflict'} error) a concurrent
   // writer landing in between, instead of silently clobbering it. `user` stays
   // its own positional param (unused by the store today, kept for API
   // stability with existing callers); opts is a new, optional 5th param.
   async update(entity, id, data, user, opts = {}) {
-    const { update } = await import(resolveModule('./lib/busybase-store.js'));
+    const { update } = await import(resolveModule('./lib/busybase/store.js'));
     return update(entity, id, data, opts);
   }
 
   async delete(entity, id) {
-    const { remove } = await import(resolveModule('./lib/busybase-store.js'));
+    const { remove } = await import(resolveModule('./lib/busybase/store.js'));
     return remove(entity, id);
   }
 
   async search(entity, query, where = {}, opts = {}) {
-    const { search } = await import(resolveModule('./lib/busybase-store.js'));
+    const { search } = await import(resolveModule('./lib/busybase/store.js'));
     return search(entity, query, where, opts);
   }
 

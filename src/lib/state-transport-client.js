@@ -1,3 +1,9 @@
+// state-sync channel (client side): browser WebSocket client with
+// exponential-backoff reconnect + polling fallback, part of the
+// state-protocol.js quartet. See the header comment in state-protocol.js --
+// this is a structured, reconnect-aware protocol distinct from
+// realtime-server.js's simple in-process pub/sub. Zero real importers found
+// repo-wide as of this writing; currently dormant/unwired.
 import Protocol from './state-protocol.js'
 import { CONFIG, ReconnectManager } from './state-transport-reconnect.js'
 import { createLogger } from './logger.js'

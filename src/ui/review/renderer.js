@@ -5,7 +5,7 @@ import { reviewCreateDialog, reviewTemplateChoiceDialog, reviewContextMenu, revi
 import { SPACING, renderButton, renderEmptyState, renderStatsRow, renderPageHeader } from '@/ui/spacing-system.js';
 
 export { reviewCreateDialog, reviewTemplateChoiceDialog, reviewContextMenu, reviewFlagsDialog, reviewTagsDialog, reviewValueDialog, reviewDeadlineDialog, reviewNotificationDialog };
-export { renderMwrHome, renderSectionReport } from '@/ui/review-mwr-renderer.js';
+export { renderMwrHome, renderSectionReport } from '@/ui/review/mwr.js';
 
 const TOAST_SCRIPT = `window.showToast=(m,t='info')=>{let c=document.getElementById('toast-container');if(!c){c=document.createElement('div');c.id='toast-container';c.className='toast-container';c.setAttribute('role','status');c.setAttribute('aria-live','polite');c.setAttribute('aria-atomic','true');document.body.appendChild(c)}const d=document.createElement('div');d.className='toast toast-'+t;d.textContent=m;c.appendChild(d);setTimeout(()=>{d.style.opacity='0';setTimeout(()=>d.remove(),300)},3000)};`;
 

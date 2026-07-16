@@ -1,3 +1,21 @@
+// ws-broadcast channel: in-process pub/sub used by the CRUD layer to fan out
+// entity create/update/delete notifications (see src/lib/api.js, which calls
+// broadcastUpdate() on every write, and src/lib/index.js which re-exports this
+// module). Despite the "(polling mode)" log line there is no actual transport
+// here -- no WebSocket, no poll endpoint -- just an in-memory Map of
+// channel -> Set<callback>, so subscribers must live in the same process.
+//
+// This is a DIFFERENT channel from the state-transport-*.js / state-protocol.js
+// quartet (state-transport-server.js / state-transport-client.js /
+// state-transport-reconnect.js): that stack is a real `ws`-backed WebSocket
+// server+client with a structured message protocol, vector clocks, and
+// reconnect/polling-fallback semantics, but as of this writing it has ZERO
+// importers anywhere in the repo outside its own internal cross-imports --
+// nothing constructs a StateTransportServer/StateTransportClient. So today
+// state-transport-* does NOT supersede this file; this file (realtime-server.js)
+// is the one actually wired into production (src/lib/api.js), while
+// state-transport-* is a more capable but currently-unwired structured protocol.
+// Do not delete either without re-checking real importers first.
 import { createLogger } from './logger.js';
 
 const log = createLogger('[Realtime]');

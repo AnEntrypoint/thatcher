@@ -4,7 +4,7 @@
  * audit_logs and permission_audit tables.
  */
 
-import { list, create } from '@/lib/busybase-store.js';
+import { list, create } from '@/lib/busybase/store.js';
 import { genId, now } from '@/lib/id-helpers.js';
 
 const parseJson = (val) => { try { return val ? JSON.parse(val) : null; } catch { return null; } };

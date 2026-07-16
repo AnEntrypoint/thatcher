@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 
 export async function GET() {
   if (process.env.NODE_ENV === 'production') {

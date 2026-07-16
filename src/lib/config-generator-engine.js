@@ -1,5 +1,17 @@
 // Adapted from moonlanding/src/lib/config-generator-engine.js
-
+//
+// Config/spec generation layer -- a genuinely SEPARATE concern from
+// workflow-engine.js / xstate-workflow-engine.js. This file loads+validates
+// the master YAML config and generates cached, deep-frozen derived specs
+// (entity field specs via generateEntitySpec, roles, permission templates,
+// status enums, theme, thresholds, automation jobs). It does not itself
+// validate or execute a workflow transition -- both workflow engines simply
+// READ the `workflows` config section through this engine's
+// getConfigEngineSync().getConfig(). By far the most widely consumed of the
+// three files (16 importers repo-wide across services/lib/ui/app-api routes
+// as of this writing, vs. workflow-engine.js's 2 and
+// xstate-workflow-engine.js's 2 debug/test-only importers) -- this is live,
+// central infrastructure, not a candidate for deprecation.
 import { load as yamlLoad } from 'js-yaml';
 import { LRUCache, deepFreeze, deepClone, recursiveResolve } from './config-helpers.js';
 import { generateFieldsFromOverrides, ensureFieldLabels } from './config-field-helpers.js';

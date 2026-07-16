@@ -1,16 +1,17 @@
 // Adapted from moonlanding/src/lib/validate.js
+// Entity/spec-driven field, record, and status-transition validation.
 
-import { getSpec } from '../config/spec-helpers.js';
-import { isValidEmail as checkEmailFormat, isValidEmail } from './validators.js';
-import { getValidTransitions } from './status-helpers.js';
-import { isBeforeDate } from './date-utils.js';
+import { getSpec } from '@/config/spec-helpers';
+import { isValidEmail } from '@/lib/validation/format-validators';
+import { getValidTransitions } from '@/lib/status-helpers';
+import { isBeforeDate } from '@/lib/date-utils';
 
-// Re-export so consumers can reach the email validator from validate.js (parity with moon)
+// Re-export so consumers can reach the email validator from entity-validators.js (parity with moon)
 export { isValidEmail };
 
 const HTML_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
-function sanitizeHtml(str) {
+export function sanitizeHtml(str) {
   return typeof str === 'string' ? str.replace(/[&<>"']/g, c => HTML_ESC[c]) : str;
 }
 
@@ -50,7 +51,7 @@ export async function validateField(fieldDef, value, options = {}) {
       return { valid: true };
     }
     try {
-      const { getBy } = await import('./busybase-store.js');
+      const { getBy } = await import('@/lib/busybase/store');
       const refTable = fieldDef.ref === 'user' ? 'users' : fieldDef.ref;
       if (!(await getBy(refTable, 'id', value))) {
         return {
@@ -141,7 +142,7 @@ async function checkUnique(fieldDef, value, { fieldName, entityName, existingRec
   const existingValue = existingRecord?.[fieldName];
   if (value === existingValue) return null;
   try {
-    const { getBy } = await import('./busybase-store.js');
+    const { getBy } = await import('@/lib/busybase/store');
     const table = entityName === 'user' ? 'users' : entityName;
     const dup = await getBy(table, fieldName, value);
     if (dup && (!existingRecord || dup.id !== existingRecord.id)) {

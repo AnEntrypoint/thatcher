@@ -27,7 +27,7 @@ export {
 export {
   mobileReviewCard, sidebarReviewDetails, archiveReviewDialog,
   reviewOpenCloseToggle, reviewPrivateToggle, markAllHighlightsResolved
-} from '@/ui/review-widgets.js'
+} from '@/ui/review/widgets.js'
 
 export {
   colorPickerDialog, dateChoiceDialog, stageTransitionDialog,

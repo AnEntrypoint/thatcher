@@ -1,4 +1,4 @@
-import { sanitizeHtml } from '@/lib/validate';
+import { sanitizeHtml } from '@/lib/validation/entity-validators';
 
 const XSS_PATTERNS = [
   /<script[^>]*>.*?<\/script>/gi,
