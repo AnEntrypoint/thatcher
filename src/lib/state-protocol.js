@@ -1,3 +1,16 @@
+// state-sync channel: message-type vocabulary + VectorClock + schema validation
+// shared by state-transport-server.js / state-transport-client.js /
+// state-transport-reconnect.js. This is a structured, reconnect-aware
+// WebSocket protocol (real `ws` transport, IP/rate-limited via
+// connection-guard.js, exponential-backoff client reconnect with a polling
+// fallback) -- distinct from the simpler in-process pub/sub in
+// realtime-server.js (the "ws-broadcast" channel actually wired into the CRUD
+// write path via src/lib/api.js). As of this writing, grepping the whole repo
+// found ZERO importers of this quartet outside their own internal cross-imports
+// (state-transport-client.js imports state-transport-reconnect.js; both import
+// this file) -- nothing external constructs a StateTransportServer/Client, so
+// this stack is currently unwired/dormant rather than superseding
+// realtime-server.js. Keep both; re-check importers before deleting either.
 const MESSAGE_TYPES = {
   STATE_UPDATE: 'state_update',
   STATE_SNAPSHOT: 'state_snapshot',

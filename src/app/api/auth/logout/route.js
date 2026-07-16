@@ -1,5 +1,5 @@
 import { setCurrentRequest as setEngineRequest, invalidateSession } from '@/engine.server';
-import { setCurrentRequest, setCurrentResponse } from '@/lib/next-polyfills';
+import { setCurrentRequest, setCurrentResponse } from '@/lib/next-shim';
 
 function buildLogoutHeaders(headerMap) {
   const setCookies = headerMap.get('Set-Cookie');

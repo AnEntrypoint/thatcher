@@ -1,6 +1,6 @@
 import { statusLabel } from '@/ui/renderer.js';
 import { page } from '@/ui/layout.js';
-import { emptyRow, esc } from './render-helpers.js';
+import { emptyRow, esc } from '../render-helpers.js';
 
 function reviewSummaryPanel(review, highlights, side) {
   const total = highlights.length;

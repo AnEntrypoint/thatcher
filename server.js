@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadEnv, setupProcessGuards, setupHotReload, loadModule as _loadModule, setSecurityHeaders } from './src/lib/server-bootstrap.js';
-import { registerGlobals, NextRequest, readBody, normalizeHeaderName } from './src/lib/next-compat.js';
+import { registerGlobals, NextRequest, readBody, normalizeHeaderName } from './src/lib/next-shim.js';
 import { serveStatic, html404 } from './src/lib/static-server.js';
 import { resolveRoute } from './src/lib/route-resolver.js';
 import { createLogger } from './src/lib/logger.js';

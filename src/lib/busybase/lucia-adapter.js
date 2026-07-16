@@ -7,7 +7,7 @@
  * receives back; busybase stores it as an epoch-ms number, so we convert at the boundary.
  */
 
-import { list, get, create, update, remove } from '@/lib/busybase-store.js';
+import { list, get, create, update, remove } from '@/lib/busybase/store.js';
 
 const SESSION = 'sessions';
 const USER = 'users';

@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { createLogger } from '@/lib/logger.js';
 
 const log = createLogger('[AuditDashboardAPI]');
@@ -6,7 +6,7 @@ import { getUser, setCurrentRequest } from '@/engine.server';
 import {
   getPermissionAuditTrail, getPermissionAuditStats, getPermissionAuditBreakdown,
   getPermissionAuditByDateRange, searchPermissionAudit, getPermissionDiff,
-} from '@/lib/busybase-audit-reads';
+} from '@/lib/busybase/audit-reads';
 
 export async function GET(request) {
   setCurrentRequest(request);

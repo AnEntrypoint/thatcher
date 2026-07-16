@@ -1,10 +1,10 @@
 import { page } from '@/ui/layout.js';
-import { reviewZoneNav } from '@/ui/review-zone-nav.js';
+import { reviewZoneNav } from '@/ui/review/zone-nav.js';
 export { reviewZoneNav };
 import { canEdit } from '@/ui/permissions-ui.js';
 import { esc, statusBadge, TOAST_SCRIPT, icon } from '@/ui/render-helpers.js';
-import { reviewDetailScript } from '@/ui/review-detail-script.js';
-import { highlightRow, collaboratorRow, addCollaboratorDialog } from '@/ui/review-detail-panels.js';
+import { reviewDetailScript } from '@/ui/review/detail-script.js';
+import { highlightRow, collaboratorRow, addCollaboratorDialog } from '@/ui/review/detail-panels.js';
 import { tenderPanelHtml, tenderDialog, linksPanelHtml, linkDialog, sectionsPanelHtml, compareDialogHtml } from '@/ui/review-detail-panels-extra.js';
 import { retryHighlightDialog, switchTemplateButton } from '@/ui/engagement-dialogs.js';
 import { reviewTemplateChoiceDialog } from '@/ui/review-dialogs.js';

@@ -1,13 +1,13 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { createLogger } from '@/lib/logger.js';
 
 const log = createLogger('[AuditAPI]');
 import { lucia } from '@/engine.server';
-import { cookies } from '@/lib/next-polyfills';
+import { cookies } from '@/lib/next-shim';
 import {
   logPermissionChange, getPermissionAuditTrail, searchPermissionAudit,
   getPermissionAuditByDateRange, exportPermissionAuditCSV,
-} from '@/lib/busybase-audit-reads';
+} from '@/lib/busybase/audit-reads';
 
 async function getUser() {
   const sessionId = (await cookies()).get(lucia.sessionCookieName)?.value ?? null;

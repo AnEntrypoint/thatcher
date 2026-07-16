@@ -2,7 +2,7 @@ import { createLogger } from './logger.js';
 import { genId, now } from '@/lib/id-helpers';
 
 const log = createLogger('[AuditEnhanced]');
-import { list, create, remove } from '@/lib/busybase-store';
+import { list, create, remove } from '@/lib/busybase/store';
 
 export const LOG_LEVELS = { DEBUG: 'debug', INFO: 'info', WARN: 'warn', ERROR: 'error' };
 export const OPERATION_TYPES = { CREATE: 'create', UPDATE: 'update', DELETE: 'delete', READ: 'read', AUTH: 'auth', AUTHZ: 'authz' };

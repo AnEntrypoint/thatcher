@@ -16,4 +16,4 @@ export {
   validateDeadline,
   sanitizeData,
   sanitizeHtml
-} from '@/lib/validate';
+} from '@/lib/validation/entity-validators';

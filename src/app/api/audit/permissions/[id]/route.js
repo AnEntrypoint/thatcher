@@ -1,9 +1,9 @@
-import { NextResponse, cookies } from '@/lib/next-polyfills';
+import { NextResponse, cookies } from '@/lib/next-shim';
 import { createLogger } from '@/lib/logger.js';
 
 const log = createLogger('[AuditDetailAPI]');
 import { lucia } from '@/engine.server';
-import { getPermissionAuditById, getPermissionDiff } from '@/lib/busybase-audit-reads';
+import { getPermissionAuditById, getPermissionDiff } from '@/lib/busybase/audit-reads';
 
 async function getUser() {
   const sessionId = (await cookies()).get(lucia.sessionCookieName)?.value ?? null;

@@ -14,9 +14,9 @@
  * Requires Bun (busybase embedded uses Bun.password + the vectordb native binding).
  */
 
-import { getSpec } from '../config/spec-helpers.js';
-import { RECORD_STATUS } from '../config/constants.js';
-import { genId, now } from './id-helpers.js';
+import { getSpec } from '../../config/spec-helpers.js';
+import { RECORD_STATUS } from '../../config/constants.js';
+import { genId, now } from '../id-helpers.js';
 
 let _client = null;
 

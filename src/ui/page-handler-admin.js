@@ -1,8 +1,9 @@
-import { list, get } from '@/lib/busybase-store.js';
+import { list, get } from '@/lib/busybase/store.js';
 import { renderAuditDashboard, renderSystemHealth, renderAccessDenied, generateHtml, REDIRECT } from '@/ui/renderer.js';
-import { renderSettingsHome, renderSettingsSystem, renderSettingsUsers, renderSettingsTeams, renderSettingsRfiSections } from '@/ui/settings-renderer.js';
-import { renderSettingsTemplates, renderSettingsNotifications, renderSettingsIntegrations, renderSettingsChecklists, renderSettingsRecreation, renderSettingsEntityTypes, renderSettingsEngagementTypes } from '@/ui/settings-renderer-advanced.js';
-import { renderSettingsReviewSettings, renderSettingsFileReview, renderSettingsTemplateManage, renderSettingsMwrPermissions } from '@/ui/settings-renderer-advanced2.js';
+import { renderSettingsHome, renderSettingsSystem, renderSettingsUsers } from '@/ui/settings/home.js';
+import { renderSettingsTeams, renderSettingsRfiSections } from '@/ui/settings/teams.js';
+import { renderSettingsTemplates, renderSettingsChecklists, renderSettingsEntityTypes, renderSettingsEngagementTypes, renderSettingsTemplateManage } from '@/ui/settings/templates.js';
+import { renderSettingsNotifications, renderSettingsIntegrations, renderSettingsRecreation, renderSettingsReviewSettings, renderSettingsFileReview, renderSettingsMwrPermissions } from '@/ui/settings/review.js';
 import { renderChecklistsManagement } from '@/ui/checklist-renderer.js';
 import { renderJobManagement } from '@/ui/job-management-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
@@ -36,7 +37,7 @@ export async function handleAdminPage(normalized, segments, user) {
   if (normalized === '/admin/settings/system') { const config = await getSystemConfig(); return renderSettingsSystem(user, config); }
   if (normalized === '/admin/settings/users') { return renderSettingsUsers(user, await list('user', {})); }
   if (normalized === '/admin/settings/teams') {
-    const { renderSettingsTeams: _rt } = await lazyRenderer('settings-renderer.js');
+    const { renderSettingsTeams: _rt } = await lazyRenderer('settings/teams.js');
     return _rt(user, await list('team', {}), await list('user', {}));
   }
   if (normalized === '/admin/settings/rfi-sections') {

@@ -11,7 +11,7 @@ export function getNotificationTemplate(name) {
 }
 
 export async function createNotification(notification) {
-  const { create } = await import('../lib/busybase-store.js');
+  const { create } = await import('../lib/busybase/store.js');
   return create('notification', {
     ...notification,
     created_at: Math.floor(Date.now() / 1000),
@@ -66,14 +66,14 @@ export async function sendNotification(type, userId, context = {}, options = {})
 }
 
 export async function markNotificationRead(notificationId, userId) {
-  const { update } = await import('../lib/busybase-store.js');
+  const { update } = await import('../lib/busybase/store.js');
   return update('notification', notificationId, {
     read_at: Math.floor(Date.now() / 1000),
   });
 }
 
 export async function getUnreadCount(userId) {
-  const { list } = await import('../lib/busybase-store.js');
+  const { list } = await import('../lib/busybase/store.js');
   return (await list('notification', {
     user_id: userId,
     read_at: null,
@@ -83,13 +83,13 @@ export async function getUnreadCount(userId) {
 // Resolve a `recipients` token (a role/group name used across events-engine.js
 // call sites, e.g. 'client_users', 'team_members', 'collaborator') to a list of
 // user records to notify. There is no dedicated recipient-resolution engine in
-// this codebase yet, so this composes the existing busybase-store queries the
+// this codebase yet, so this composes the existing busybase/store queries the
 // same way the rest of the app looks up users -- a single explicit user object
 // on the context (context.recipientUser / a matching *_id field) is honored
 // directly, and a bare role/group token that cannot be resolved to concrete
 // users is logged and skipped rather than silently guessed at.
 async function resolveRecipients(recipients, context) {
-  const { list, get } = await import('../lib/busybase-store.js');
+  const { list, get } = await import('../lib/busybase/store.js');
 
   if (context.recipientUser) return [context.recipientUser];
   if (context.collaborator?.email) return [context.collaborator];

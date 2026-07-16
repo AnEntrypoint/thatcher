@@ -1,5 +1,5 @@
 
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { getSpec } from '@/config/spec-helpers';
 import { migrate } from '@/engine';
 import { getUser } from '@/engine.server';

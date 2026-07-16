@@ -1,4 +1,4 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { SESSION } from '@/config/auth-config';
 import { HTTP } from '@/config/constants';
 

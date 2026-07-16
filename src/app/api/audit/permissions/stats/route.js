@@ -1,9 +1,9 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { createLogger } from '@/lib/logger.js';
 
 const log = createLogger('[AuditStatsAPI]');
 import { getUser, setCurrentRequest } from '@/engine.server';
-import { getPermissionAuditStats, getPermissionAuditBreakdown } from '@/lib/busybase-audit-reads';
+import { getPermissionAuditStats, getPermissionAuditBreakdown } from '@/lib/busybase/audit-reads';
 
 export async function GET(request) {
   setCurrentRequest(request);

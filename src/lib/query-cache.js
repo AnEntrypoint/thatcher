@@ -1,10 +1,4 @@
-const stmtCache = new Map();
-const resultCache = new Map();
-const queryCache = new Map();
-let cacheHits = 0;
-let cacheMisses = 0;
-let stmtCacheHits = 0;
-let stmtCacheMisses = 0;
+import { createCache } from './keyed-cache.js';
 
 const MAX_STMT_CACHE = 500;
 const MAX_RESULT_CACHE = 200;
@@ -23,17 +17,29 @@ const TTL_CONFIG = {
   default: DEFAULT_TTL
 };
 
+// Prepared statements never expire by time (only size-evicted), so ttlMs is
+// left unset (no expiry) -- matches the original stmtCache having no TTL check.
+const stmtCache = createCache({ maxSize: MAX_STMT_CACHE });
+// The query cache (cacheQuery) also never expired by time in the original.
+const queryCache = createCache({ maxSize: MAX_QUERY_CACHE });
+// The result cache's TTL varies PER ENTRY (by the entity it was cached under),
+// so a single fixed ttlMs on the shared primitive cannot express it directly.
+// Kept as ONE cache instance (matching the original single-Map, single
+// MAX_RESULT_CACHE=200-total ceiling -- a per-TTL-bucket split would silently
+// multiply the effective capacity, a real behaviour change) with no TTL on the
+// primitive itself; each entry's own per-entity TTL is checked here at read
+// time against a stored timestamp, exactly like the original inline check did.
+// Hit/miss counting is also done at this layer (not the primitive's own
+// built-in counters) since a ttl=0/expired lookup must count as a MISS to
+// match the original's exact cacheHits/cacheMisses semantics.
+const resultCache = createCache({ maxSize: MAX_RESULT_CACHE });
+let cacheHits = 0;
+let cacheMisses = 0;
+
 export const prepareStmt = (db, sql) => {
   const cached = stmtCache.get(sql);
-  if (cached) {
-    stmtCacheHits++;
+  if (cached !== undefined) {
     return cached;
-  }
-
-  stmtCacheMisses++;
-  if (stmtCache.size >= MAX_STMT_CACHE) {
-    const firstKey = stmtCache.keys().next().value;
-    stmtCache.delete(firstKey);
   }
 
   const stmt = db.prepare(sql);
@@ -43,7 +49,7 @@ export const prepareStmt = (db, sql) => {
 
 export const getCached = (key, entity = 'default') => {
   const entry = resultCache.get(key);
-  if (!entry) {
+  if (entry === undefined) {
     cacheMisses++;
     return null;
   }
@@ -68,11 +74,6 @@ export const setCached = (key, data, entity = 'default') => {
   const ttl = TTL_CONFIG[entity] || TTL_CONFIG.default;
   if (ttl === 0) return;
 
-  if (resultCache.size >= MAX_RESULT_CACHE) {
-    const firstKey = resultCache.keys().next().value;
-    resultCache.delete(firstKey);
-  }
-
   resultCache.set(key, { data, timestamp: Date.now() });
 };
 
@@ -84,43 +85,36 @@ export const invalidate = (pattern) => {
   }
 
   const regex = new RegExp(pattern);
-  for (const key of resultCache.keys()) {
-    if (regex.test(key)) resultCache.delete(key);
-  }
-  for (const key of queryCache.keys()) {
-    if (regex.test(key)) queryCache.delete(key);
-  }
+  resultCache.deleteWhere(key => regex.test(key));
+  queryCache.deleteWhere(key => regex.test(key));
 };
 
 export const cacheQuery = (key, fn) => {
   const cached = queryCache.get(key);
-  if (cached) return cached;
-
-  if (queryCache.size >= MAX_QUERY_CACHE) {
-    const firstKey = queryCache.keys().next().value;
-    queryCache.delete(firstKey);
-  }
+  if (cached !== undefined) return cached;
 
   const result = fn();
   queryCache.set(key, result);
   return result;
 };
 
-export const getStats = () => ({
-  cacheHits,
-  cacheMisses,
-  hitRate: cacheHits + cacheMisses > 0 ? (cacheHits / (cacheHits + cacheMisses) * 100).toFixed(2) + '%' : '0%',
-  stmtCacheHits,
-  stmtCacheMisses,
-  stmtHitRate: stmtCacheHits + stmtCacheMisses > 0 ? (stmtCacheHits / (stmtCacheHits + stmtCacheMisses) * 100).toFixed(2) + '%' : '0%',
-  stmtCacheSize: stmtCache.size,
-  resultCacheSize: resultCache.size,
-  queryCacheSize: queryCache.size
-});
+export const getStats = () => {
+  const stmtStats = stmtCache.stats();
+  return {
+    cacheHits,
+    cacheMisses,
+    hitRate: cacheHits + cacheMisses > 0 ? (cacheHits / (cacheHits + cacheMisses) * 100).toFixed(2) + '%' : '0%',
+    stmtCacheHits: stmtStats.hits,
+    stmtCacheMisses: stmtStats.misses,
+    stmtHitRate: stmtStats.hits + stmtStats.misses > 0 ? (stmtStats.hits / (stmtStats.hits + stmtStats.misses) * 100).toFixed(2) + '%' : '0%',
+    stmtCacheSize: stmtStats.size,
+    resultCacheSize: resultCache.stats().size,
+    queryCacheSize: queryCache.stats().size
+  };
+};
 
 export const clearStats = () => {
   cacheHits = 0;
   cacheMisses = 0;
-  stmtCacheHits = 0;
-  stmtCacheMisses = 0;
+  stmtCache.resetStats();
 };

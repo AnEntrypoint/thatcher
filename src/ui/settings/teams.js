@@ -1,5 +1,4 @@
-import { TOAST_SCRIPT, settingsPage, settingsBack, inlineTable } from '@/ui/settings-renderer.js';
-import { esc } from '@/ui/render-helpers.js';
+import { TOAST_SCRIPT, settingsPage, settingsBack, inlineTable, esc } from '@/ui/settings/shared.js';
 
 const RFI_PALETTE = ['#B0B0B0', '#44BBA4', '#FF4141', '#7F7EFF', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
 

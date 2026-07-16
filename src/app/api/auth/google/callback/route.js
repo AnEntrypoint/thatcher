@@ -8,7 +8,7 @@ import { GOOGLE_APIS } from '@/config/constants';
 import { config } from '@/config';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 import { globalManager } from '@/lib/hot-reload/mutex';
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import {
   validateOAuthProvider,
   getOAuthCookie,

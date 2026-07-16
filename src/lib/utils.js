@@ -1,4 +1,4 @@
-import { list } from './busybase-store.js';
+import { list } from './busybase/store.js';
 import { getSpec } from '../config/spec-helpers.js';
 
 // Ported from moonlanding. engagement refs get a richer label and skip archived rows; failures degrade to [].

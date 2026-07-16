@@ -1,5 +1,5 @@
 export * from '@/lib/busybase/store';
-export * from '@/lib/validate';
+export * from '@/lib/validation/entity-validators';
 export * from '@/lib/field-types';
 export * from '@/lib/field-iterator';
 export * from '@/lib/list-data-transform';

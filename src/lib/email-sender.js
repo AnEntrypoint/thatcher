@@ -2,7 +2,7 @@ import { createLogger } from './logger.js';
 import { now, genId } from '@/lib/id-helpers';
 
 const log = createLogger('[Email]');
-import { list, update, create } from '@/lib/busybase-store';
+import { list, update, create } from '@/lib/busybase/store';
 import { sendEmail } from '@/adapters/google-gmail';
 import { EMAIL_STATUS } from '@/config/constants';
 import { config } from '@/config/env';

@@ -1,18 +1,18 @@
 import { createLogger } from './logger.js';
-import { get, listWithPagination, searchWithPagination, create, update, remove } from './busybase-store.js';
+import { get, listWithPagination, searchWithPagination, create, update, remove } from './busybase/store.js';
 
 const log = createLogger('[CRUD]');
-import { validateEntity, validateUpdate, sanitizeData } from './validate.js';
+import { validateEntity, validateUpdate, sanitizeData } from './validation/index.js';
 import { requirePermission, getSessionToken } from './auth-middleware.js';
 import { executeHook } from './hook-engine.js';
-import { AppError, NotFoundError, ValidationError } from './error-handler.js';
+import { AppError, NotFoundError, ValidationError } from './errors/index.js';
 import { ok, created, paginated, noContent, error } from './response-formatter.js';
 import { HTTP } from '../config/constants.js';
 import { permissionService } from '../services/permission.service.js';
 import { parse as parseQuery } from './query-string-adapter.js';
 import { now } from './id-helpers.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
-import { logAction } from './busybase-audit.js';
+import { logAction } from './busybase/audit.js';
 
 export function createCrudHandlers(entityName, spec) {
   if (!spec) {

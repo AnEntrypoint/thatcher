@@ -380,6 +380,33 @@ Thatcher is published to npm as `thatcher`. Every push to `main` triggers:
 
 CI/CD ready via included GitHub Actions workflow.
 
+## Runtime: Bun vs Node
+
+Thatcher targets Bun as its primary runtime (`engines.bun` in `package.json`,
+a `bun.lock` in the repo root, and `src/cli.js` carries a `#!/usr/bin/env bun`
+shebang), but most of the codebase is plain ES modules with no Bun-only API
+calls, so a Node-only consumer can run everything except the two `bun run`
+scripts as-is.
+
+| Script | Command | Runtime |
+|--------|---------|---------|
+| `npm run dev` | `bun run src/cli.js dev` | **Bun required** — invoked via `bun run`; `thatcher dev` also enables hot reload (`server.hotReload: true`), and the CLI's own shebang is `#!/usr/bin/env bun`. |
+| `npm run start` | `bun run src/cli.js start` | **Bun required** — same `bun run` invocation as `dev`, just without hot reload. |
+| `npm test` | `node test.js` | Plain Node — runs fine under `node test.js` directly. |
+| `npm run lint` | `eslint src/` | Tool-agnostic — standard ESLint CLI, no runtime dependency. |
+| `npm run typecheck` | `tsc --noEmit` | Tool-agnostic — standard TypeScript CLI. |
+
+In practice, `src/cli.js` itself has no Bun-only API calls (no `Bun.*`
+globals) — the `bun run` wrapping in `dev`/`start` is a process-launcher
+choice, not a hard code dependency, so `node src/cli.js start` / `node
+src/cli.js dev` also work for a Node-only deployer. The one place Bun is
+harder to avoid is the `busybase` dependency, whose published `src/*.js` are
+bun-build outputs (per its own build process) rather than hand-authored
+Node-targeted files. A Node-only consumer/deployer can therefore run
+`test`/`lint`/`typecheck` and the CLI itself with plain `node`, but should
+expect the `dev`/`start` npm scripts as published to require Bun on `PATH`
+unless invoking `src/cli.js` directly with `node`.
+
 ## License
 
 MIT — Extracted from moonlanding with all functionality preserved.

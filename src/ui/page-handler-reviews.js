@@ -1,16 +1,16 @@
-import { list, get } from '@/lib/busybase-store.js';
+import { list, get } from '@/lib/busybase/store.js';
 import { createLogger } from '@/lib/logger.js';
 import { getSpec } from '@/config/spec-helpers.js';
 
 const log = createLogger('[PageHandlerReviews]');
 import { renderEntityList, renderAccessDenied } from '@/ui/renderer.js';
-import { renderSectionReport, renderReviewListTabbed } from '@/ui/review-renderer.js';
+import { renderSectionReport, renderReviewListTabbed } from '@/ui/review/index.js';
 import { renderChecklistDetails, renderChecklistsHome } from '@/ui/checklist-renderer.js';
 import { renderPdfViewer, renderPdfEditorPlaceholder } from '@/ui/pdf-viewer-renderer.js';
 import { renderReviewAnalytics } from '@/ui/review-analytics-renderer.js';
 import { renderHighlightThreading } from '@/ui/highlight-threading-renderer.js';
 import { renderSectionResolution } from '@/ui/section-resolution-renderer.js';
-import { renderReviewComparison, renderComparisonPicker } from '@/ui/review-comparison-renderer.js';
+import { renderReviewComparison, renderComparisonPicker } from '@/ui/review/index.js';
 import { renderTenderDashboard } from '@/ui/tender-dashboard-renderer.js';
 import { renderBatchOperations } from '@/ui/batch-review-renderer.js';
 import { canList, canView, canEdit } from '@/ui/permissions-ui.js';
@@ -168,7 +168,7 @@ export async function handleReviewRoutes(normalized, segments, user, req) {
     } catch {}
     try { sections = (await list('review_section', {})).filter(s => s.review_id === reviewId); } catch {}
     try { tenders = (await list('tender', {})).filter(t => t.review_id === reviewId); } catch {}
-    const { renderReviewDetail } = await lazyRenderer('review-detail-renderer.js');
+    const { renderReviewDetail } = await lazyRenderer('review/detail-renderer.js');
     return renderReviewDetail(user, review, highlights, collaborators, checklists, sections, tenders);
   }
 

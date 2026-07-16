@@ -1,4 +1,4 @@
-import { list, get, count } from '@/lib/busybase-store.js';
+import { list, get, count } from '@/lib/busybase/store.js';
 import { createLogger } from '@/lib/logger.js';
 
 const log = createLogger('[PageHandlerHelpers]');
@@ -26,7 +26,7 @@ export async function getRefOptions(spec) {
   return refOptions;
 }
 
-// busybase-store's list()/get() already attach `<field>_display` for ref fields (the
+// busybase/store's list()/get() already attach `<field>_display` for ref fields (the
 // old LEFT JOIN equivalent), so this is now a sync pass-through: it just guarantees a
 // `_display` key exists (falling back to the raw id) without issuing any query.
 export function resolveRefFields(items, spec) {

@@ -2,7 +2,7 @@
 import { Lucia } from 'lucia';
 import { Google } from 'arctic';
 import bcrypt from 'bcrypt';
-import { BusyBaseLuciaAdapter } from './lib/busybase-lucia-adapter.js';
+import { BusyBaseLuciaAdapter } from './lib/busybase/lucia-adapter.js';
 import { buildConfig, hasGoogleAuth } from './config/env.js';
 
 let _lucia = null;
@@ -118,13 +118,13 @@ export async function verifyPassword(password, hash) {
 }
 
 export async function getUserByEmail(email) {
-  const { getBy } = await import('./lib/busybase-store.js');
+  const { getBy } = await import('./lib/busybase/store.js');
   return getBy('user', 'email', email);
 }
 
 export async function createUser(userData) {
   const hashedPassword = await hashPassword(userData.password);
-  const { create } = await import('./lib/busybase-store.js');
+  const { create } = await import('./lib/busybase/store.js');
   return create('user', {
     ...userData,
     password: hashedPassword,
