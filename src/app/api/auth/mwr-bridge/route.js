@@ -1,7 +1,7 @@
 import { getBy, list, update } from '@/engine';
 import { lucia } from '@/engine.server';
 import { now } from '@/lib/id-helpers';
-import { withErrorHandler } from '@/lib/with-error-handler';
+import { withErrorHandler } from '@/lib/errors';
 import crypto from 'crypto';
 
 export const POST = withErrorHandler(async (request) => {

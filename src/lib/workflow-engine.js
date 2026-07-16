@@ -1,7 +1,27 @@
-import { get, update, create } from './busybase-store.js';
+// Plain-function entity lifecycle/workflow engine: reads a `config.workflows[name]`
+// definition (stages with forward/backward/requires_role/entry/readonly/order/
+// locks/actions) and validates+applies transitions against a busybase-backed
+// entity record. THIS IS THE LIVE PATH: its `validateTransition` is called from
+// src/lib/events-engine.js to gate an `engagement_lifecycle` stage change, a real
+// production call site. It is also re-exported from src/lib/index.js (the top-level
+// Thatcher class delegates `thatcher.transition()`/`thatcher.getAvailableTransitions()`
+// here -- see src/index.js).
+//
+// xstate-workflow-engine.js implements the SAME job (same config shape, same
+// validateTransition/getAvailableTransitions/transition/getStateField/
+// getStageLabels/getStateLocks/getStateActions exports, nearly line-for-line
+// duplicated validation branches) PLUS a real xstate machine + live per-entity
+// actors on top. Despite the more capable implementation, as of this writing its
+// only importers repo-wide are a debug route (src/app/api/debug/[[...path]]/route.js,
+// which hard-disables itself when NODE_ENV=production) and a root-level manual
+// test.js script -- neither is a production call site. So xstate-workflow-engine.js
+// does NOT currently supersede this file; if anything the reverse holds (this file
+// is live, that one is dormant/debug-only). Re-check import sites before treating
+// either as the "old" one.
+import { get, update, create } from './busybase/store.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { executeHook } from './hook-engine.js';
-import { AppError } from './error-handler.js';
+import { AppError } from './errors/index.js';
 import { HTTP } from '../config/constants.js';
 import { createLogger } from './logger.js';
 
@@ -137,7 +157,7 @@ export async function transition(entityType, entityId, workflowName, toState, us
   }
 
   // Dynamically import write engine to avoid circular dependency
-  const { update: updateRecord } = await import('./busybase-store.js');
+  const { update: updateRecord } = await import('./busybase/store.js');
   const updated = await updateRecord(entityType, entityId, updates, user);
 
   executeHook(`transition:${entityType}`, {

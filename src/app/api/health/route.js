@@ -5,8 +5,7 @@ const log = createLogger('[Health]');
 import path from 'path'
 import { count } from '@/engine'
 import { getAllMetrics } from '@/lib/metrics-collector.js'
-import { getDatabaseStats } from '@/lib/db-monitor.js'
-import { getCurrentResources } from '@/lib/resource-monitor.js'
+import { getDatabaseStats, getCurrentResources } from '@/lib/monitor.js'
 import { getRecentAlerts } from '@/lib/alert-manager.js'
 
 function getLastSyncAt() {

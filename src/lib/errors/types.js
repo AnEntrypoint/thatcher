@@ -1,4 +1,4 @@
-import { createLogger } from './logger.js';
+import { createLogger } from '../logger.js';
 
 // AppError stays a real class (base error type; `instanceof AppError` works).
 export class AppError extends Error {

@@ -1,7 +1,23 @@
+// xstate-backed workflow engine: reads the SAME `config.workflows[name]`
+// definition as workflow-engine.js and duplicates its plain-function exports
+// (validateTransition/getAvailableTransitions/transition/getStateField/
+// getStageLabels/getStateLocks/getStateActions, nearly line-for-line the same
+// validation logic) but additionally compiles a real xstate machine
+// (compileWorkflow) and manages live per-entity actors (createActorForEntity/
+// sendEvent/getSnapshot/getActiveActors).
+//
+// NOT currently the live path. As of this writing its only importers repo-wide
+// are src/app/api/debug/[[...path]]/route.js (getXStateWorkflowEngine -- and that
+// whole route hard-disables itself when NODE_ENV=production) and a root-level
+// manual `test.js` script outside src/ -- neither is a production call site.
+// workflow-engine.js is the one actually wired into production (called from
+// src/lib/events-engine.js and re-exported by src/index.js's Thatcher class).
+// This file does NOT supersede workflow-engine.js; treat it as a dormant/
+// debug-only alternate implementation until a real call site adopts it.
 import { createMachine, createActor, assign, fromPromise, sendParent } from 'xstate';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { hookEngine } from './hook-engine.js';
-import { AppError } from './error-handler.js';
+import { AppError } from './errors/index.js';
 import { HTTP } from '../config/constants.js';
 import { createLogger } from './logger.js';
 
@@ -385,7 +401,7 @@ export function getAvailableTransitions(workflowName, currentState, user, record
 }
 
 export async function transition(entityType, entityId, workflowName, toState, user, reason = '') {
-  const { get, update: updateRecord } = await import('./busybase-store.js');
+  const { get, update: updateRecord } = await import('./busybase/store.js');
 
   const record = await get(entityType, entityId);
   if (!record) throw new AppError('Record not found', 'NOT_FOUND', HTTP.NOT_FOUND);

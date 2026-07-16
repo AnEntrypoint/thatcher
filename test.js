@@ -6,12 +6,12 @@
 import { HyperFormula } from 'hyperformula';
 import { createMachine, createActor } from 'xstate';
 import { tracer, Span } from './src/lib/tracing.js';
-import { perfProfiler } from './src/lib/perf-profiler.js';
+import { perfProfiler } from './src/lib/perf.js';
 import { debugRegistry } from './src/lib/debug-registry.js';
 import { HyperFormulaService, createHyperFormulaService } from './src/lib/hyperformula-service.js';
 import { XStateWorkflowEngine, validateTransition, getAvailableTransitions, transition } from './src/lib/xstate-workflow-engine.js';
-import { BusyBaseAdapter, createBusyBaseAdapter } from './src/lib/busybase-adapter.js';
-import { bootstrapObservability } from './src/lib/observability-bootstrap.js';
+import { BusyBaseAdapter, createBusyBaseAdapter } from './src/lib/busybase/adapter.js';
+import { bootstrapObservability } from './src/lib/observability-init.js';
 
 let passed = 0;
 let failed = 0;
@@ -149,7 +149,7 @@ await test('7b. BusyBase store - $or returns exactly the union', async () => {
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const { createEmbedded } = await import('busybase/embedded');
-  const store = await import('./src/lib/busybase-store.js');
+  const store = await import('./src/lib/busybase/store.js');
   const client = await createEmbedded({ dir: mkdtempSync(join(tmpdir(), 'thatcher-or-')) });
   store.setBusyBaseClient(client);
   // No config engine is booted in this suite; make getSpec() resolve or_probe as
@@ -199,7 +199,7 @@ await test('10. Export Sink - creation', async () => {
 });
 
 await test('11. createErrorLogger - delegates to createLogger (no raw console)', async () => {
-  const { createErrorLogger } = await import('./src/lib/error-handler.js');
+  const { createErrorLogger } = await import('./src/lib/errors/index.js');
   const logger = createErrorLogger('test-ctx');
   assert(typeof logger.error === 'function', 'error method exists');
   assert(typeof logger.warn === 'function', 'warn method exists');

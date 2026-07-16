@@ -1,7 +1,7 @@
-import { NextResponse } from '@/lib/next-polyfills';
+import { NextResponse } from '@/lib/next-shim';
 import { requireAuth } from '@/lib/auth-middleware';
 import { searchLogs, getLogStats, rotateLogsOlderThan } from '@/lib/audit-logger-enhanced';
-import { withErrorHandler } from '@/lib/with-error-handler';
+import { withErrorHandler } from '@/lib/errors';
 
 export const GET = withErrorHandler(async (request) => {
   const user = await requireAuth();

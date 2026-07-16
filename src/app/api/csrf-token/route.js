@@ -1,6 +1,6 @@
 import { generateToken } from '@/lib/csrf-protection';
 import { ok } from '@/lib/response-formatter';
-import { withErrorHandler } from '@/lib/with-error-handler';
+import { withErrorHandler } from '@/lib/errors';
 
 export const GET = withErrorHandler(async (request) => {
   const token = generateToken();
