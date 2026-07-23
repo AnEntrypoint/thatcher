@@ -248,7 +248,32 @@ export class Thatcher {
       _server = null;
     }
     for (const w of _hotReloadWatchers) w.close();
-    _hotReloadWatchers = [];
+    _hotReloadWatchers = []
+    // This never called the underlying database client's own close() at all
+    // -- busybase's createEmbedded() now exposes a real one (busybase's own
+    // embedded.ts fix), but nothing here called it, so a consumer reusing the
+    // SAME database file in the same process (a fresh Thatcher instance, a
+    // test harness) would silently open a SECOND native handle onto an
+    // already-open file rather than genuinely replacing the first --
+    // _databaseInitialized is a MODULE-level singleton (see initDatabase()'s
+    // own comment / AGENTS.md's documented cwd-bound handle caveat), so it
+    // must be reset here too or a subsequent initDatabase() call would
+    // silently skip re-opening and keep using the now-closed client.
+    // NOTE (live-witnessed, Windows): calling close() does NOT synchronously
+    // release the native libsql binding's OS-level file lock while THIS
+    // process keeps running -- the lock only actually clears once the owning
+    // process exits. A caller needing the underlying file/directory removable
+    // in the SAME still-running process (e.g. a per-run isolated-tmpdir test
+    // harness) cannot rely on this call alone for that and must retry the
+    // removal with backoff, or isolate each run in its own child process.
+    // close() is still correct and worth calling regardless -- it prevents
+    // the silent second-handle-fork above, which is a real, distinct benefit.
+    if (this.busybase) {
+      try { this.busybase.close?.() } catch { /* best-effort */ }
+      this.busybase = null
+      globalThis.__thatcherBusyBase = null
+      _databaseInitialized = false
+    }
   }
 
   getConfigEngine() {
