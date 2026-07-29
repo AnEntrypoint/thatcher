@@ -2,15 +2,19 @@ name: Publish
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   publish:
+    if: "!contains(github.event.head_commit.message, '[skip publish]') && !startsWith(github.event.head_commit.message, 'chore(release):')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,54 +22,44 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install dependencies
-        run: bun install || npm install --no-audit --no-fund
+      - name: Install deps
+        run: npm install --no-audit --no-fund
 
-      - name: Bump patch version
-        id: bump
+      - name: Test
+        run: npm test
+
+      - name: Sync version with npm registry
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch --tags --force
-          # Start from the larger of package.json version and the highest existing
-          # vX.Y.Z git tag, then increment the patch until we find a tag that does
-          # not already exist. This keeps the bump idempotent across re-runs even
-          # if a prior run tagged but failed before pushing package.json.
-          CURRENT=$(node -p "require('./package.json').version")
-          HIGHEST_TAG=$(git tag -l 'v*.*.*' | sed 's/^v//' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
-          BASE=$(printf '%s\n%s\n' "$CURRENT" "${HIGHEST_TAG:-0.0.0}" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
-          IFS='.' read -r MA MI PA <<< "$BASE"
-          while git rev-parse "v$MA.$MI.$((PA+1))" >/dev/null 2>&1; do PA=$((PA+1)); done
-          NEW="$MA.$MI.$((PA+1))"
-          node -e "const f='./package.json';const p=require(f);p.version='$NEW';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n');"
-          echo "version=$NEW" >> $GITHUB_OUTPUT
-          git add package.json
-          git commit -m "chore(release): v$NEW [skip ci]" || true
-          git tag "v$NEW"
-          git push origin HEAD
-          git push origin "v$NEW"
+          PKG_NAME=$(node -p "require('./package.json').name")
+          REMOTE=$(npm view "$PKG_NAME" version 2>/dev/null || echo "0.0.0")
+          LOCAL=$(node -p "require('./package.json').version")
+          echo "remote=$REMOTE local=$LOCAL"
+          HIGHER=$(node -e "const s=(a,b)=>a.split('.').map(Number).reduce((r,n,i)=>r||n-Number(b.split('.')[i]),0);process.stdout.write(s('$REMOTE','$LOCAL')>=0?'$REMOTE':'$LOCAL')")
+          npm version "$HIGHER" --no-git-tag-version --allow-same-version
+          npm version patch --no-git-tag-version
 
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          if [ -n "$NODE_AUTH_TOKEN" ]; then
-            npm publish --access public || echo "npm publish failed (token may be unset on first run)"
-          else
-            echo "NPM_TOKEN secret not set — skipping npm publish. Set it under repo secrets to enable."
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN secret is not set in this repository"
+            exit 1
           fi
+          npm publish --access public
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.bump.outputs.version }}
-          generate_release_notes: true
+      - name: Commit version bump and tag
+        run: |
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore(release): v$NEW_VERSION [skip publish]" || echo "nothing to commit"
+          git tag "v$NEW_VERSION"
+          git push origin HEAD:main
+          git push origin "v$NEW_VERSION"
