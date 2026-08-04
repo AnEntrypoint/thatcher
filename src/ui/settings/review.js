@@ -181,7 +181,6 @@ export function renderSettingsFileReview(user, config = {}, frSettings = {}) {
   const fr = config.fileReview || {};
   const reviewFlags = frSettings.review_flags || [];
   const tenderFlags = frSettings.tender_flags || [];
-  const flagManagers = frSettings.flags_managers || [];
   const tempAccess = frSettings.temp_review_access_period || 0;
   const toggles = [
     { id: 'auto_pdf_cache', label: 'Auto-cache PDFs', desc: 'Cache PDF files for faster loading', checked: fr.auto_pdf_cache !== false },

@@ -50,7 +50,7 @@ export async function GET(request) {
   });
 }
 
-export async function HEAD(request) {
+export async function HEAD(_request) {
   try {
     const { valid } = validateOAuthProvider(google);
     return new Response(null, { status: valid ? 200 : 503 });

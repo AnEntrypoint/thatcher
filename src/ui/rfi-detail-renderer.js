@@ -1,6 +1,6 @@
 import { page } from '@/ui/layout.js';
 import { canEdit, isPartner, isManager, isClientUser } from '@/ui/permissions-ui.js';
-import { esc, statusBadge, TOAST_SCRIPT, emptyRow } from '@/ui/render-helpers.js';
+import { esc, statusBadge, TOAST_SCRIPT } from '@/ui/render-helpers.js';
 import { SPACING } from '@/ui/spacing-system.js';
 
 const TOAST = TOAST_SCRIPT;

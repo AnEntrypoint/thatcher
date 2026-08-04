@@ -9,7 +9,7 @@ const ACTION_FIELD_MAPS = {
   respond: (data, user) => ({ status: 'responded', response: data.response, responded_at: now(), responded_by: user.id }),
 };
 
-export function resolveActionUpdate(action, data, user, record) {
+export function resolveActionUpdate(action, data, user, _record) {
   const mapped = ACTION_FIELD_MAPS[action];
   if (typeof mapped === 'function') return mapped(data, user);
   if (mapped) {

@@ -4,19 +4,12 @@ import { google } from 'googleapis';
 const log = createLogger('[GoogleAuth]');
 import { buildConfig } from '../config/env.js';
 import fs from 'fs';
-import path from 'path';
 
 let _oauth2Client = null;
 let _jwtClient = null;
 
 export function initGoogleAuth(config = null) {
   const cfg = config || buildConfig();
-  const scopes = [
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/gmail.send',
-  ];
 
   // OAuth2 client for web flow
   _oauth2Client = new google.auth.OAuth2(

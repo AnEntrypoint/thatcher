@@ -11,7 +11,7 @@ export class BusinessRulesEngine {
       return rule && !this.isDuplicateEngagement(engagement);
     });
 
-    this.registerRule('daysOutstandingNotificationNeeded', (rfi) => {
+    this.registerRule('daysOutstandingNotificationNeeded', (_rfi) => {
       return this.businessRules.rfiDaysOutstanding.enabled;
     });
 
@@ -23,7 +23,7 @@ export class BusinessRulesEngine {
       return true;
     });
 
-    this.registerRule('clientCanRate', (user, engagement) => {
+    this.registerRule('clientCanRate', (user, _engagement) => {
       return user.type === 'client' && user.role === 'client_admin';
     });
 
@@ -66,7 +66,7 @@ export class BusinessRulesEngine {
     return this.businessRules.recreationRules.engagement[interval];
   }
 
-  isDuplicateEngagement(engagement) {
+  isDuplicateEngagement(_engagement) {
     return false;
   }
 

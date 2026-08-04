@@ -11,7 +11,7 @@
  *   thatcher example         - Generate example config
  */
 
-import { startThatcher, Thatcher } from './index.js';
+import { Thatcher } from './index.js';
 import * as readline from 'readline';
 import fs from 'fs';
 import path from 'path';

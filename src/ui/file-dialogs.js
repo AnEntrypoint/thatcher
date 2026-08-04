@@ -1,5 +1,3 @@
-import { statusLabel } from '@/ui/renderer.js';
-
 // Inline HTML-escape for client-script innerHTML sinks (file names are DB-sourced).
 const FD_ESC = `function fdEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}`;
 

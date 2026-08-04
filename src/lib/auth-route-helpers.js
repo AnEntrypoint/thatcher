@@ -23,7 +23,7 @@ export function validateOAuthProvider(provider) {
   return { valid: true };
 }
 
-export async function setOAuthCookie(name, value, options = {}) {
+export async function setOAuthCookie(name, value) {
   const timestamp = Date.now();
   const key = `oauth-${timestamp}-${Math.random().toString(36).substring(7)}`;
   const expiresAt = timestamp + (SESSION.cookieMaxAge * 1000);

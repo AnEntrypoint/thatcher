@@ -1,9 +1,8 @@
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath } from 'url';
 import { createLogger } from '../lib/logger.js';
-import * as thatcherLib from '../index.js';
 
 const log = createLogger('[Server]');
 const pageLog = createLogger('[Page]');
@@ -13,8 +12,7 @@ const apiLog = createLogger('[API]');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function createServer(options) {
-  const { thatcher, config, configEngine, port, host } = options;
-  const PORT = port || 3000;
+  const { thatcher, configEngine } = options;
   const SERVER_START = Date.now();
 
   let systemInitialized = false;
@@ -50,7 +48,6 @@ export function createServer(options) {
   };
 
   const server = http.createServer(async (req, res) => {
-    const t0 = Date.now();
     globalThis.__debug__.activeRequests.count++;
 
     try {
@@ -98,7 +95,7 @@ export function createServer(options) {
       }
 
       // Static file serving (simplified)
-      if (serveStaticFile(pathname, req, res, load)) {
+      if (serveStaticFile(pathname, req, res)) {
         return;
       }
 
@@ -135,7 +132,7 @@ export function createServer(options) {
   return server;
 }
 
-async function serveStaticFile(pathname, req, res, load) {
+async function serveStaticFile(pathname, req, res) {
   if (pathname === '/' || pathname === '/index.html') {
     // Could serve SPA
     return false;
@@ -220,9 +217,8 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
     const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
     configEngine = getConfigEngineSync();
   }
-  let spec;
   try {
-    spec = configEngine.generateEntitySpec(entity);
+    configEngine.generateEntitySpec(entity);
   } catch (e) {
     res.writeHead(404);
     res.end(JSON.stringify({ error: `Entity '${entity}' not found` }));

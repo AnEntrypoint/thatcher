@@ -262,9 +262,9 @@ export async function cookies() {
 
 export function headers() {
   return {
-    get: (name) => null,
+    get: (_name) => null,
     getSetCookie: () => [],
-    has: (name) => false,
+    has: (_name) => false,
     entries: () => [],
   };
 }

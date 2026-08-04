@@ -1,6 +1,6 @@
 import { page } from '@/ui/layout.js';
 import { reviewZoneNav } from '@/ui/review/zone-nav.js';
-import { SPACING, renderCard, renderButton, renderProgress, renderEmptyState, renderStatsRow, renderPageHeader } from '@/ui/spacing-system.js';
+import { SPACING, renderCard, renderButton, renderEmptyState, renderStatsRow, renderPageHeader } from '@/ui/spacing-system.js';
 import { icon, esc } from '@/ui/format-helpers.js';
 import { TOAST_SCRIPT } from '@/ui/render-helpers.js';
 

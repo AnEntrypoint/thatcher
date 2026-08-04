@@ -2,7 +2,7 @@ import { getUser, setCurrentRequest } from '@/engine.server.js';
 import { hasGoogleAuth } from '@/config/env.js';
 import { getSpec } from '@/config/spec-helpers.js';
 import { list, get } from '@/lib/busybase/store.js';
-import { renderLogin, renderDashboard, renderEntityList, renderEntityDetail, renderEntityForm, renderAccessDenied, renderPasswordReset, renderPasswordResetConfirm, REDIRECT } from '@/ui/renderer.js';
+import { renderLogin, renderDashboard, renderAccessDenied, renderPasswordReset, renderPasswordResetConfirm, REDIRECT } from '@/ui/renderer.js';
 import { renderClientDashboard, renderClientList } from '@/ui/client-renderer.js';
 import { canList, canView, canCreate, canEdit, isPartner, isClerk, isClientUser, canClientAccessEntity } from '@/ui/permissions-ui.js';
 import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';

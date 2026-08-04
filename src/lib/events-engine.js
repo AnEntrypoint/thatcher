@@ -175,7 +175,7 @@ export const registerEntityHandlers = () => {
     create('removed_highlight', { review_id: highlight.review_id, original_id: highlight.id, highlight_data: JSON.stringify(highlight) }, user);
   });
 
-  hookEngine.on('collaborator:afterCreate', async (collaborator, user) => {
+  hookEngine.on('collaborator:afterCreate', async (collaborator, _user) => {
     const review = get('review', collaborator.review_id);
     const collabUser = get('user', collaborator.user_id);
     if (review && collabUser) {

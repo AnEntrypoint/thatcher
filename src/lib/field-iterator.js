@@ -20,13 +20,13 @@ export function getFieldNames(spec) {
 
 export function getEditableFields(spec) {
   return Object.entries(spec.fields || {})
-    .filter(([key, field]) => !field.readonly && !field.auto && !field.auto_generate)
+    .filter(([, field]) => !field.readonly && !field.auto && !field.auto_generate)
     .map(([key]) => key);
 }
 
 export function getFieldsByType(spec, type) {
   return Object.entries(spec.fields || {})
-    .filter(([key, field]) => field.type === type);
+    .filter(([, field]) => field.type === type);
 }
 
 export function fieldQuery(spec, predicates, options = {}) {

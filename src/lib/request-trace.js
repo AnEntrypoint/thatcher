@@ -6,10 +6,7 @@
 
 import { tracer } from './tracing.js';
 import { perfProfiler } from './perf.js';
-import { createLogger } from './logger.js';
 import { recordRequest, recordError } from './metrics-collector.js';
-
-const logger = createLogger('[RequestTracing]');
 
 // ---------------------------------------------------------------------------
 // From request-tracing.js
@@ -223,7 +220,7 @@ export default withTracing;
 // ---------------------------------------------------------------------------
 // From request-tracker.js
 // ---------------------------------------------------------------------------
-function wrapHandler(handler, metadata = {}) {
+function wrapHandler(handler, _metadata = {}) {
   return async (request, context) => {
     const start = process.hrtime.bigint();
     const method = request.method;

@@ -1,6 +1,6 @@
 import { createLogger } from './logger.js';
 
-const logger = createLogger('[DebugRegistry]');
+createLogger('[DebugRegistry]');
 
 class DebugRegistry {
   constructor() {

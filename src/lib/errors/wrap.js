@@ -48,7 +48,7 @@ export function wrap(fn, options = {}) {
 // retryWithBackoff lives here (not recovery.js) because wrap() itself needs it
 // with no circular dependency; recovery.js imports it back from here.
 export async function retryWithBackoff(fn, options = {}) {
-  const { maxAttempts = 3, delay = 1000, backoff = 2, context = {} } = options;
+  const { maxAttempts = 3, delay = 1000, backoff = 2 } = options;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {

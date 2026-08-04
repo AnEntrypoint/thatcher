@@ -1,7 +1,6 @@
 /* eslint-disable no-useless-escape -- this file embeds raw client <script> text inside a template literal; ESLint parses embedded regex escapes like \d as literal template text and misflags them */
-import { h } from '@/ui/webjsx.js'
-import { getNavItems, getAdminItems, isPartner, isClerk } from '@/ui/permissions-ui.js'
-import { TOAST_SCRIPT, AVATAR_COLORS, esc } from '@/ui/render-helpers.js'
+import { isPartner, isClerk } from '@/ui/permissions-ui.js'
+import { AVATAR_COLORS, esc } from '@/ui/render-helpers.js'
 import { FETCH_JSON_SCRIPT } from '@/ui/fetch-json.js'
 import { aria, role, skipLink, liveRegion } from '@/lib/accessibility'
 
@@ -17,7 +16,7 @@ function withAppName(title) {
   return base === appName ? base : `${base} | ${appName}`
 }
 
-export function generateHtml(title, bodyContent, scripts = [], pathname = '/') {
+export function generateHtml(title, bodyContent, scripts = []) {
   title = withAppName(title)
   const scriptTags = scripts.map(s =>
     typeof s === 'string' ? `<script>${s.replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--')}</script>` : `<script type="module" src="${s.src}"></script>`

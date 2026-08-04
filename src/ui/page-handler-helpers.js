@@ -1,4 +1,4 @@
-import { list, get, count } from '@/lib/busybase/store.js';
+import { list, count } from '@/lib/busybase/store.js';
 import { createLogger } from '@/lib/logger.js';
 
 const log = createLogger('[PageHandlerHelpers]');
@@ -19,7 +19,7 @@ export function resolveEnumOptions(spec) {
 
 export async function getRefOptions(spec) {
   const refOptions = {};
-  for (const [fieldKey, field] of Object.entries(spec.fields || {}).filter(([k, f]) => f.type === 'ref' && f.ref)) {
+  for (const [fieldKey, field] of Object.entries(spec.fields || {}).filter(([, f]) => f.type === 'ref' && f.ref)) {
     try { refOptions[fieldKey] = (await list(field.ref, {})).map(r => ({ value: r.id, label: r.name || r.title || r.label || r.email || r.id })); }
     catch { refOptions[fieldKey] = []; }
   }
@@ -31,7 +31,7 @@ export async function getRefOptions(spec) {
 // `_display` key exists (falling back to the raw id) without issuing any query.
 export function resolveRefFields(items, spec) {
   try {
-    const refFields = Object.entries(spec.fields || {}).filter(([k, f]) => f.type === 'ref' && f.ref);
+    const refFields = Object.entries(spec.fields || {}).filter(([, f]) => f.type === 'ref' && f.ref);
     if (!refFields.length) return items;
     return items.map(item => {
       const resolved = { ...item };

@@ -260,7 +260,7 @@ const eventDelegation = {
 
   navigate(path) { window.location = path; },
 
-  toggle(elementId, attr = 'checked') {
+  toggle(elementId, _attr = 'checked') {
     const el = document.getElementById(elementId);
     if (el?.type === 'checkbox') el.checked = !el.checked;
     else el.classList.toggle('active');

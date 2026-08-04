@@ -1,4 +1,4 @@
-import { getTransporter, sendEmail } from './email-sender.js';
+import { sendEmail } from './email-sender.js';
 import { getConfigEngineSync } from '../lib/config-generator-engine.js';
 import { executeHook } from '../lib/hook-engine.js';
 import { createLogger } from '../lib/logger.js';
@@ -65,7 +65,7 @@ export async function sendNotification(type, userId, context = {}, options = {})
   return notification;
 }
 
-export async function markNotificationRead(notificationId, userId) {
+export async function markNotificationRead(notificationId, _userId) {
   const { update } = await import('../lib/busybase/store.js');
   return update('notification', notificationId, {
     read_at: Math.floor(Date.now() / 1000),
@@ -125,7 +125,7 @@ async function resolveRecipients(recipients, context) {
   return [];
 }
 
-function templateNameForType(type) {
+function templateNameForType(_type) {
   // events-engine.js passes descriptive template names (e.g.
   // 'engagement_info_gathering'); the built-in getTemplates() set in
   // email-sender.js is generic ('notification', 'invitation'), so an

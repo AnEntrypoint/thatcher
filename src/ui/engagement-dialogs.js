@@ -1,6 +1,4 @@
-import { statusLabel } from '@/ui/renderer.js';
 import { createDialog } from '@/ui/dialog-factory.js';
-import { esc } from '@/ui/render-helpers.js';
 
 export function engagementFileSearchDialog(engagementId) {
   const body = `<div class="modal-form-group"><label for="efs-query" class="sr-only">Search files</label><input type="text" id="efs-query" class="input input-bordered w-full" placeholder="Search files..." aria-label="Search engagement files" oninput="efsSearch()"/></div><div id="efs-results" class="flex flex-col gap-2" style="max-height:400px;overflow:auto"></div>`;

@@ -22,7 +22,6 @@ const logger = createLogger('[Perf]');
 const _profiles = new Map();
 const _alerts = [];
 const MAX_ALERTS = 100;
-const BASELINE_WINDOW_MS = 3600000;
 
 const DEFAULT_THRESHOLDS = {
   'http.request': 500,
@@ -119,7 +118,6 @@ export class PerfProfiler {
     if (!profile) return null;
 
     const durations = profile.durations.map(d => d.durationMs).sort((a, b) => a - b);
-    const count = durations.length;
 
     return {
       operation: profile.operation,

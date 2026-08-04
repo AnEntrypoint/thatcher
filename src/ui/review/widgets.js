@@ -1,4 +1,3 @@
-import { h } from '@/ui/webjsx.js'
 import { statusLabel, TOAST_SCRIPT, esc } from '@/ui/render-helpers.js'
 import { teamAvatarGroup } from '@/ui/widgets.js'
 

@@ -1,6 +1,6 @@
 import { generateHtml } from '@/ui/layout.js'
 import { nav as navFn } from '@/ui/layout.js'
-import { AUTH_CSS, GOOGLE_SVG, WARN_SVG, LOGO_SVG, authLogoHtml } from '@/ui/auth-styles.js'
+import { AUTH_CSS, GOOGLE_SVG, WARN_SVG, authLogoHtml } from '@/ui/auth-styles.js'
 import { esc } from '@/ui/render-helpers.js'
 
 export function renderLogin(error = null, hasGoogleAuth = false) {

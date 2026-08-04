@@ -30,7 +30,7 @@ export const ok = (data) => NextResponse.json(withMetadata(data, HTTP.OK, 'succe
 export const created = (data) => NextResponse.json(withMetadata(data, HTTP.CREATED, 'created'), { status: HTTP.CREATED });
 export const notFound = (entity = 'Resource') => NextResponse.json(withMetadata({ error: ERROR_MESSAGES.notFound(entity) }, HTTP.NOT_FOUND, 'error'), { status: HTTP.NOT_FOUND });
 export const badRequest = (reason = 'invalid data') => NextResponse.json(withMetadata({ error: ERROR_MESSAGES.invalidRequest(reason) }, HTTP.BAD_REQUEST, 'error'), { status: HTTP.BAD_REQUEST });
-export const unauthorized = (action = 'perform this action') => NextResponse.json(withMetadata({ error: ERROR_MESSAGES.permission.denied }, HTTP.FORBIDDEN, 'error'), { status: HTTP.FORBIDDEN });
+export const unauthorized = (_action = 'perform this action') => NextResponse.json(withMetadata({ error: ERROR_MESSAGES.permission.denied }, HTTP.FORBIDDEN, 'error'), { status: HTTP.FORBIDDEN });
 export const serverError = (msg = null) => NextResponse.json(withMetadata({ error: msg || ERROR_MESSAGES.operationFailed('server operation') }, HTTP.INTERNAL_ERROR, 'error'), { status: HTTP.INTERNAL_ERROR });
 
 export async function withEntityAccess(entity, action, handler) {

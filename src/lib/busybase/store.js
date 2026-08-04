@@ -271,7 +271,7 @@ export async function create(entity, data, user) {
 // unconditional-write behaviour, unchanged for every existing caller; _version
 // is added as a new column, ignored by every reader that doesn't ask for it.
 export async function update(entity, id, data, opts = {}) {
-  const spec = specOf(entity);
+  specOf(entity);
   const tbl = tableName(entity);
 
   const existing = await get(entity, id);

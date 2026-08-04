@@ -12,7 +12,7 @@ function parseMembers(t) {
   } catch { return []; }
 }
 
-export function renderSettingsTeams(user, teams = [], allUsers = []) {
+export function renderSettingsTeams(user, teams = [], _allUsers = []) {
   const editDialog = `<div id="team-dialog" class="modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="team-dialog-title">
     <div class="modal-overlay" data-dialog-close="team-dialog"></div>
     <div class="modal-content rounded-box max-w-md p-6">

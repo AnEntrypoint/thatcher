@@ -33,7 +33,6 @@ export async function GET(request) {
     const search = searchParams.get('search');
     const startDate = searchParams.get('start_date');
     const endDate = searchParams.get('end_date');
-    const action = searchParams.get('action');
     const limit = parseInt(searchParams.get('limit') || '100', 10);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
     const format = searchParams.get('format');

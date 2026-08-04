@@ -8,7 +8,7 @@ function buildLogoutHeaders(headerMap) {
     : [];
 }
 
-export async function GET(request, { res } = {}) {
+export async function GET(request) {
   try {
     setEngineRequest(request);
     setCurrentRequest(request);

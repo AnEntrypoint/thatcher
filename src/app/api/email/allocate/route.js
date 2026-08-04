@@ -7,7 +7,6 @@ const log = createLogger('[EmailAllocate]');
 import {
   allocateEmailToEntity,
   autoAllocateEmail,
-  validateAllocation,
   findEntityByAlternateId,
 } from '@/lib/email-parser';
 

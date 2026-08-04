@@ -4,8 +4,6 @@ import path from 'path';
 import { getJWTClient, getOAuth2Client } from './google-auth.js';
 import { buildConfig } from '../config/env.js';
 
-const DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive'];
-
 export function getDriveClient(user = null) {
   let client;
 
@@ -26,7 +24,7 @@ export function getDriveClient(user = null) {
 export async function uploadFile(filePath, name, options = {}, user = null) {
   const drive = getDriveClient(user);
   const absPath = path.resolve(filePath);
-  const fileSize = fs.statSync(absPath).size;
+  fs.statSync(absPath);
 
   const res = await drive.files.create({
     requestBody: {

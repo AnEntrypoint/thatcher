@@ -1,7 +1,4 @@
 import { AsyncLocalStorage } from 'async_hooks';
-import { createLogger } from './logger.js';
-
-const logger = createLogger('[Tracing]');
 
 const _asyncLocalStorage = new AsyncLocalStorage();
 const _traceBuffer = [];

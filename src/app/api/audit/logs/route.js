@@ -1,6 +1,6 @@
 import { NextResponse } from '@/lib/next-shim';
 import { requireAuth } from '@/lib/auth-middleware';
-import { searchLogs, getLogStats, rotateLogsOlderThan } from '@/lib/audit-logger-enhanced';
+import { searchLogs, rotateLogsOlderThan } from '@/lib/audit-logger-enhanced';
 import { withErrorHandler } from '@/lib/errors';
 
 export const GET = withErrorHandler(async (request) => {

@@ -1,4 +1,3 @@
-import { h } from '@/ui/webjsx.js'
 import { STAGE_COLORS, statusLabel, esc, icon } from '@/ui/render-helpers.js'
 import { teamAvatarGroup } from '@/ui/widgets.js'
 import { canEdit } from '@/ui/permissions-ui.js'
