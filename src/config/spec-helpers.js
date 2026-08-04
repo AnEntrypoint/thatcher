@@ -135,7 +135,6 @@ export function buildNavigation(configEngine, user = null) {
     // Filter by user permissions if provided
     if (user && configEngine.getRolePermissions) {
       return items.filter(item => {
-        const spec = configEngine.generateEntitySpec(item.name);
         const perms = configEngine.getRolePermissions(user.role, item.name);
         return perms.includes('list') || perms.includes('view') || perms.includes('all');
       });

@@ -93,7 +93,7 @@ export function renderButton(label, opts = {}) {
   return `<button type="button"${onclickAttr} class="${btnClass}" ${disabled ? 'disabled' : ''} style="${extraStyle}">${label}</button>`;
 }
 
-export function renderProgress(value, max = 100, variant = 'success', marginTop = SPACING.md) {
+export function renderProgress(value, max = 100, _variant = 'success', marginTop = SPACING.md) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return `<div style="margin-top:${typeof marginTop === 'string' ? marginTop : SPACING.md}">
     <div style="display:flex;justify-content:space-between;margin-bottom:${SPACING.sm};align-items:center">

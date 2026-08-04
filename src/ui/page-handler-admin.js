@@ -1,7 +1,7 @@
 import { list, get } from '@/lib/busybase/store.js';
-import { renderAuditDashboard, renderSystemHealth, renderAccessDenied, generateHtml, REDIRECT } from '@/ui/renderer.js';
+import { renderAuditDashboard, renderSystemHealth, renderAccessDenied, generateHtml } from '@/ui/renderer.js';
 import { renderSettingsHome, renderSettingsSystem, renderSettingsUsers } from '@/ui/settings/home.js';
-import { renderSettingsTeams, renderSettingsRfiSections } from '@/ui/settings/teams.js';
+import { renderSettingsRfiSections } from '@/ui/settings/teams.js';
 import { renderSettingsTemplates, renderSettingsChecklists, renderSettingsEntityTypes, renderSettingsEngagementTypes, renderSettingsTemplateManage } from '@/ui/settings/templates.js';
 import { renderSettingsNotifications, renderSettingsIntegrations, renderSettingsRecreation, renderSettingsReviewSettings, renderSettingsFileReview, renderSettingsMwrPermissions } from '@/ui/settings/review.js';
 import { renderChecklistsManagement } from '@/ui/checklist-renderer.js';

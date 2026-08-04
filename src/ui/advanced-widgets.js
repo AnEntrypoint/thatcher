@@ -1,6 +1,3 @@
-import { h } from '@/ui/webjsx.js'
-import { TOAST_SCRIPT } from '@/ui/render-helpers.js'
-
 export function dataGridAdvanced(config) {
   const { columns = [], data = [], groupBy = null, sortable = true, filterable = true, expandable = false, detailRenderer = null } = config
   const gridId = 'dg-' + Math.random().toString(36).slice(2, 8)

@@ -1,16 +1,5 @@
 import { getConfigEngineSync } from '@/lib/config-generator-engine.js';
 
-function getRoleHierarchy() {
-  const config = getConfigEngineSync();
-  const roles = config.getRoles();
-  const hierarchy = {};
-  let level = 0;
-  for (const [roleName] of Object.entries(roles)) {
-    hierarchy[roleName] = level++;
-  }
-  return hierarchy;
-}
-
 function getEntityPermissions() {
   const config = getConfigEngineSync();
   const entityNames = config.getAllEntities();
@@ -40,7 +29,6 @@ function getEntityPermissions() {
 
 export function canAccess(user, entity, action) {
   if (!user?.role) return false;
-  const config = getConfigEngineSync();
   const allPermissions = getEntityPermissions();
   const permissions = allPermissions[entity];
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '../..');
 
-export function serveStatic(pathname, req, res, compress, getCacheHeaders, loadModule) {
+export function serveStatic(pathname, req, res, compress, getCacheHeaders, _loadModule) {
   const acceptEncoding = req.headers['accept-encoding'] || '';
 
   if (pathname === '/favicon.ico') {

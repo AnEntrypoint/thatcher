@@ -43,7 +43,6 @@ export async function withCsrfValidation(handler) {
     }
 
     try {
-      const contentType = request.headers.get('content-type') || '';
       const token = request.headers.get('x-csrf-token');
 
       if (!token || !validateToken(token)) {

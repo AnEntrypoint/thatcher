@@ -1,5 +1,5 @@
 import { createLogger } from '@/lib/logger.js';
-import { google, createSession } from '@/engine.server';
+import { createSession } from '@/engine.server';
 
 const log = createLogger('[OAuth]');
 import { getBy, create } from '@/engine';

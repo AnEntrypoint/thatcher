@@ -32,7 +32,7 @@ export function renderComponent(componentId, props = {}) {
     const regex = new RegExp(`{{${key}}}`, 'g');
     if (value && typeof value === 'object') {
       if (Array.isArray(value)) {
-        html = html.replace(regex, value.map(v => renderItem(v, key)).join(''));
+        html = html.replace(regex, value.map(v => renderItem(v)).join(''));
       } else {
         html = html.replace(regex, esc(JSON.stringify(value)));
       }
@@ -49,7 +49,7 @@ export function renderComponent(componentId, props = {}) {
   return `<${element}${cssClass}>${html}</${element}>`;
 }
 
-function renderItem(item, key) {
+function renderItem(item) {
   if (typeof item === 'string') return esc(item);
   if (typeof item === 'object' && item.name && item.color) {
     const bg = safeColor(item.color);

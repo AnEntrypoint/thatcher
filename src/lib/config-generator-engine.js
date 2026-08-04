@@ -12,9 +12,7 @@
 // as of this writing, vs. workflow-engine.js's 2 and
 // xstate-workflow-engine.js's 2 debug/test-only importers) -- this is live,
 // central infrastructure, not a candidate for deprecation.
-import { load as yamlLoad } from 'js-yaml';
 import { LRUCache, deepFreeze, deepClone, recursiveResolve } from './config-helpers.js';
-import { generateFieldsFromOverrides, ensureFieldLabels } from './config-field-helpers.js';
 
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {

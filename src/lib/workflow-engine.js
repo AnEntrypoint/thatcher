@@ -18,7 +18,7 @@
 // does NOT currently supersede this file; if anything the reverse holds (this file
 // is live, that one is dormant/debug-only). Re-check import sites before treating
 // either as the "old" one.
-import { get, update, create } from './busybase/store.js';
+import { get } from './busybase/store.js';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { executeHook } from './hook-engine.js';
 import { AppError } from './errors/index.js';

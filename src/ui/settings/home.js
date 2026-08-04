@@ -22,7 +22,7 @@ const SETTINGS_CARDS = [
   { key: 'permissions', icon: 'lock', title: 'Permissions', desc: 'MWR permissions and access control', href: '/admin/settings/permissions' },
 ];
 
-export function renderSettingsHome(user, config = {}, counts = {}) {
+export function renderSettingsHome(user, _config = {}, counts = {}) {
   const cards = SETTINGS_CARDS.map(c => {
     const cnt = c.countKey && counts[c.countKey] !== undefined ? counts[c.countKey] : null;
     const badge = cnt !== null ? `<span class="badge badge-flat-primary text-xs">${cnt.toLocaleString('en-ZA')} items</span>` : '';

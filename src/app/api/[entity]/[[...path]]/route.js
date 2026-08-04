@@ -1,7 +1,7 @@
 import { createCrudHandlers } from '@/lib/crud-factory';
 import { setCurrentRequest } from '@/engine.server';
 
-function wrapHandler(method) {
+function wrapHandler(_method) {
   return async (request, context) => {
     setCurrentRequest(request);
     const params = await context.params;

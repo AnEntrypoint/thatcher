@@ -85,7 +85,7 @@ export const GET = async (request) => {
   }
 }
 
-export const HEAD = async (request) => {
+export const HEAD = async (_request) => {
   try {
     await count('user', {})
     return new Response(null, { status: 200 })

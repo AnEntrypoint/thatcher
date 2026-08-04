@@ -1,4 +1,3 @@
-import { h } from '@/ui/webjsx.js'
 import { STAGE_COLORS, TOAST_SCRIPT } from '@/ui/render-helpers.js'
 
 const DIALOG_COLORS = ['#B0B0B0','#44BBA4','#FF4141','#7F7EFF','#3b82f6','#f59e0b','#ec4899','#8b5cf6','#ef4444','#22c55e','#06b6d4','#f97316','#84cc16','#e11d48','#14b8a6','#6366f1']

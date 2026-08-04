@@ -1,7 +1,7 @@
 import { getConfigEngineSync } from '@/lib/config-generator-engine';
 import { aria, role } from '@/lib/accessibility';
 
-export function renderDialog(dialogId, context = {}) {
+export function renderDialog(dialogId, _context = {}) {
   const config = getConfigEngineSync().getConfig();
   const dialogConfig = config.dialogs?.[dialogId];
 
@@ -10,15 +10,15 @@ export function renderDialog(dialogId, context = {}) {
     return '';
   }
 
-  const { title, fields = [], actions = [], width = '640px', onSubmit } = dialogConfig;
-  const dialogHtml = generateDialogHtml(dialogId, title, fields, actions, width, context, onSubmit);
+  const { title, fields = [], actions = [], width = '640px' } = dialogConfig;
+  const dialogHtml = generateDialogHtml(dialogId, title, fields, actions, width);
 
   return dialogHtml;
 }
 
-function generateDialogHtml(dialogId, title, fields, actions, width, context, onSubmit) {
+function generateDialogHtml(dialogId, title, fields, actions, width) {
   const titleId = `${dialogId}-title`;
-  const fieldHtml = fields.map(f => generateFieldHtml(f, dialogId, context)).join('');
+  const fieldHtml = fields.map(f => generateFieldHtml(f, dialogId)).join('');
   const actionButtons = (actions || []).map(a => {
     if (a.type === 'cancel') {
       return `<button type="button" class="btn btn-ghost btn-sm" ${aria.label('Cancel dialog')} data-action="closeDialog" data-args='["${dialogId}"]'>${a.label || 'Cancel'}</button>`;
@@ -66,8 +66,8 @@ function generateDialogHtml(dialogId, title, fields, actions, width, context, on
   `;
 }
 
-function generateFieldHtml(field, dialogId, context) {
-  const { name, label, type, required, placeholder, options, value } = field;
+function generateFieldHtml(field, dialogId) {
+  const { name, label, type, required, placeholder, options } = field;
   const fieldId = `${dialogId}-${name}`;
   const requiredAttr = required ? 'required' : '';
   const ariaRequired = required ? aria.required() : '';

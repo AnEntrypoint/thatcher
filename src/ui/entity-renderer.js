@@ -1,5 +1,4 @@
-import { h } from '@/ui/webjsx.js'
-import { page, confirmDialog, dataTable } from '@/ui/layout.js'
+import { page, dataTable } from '@/ui/layout.js'
 import { fmtVal, TOAST_SCRIPT, esc } from '@/ui/render-helpers.js'
 import { canCreate, canEdit, canDelete } from '@/ui/permissions-ui.js'
 
@@ -7,7 +6,7 @@ export function renderEntityList(entityName, items, spec, user, options = {}) {
   const label = spec?.labelPlural || spec?.label || entityName
   const fields = spec?.fields || {}
   const { groupBy = null } = options
-  let listFields = Object.entries(fields).filter(([k, f]) => f.list).slice(0, 5)
+  let listFields = Object.entries(fields).filter(([, f]) => f.list).slice(0, 5)
   if (!listFields.length) listFields = Object.entries(fields).filter(([k]) => !['created_by', 'updated_by'].includes(k)).slice(0, 6)
   if (!listFields.length && items.length > 0) listFields = Object.keys(items[0]).filter(k => !['created_by', 'updated_by'].includes(k)).slice(0, 5).map(k => [k, { label: k }])
   const headers = listFields.map(([k, f]) => `<th>${esc(f?.label || k)}</th>`).join('') + '<th>Actions</th>'

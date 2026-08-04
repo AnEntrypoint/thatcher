@@ -1,4 +1,3 @@
-import { statusLabel } from '@/ui/renderer.js';
 import { page } from '@/ui/layout.js';
 import { isPartner } from '@/ui/permissions-ui.js';
 import { STATUS_COLORS, esc } from '@/ui/render-helpers.js';

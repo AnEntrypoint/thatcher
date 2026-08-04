@@ -21,7 +21,6 @@ export function createStagePipeline(options = {}) {
   stages.forEach((stage, idx) => {
     const isComplete = idx < currentStageIndex;
     const isCurrent = idx === currentStageIndex;
-    const isUpcoming = idx > currentStageIndex;
 
     const stageItem = document.createElement('div');
     stageItem.className = `stage-item stage-${isComplete ? 'complete' : isCurrent ? 'current' : 'upcoming'}`;

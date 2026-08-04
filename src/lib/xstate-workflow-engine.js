@@ -14,7 +14,7 @@
 // src/lib/events-engine.js and re-exported by src/index.js's Thatcher class).
 // This file does NOT supersede workflow-engine.js; treat it as a dormant/
 // debug-only alternate implementation until a real call site adopts it.
-import { createMachine, createActor, assign, fromPromise, sendParent } from 'xstate';
+import { createMachine, createActor, assign } from 'xstate';
 import { getConfigEngineSync } from './config-generator-engine.js';
 import { hookEngine } from './hook-engine.js';
 import { AppError } from './errors/index.js';

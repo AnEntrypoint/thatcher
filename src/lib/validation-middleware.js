@@ -10,7 +10,7 @@ import {
 import { validateEntity, validateUpdate, hasErrors } from '@/lib/validation/entity-validators';
 
 export async function validateRequest(request, options = {}) {
-  const { requireCSRF = true, rateLimit = { max: 100, window: 60000 }, entityName = null } = options;
+  const { requireCSRF = true, rateLimit = { max: 100, window: 60000 } } = options;
   
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const sessionId = request.headers.get('cookie')?.match(/session=([^;]+)/)?.[1] || ip;

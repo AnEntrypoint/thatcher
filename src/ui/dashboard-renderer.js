@@ -1,7 +1,7 @@
 import { page } from '@/ui/layout.js'
 import { getQuickActions } from '@/ui/permissions-ui.js'
 import { esc, stagePill, statusPill, TABLE_SCRIPT, emptyRow } from '@/ui/render-helpers.js'
-import { SPACING, renderCard } from '@/ui/spacing-system.js'
+import { SPACING } from '@/ui/spacing-system.js'
 
 export function renderDashboard(user, stats = {}) {
   const isClerk = user?.role === 'clerk';

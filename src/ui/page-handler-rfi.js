@@ -1,5 +1,5 @@
 import { list, get } from '@/lib/busybase/store.js';
-import { canView, canList, isClerk, isPartner } from '@/ui/permissions-ui.js';
+import { canView, canList, isClerk } from '@/ui/permissions-ui.js';
 import { renderAccessDenied } from '@/ui/renderer.js';
 import { renderRfiList } from '@/ui/rfi-list-renderer.js';
 import { fileURLToPath } from 'url';

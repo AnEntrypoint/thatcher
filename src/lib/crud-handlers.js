@@ -3,10 +3,10 @@ import { get, listWithPagination, searchWithPagination, create, update, remove }
 
 const log = createLogger('[CRUD]');
 import { validateEntity, validateUpdate, sanitizeData } from './validation/index.js';
-import { requirePermission, getSessionToken } from './auth-middleware.js';
+import { requirePermission } from './auth-middleware.js';
 import { executeHook } from './hook-engine.js';
 import { AppError, NotFoundError, ValidationError } from './errors/index.js';
-import { ok, created, paginated, noContent, error } from './response-formatter.js';
+import { ok, created, paginated, noContent } from './response-formatter.js';
 import { HTTP } from '../config/constants.js';
 import { permissionService } from '../services/permission.service.js';
 import { parse as parseQuery } from './query-string-adapter.js';

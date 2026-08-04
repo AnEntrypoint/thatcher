@@ -1,13 +1,11 @@
-import { requireAuth, requirePermission } from '@/lib/auth-middleware';
+import { requireAuth } from '@/lib/auth-middleware';
 import { getAuditHistory, getActionStats, getUserStats } from '@/lib/busybase/audit-reads';
-import { getSpec } from '@/config/spec-helpers';
 import { paginated, ok } from '@/lib/response-formatter';
 import { withErrorHandler, AppError } from '@/lib/errors';
 import { HTTP } from '@/config/constants';
-import { parse as parseQuery } from '@/lib/query-string-adapter';
 
 export const GET = withErrorHandler(async (request) => {
-  const user = await requireAuth();
+  await requireAuth();
   const url = new URL(request.url);
 
   const entityType = url.searchParams.get('entityType');

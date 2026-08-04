@@ -1,8 +1,6 @@
 // Extracted from moonlanding/src/services/collaborator-role.service.js
 
 import { list, get, update, create } from '../lib/busybase/store.js';
-import { AppError } from '../lib/errors/index.js';
-import { HTTP } from '../config/constants.js';
 
 const COLLABORATOR_ROLE_PERMISSIONS = {
   viewer: ['view', 'view_highlights', 'view_pdfs'],
@@ -78,7 +76,7 @@ export function getCollaboratorRolePermissions(roleType) {
   return COLLABORATOR_ROLE_PERMISSIONS[roleType] || [];
 }
 
-export function canAssignRole(userRole, targetRoleType) {
+export function canAssignRole(userRole, _targetRoleType) {
   return ['partner', 'manager'].includes(userRole);
 }
 

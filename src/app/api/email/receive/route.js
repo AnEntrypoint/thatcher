@@ -143,7 +143,7 @@ export async function POST(request) {
   }
 }
 
-export async function GET(request) {
+export async function GET(_request) {
   return NextResponse.json({
     endpoint: 'Email Receive Webhook',
     method: 'POST',

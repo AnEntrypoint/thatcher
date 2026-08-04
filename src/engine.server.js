@@ -104,7 +104,7 @@ export async function createSession(userId) {
 }
 
 export async function invalidateSession() {
-  const lucia = getLucia();
+  getLucia();
   // Simplified - caller handles cookie clearing
   // In full app this uses @lucia-auth/adapter-sqlite's cookie management
 }

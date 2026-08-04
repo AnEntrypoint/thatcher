@@ -32,7 +32,7 @@ export class BusyBaseAdapter {
       this._client = this._embedded;
       logger.info('Embedded mode initialized', { dir: this.config.dir });
     } else {
-      const { default: BB, createClient } = await import('busybase');
+      const { default: BB } = await import('busybase');
       this._client = BB(this.config.url, this.config.project);
       logger.info('Remote mode initialized', { url: this.config.url });
     }
@@ -106,7 +106,7 @@ export class BusyBaseAdapter {
   }
 
   async unsubscribeAll() {
-    for (const [name, { channel }] of _realtimeChannels.entries()) {
+    for (const [, { channel }] of _realtimeChannels.entries()) {
       channel.unsubscribe();
     }
     _realtimeChannels.clear();

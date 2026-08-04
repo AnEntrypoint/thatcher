@@ -22,7 +22,7 @@ function checkErrorRate(errorMetrics) {
   const window = thresholds.errorRate.window
   let recentErrors = 0
 
-  for (const [endpoint, data] of Object.entries(errorMetrics.byEndpoint)) {
+  for (const [, data] of Object.entries(errorMetrics.byEndpoint)) {
     const recent = (data.recent || []).filter(e => (now - e.ts) < window)
     recentErrors += recent.length
   }

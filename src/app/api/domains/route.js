@@ -6,7 +6,7 @@ import { ok } from '@/lib/response-formatter';
 import { withErrorHandler } from '@/lib/errors';
 import { getConfigEngine } from '@/lib/config-generator-engine';
 
-export const GET = withErrorHandler(async (request) => {
+export const GET = withErrorHandler(async (_request) => {
   await getConfigEngine();
   const domainLoader = getDomainLoader();
   const validDomains = domainLoader.getValidDomains();
