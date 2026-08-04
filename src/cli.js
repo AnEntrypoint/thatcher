@@ -100,20 +100,16 @@ async function startRepl() {
   const thatcher = new Thatcher({});
   await thatcher.init();
 
-  // Expose thatcher in REPL context
-  const context = {
-    thatcher,
-    create: async (entity, data, user) => thatcher.create(entity, data, user),
-    get: async (entity, id) => thatcher.get(entity, id),
-    list: async (entity, where) => thatcher.list(entity, where),
-    update: async (entity, id, data, user) => thatcher.update(entity, id, data, user),
-    remove: async (entity, id) => thatcher.delete(entity, id),
-    search: async (entity, q, where) => thatcher.search(entity, q, where),
-    transition: async (entityType, entityId, wf, toState, user, reason) =>
-      thatcher.transition(entityType, entityId, wf, toState, user, reason),
-    config: thatcher.config,
-    entities: thatcher.getAllEntities(),
-  };
+  const create = async (entity, data, user) => thatcher.create(entity, data, user);
+  const get = async (entity, id) => thatcher.get(entity, id);
+  const list = async (entity, where) => thatcher.list(entity, where);
+  const update = async (entity, id, data, user) => thatcher.update(entity, id, data, user);
+  const remove = async (entity, id) => thatcher.delete(entity, id);
+  const search = async (entity, q, where) => thatcher.search(entity, q, where);
+  const transition = async (entityType, entityId, wf, toState, user, reason) =>
+    thatcher.transition(entityType, entityId, wf, toState, user, reason);
+  const config = thatcher.config;
+  const entities = thatcher.getAllEntities();
 
   rl.prompt();
 

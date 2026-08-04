@@ -14,7 +14,7 @@ export async function loadConfig(configSource) {
     }
     const content = fs.readFileSync(configPath, 'utf-8');
     config = yamlLoad(content);
-  } else if (typeof configSource === 'object') {
+  } else if (typeof configSource === 'object' && configSource !== null) {
     config = configSource;
   } else {
     throw new Error('Config must be a file path or object');

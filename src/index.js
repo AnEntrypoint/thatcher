@@ -84,7 +84,7 @@ export class Thatcher {
       const content = fs.readFileSync(configPath, 'utf-8');
       const { load: yamlLoad } = await import('js-yaml');
       masterConfig = yamlLoad(content);
-    } else if (typeof config === 'object') {
+    } else if (typeof config === 'object' && config !== null) {
       masterConfig = config;
     } else {
       // Auto-discover
