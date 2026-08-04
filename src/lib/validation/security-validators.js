@@ -12,7 +12,7 @@ const XSS_PATTERNS = [
 ];
 
 const SQL_INJECTION_PATTERNS = [
-  /('|(\-\-)|(;)|(\|\|)|(\/\*)|(\*\/)|xp_)/gi,
+  /('|(--)|(;)|(\|\|)|(\/\*)|(\*\/)|xp_)/gi,
   /(union|select|insert|update|delete|drop|create|alter|exec|execute)\s/gi,
   /0x[0-9a-f]+/gi,
   /char\(/gi,
@@ -20,7 +20,7 @@ const SQL_INJECTION_PATTERNS = [
 ];
 
 const PATH_TRAVERSAL_PATTERNS = [
-  /\.\.[\\\/]/g,
+  /\.\.[\\/]/g,
   /\.\.%/g,
   /%2e%2e/gi,
   /\.\.\./g

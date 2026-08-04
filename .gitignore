@@ -18,3 +18,4 @@ coverage/
 package-lock.json
 .gm/browser-profile/
 .gm/browser-profile-*/
+.agentplug-kv/

@@ -5,7 +5,7 @@ export function minifyJS(code) {
     .replace(/^\s+/gm, '')
     .replace(/\s+$/gm, '')
     .replace(/\n+/g, '\n')
-    .replace(/\s*([{}()\[\];:,=<>!+\-*\/&|?])\s*/g, '$1')
+    .replace(/\s*([{}()[\];:,=<>!+\-*/&|?])\s*/g, '$1')
     .trim();
 }
 

@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
 
     const content = await fileService.download(fileRecord.drive_file_id);
 
-    const safeName = (fileRecord.file_name || 'download').replace(/[^\w.\-]/g, '_');
+    const safeName = (fileRecord.file_name || 'download').replace(/[^\w.-]/g, '_');
     return new NextResponse(content, {
       headers: {
         'Content-Type': fileRecord.mime_type || 'application/octet-stream',

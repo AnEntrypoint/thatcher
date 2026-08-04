@@ -24,6 +24,7 @@ export function getGmailClient(user = null) {
 
 function encodeHeader(value) {
   // RFC 2047 encoded-word for any non-ASCII header value (subject/name).
+  // eslint-disable-next-line no-control-regex -- \x00-\x7F is the intentional ASCII range check, not a stray control char
   if (/^[\x00-\x7F]*$/.test(value)) return value;
   return `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`;
 }
