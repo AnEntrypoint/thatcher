@@ -41,7 +41,7 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const promiseContainerMod = require('./promise-container.js');
-export { Mutex, MutexManager, globalManager } from './mutex.js';
+import { Mutex, MutexManager, globalManager } from './mutex.js';
 import { Supervisor, SupervisorTree, globalTree } from './supervisor.js';
 const checkpointMod = require('./checkpoint.js');
 const timeoutMod = require('./timeout-wrapper.js');
@@ -72,6 +72,7 @@ expose('hotReload', {
 }, 'Hot reload infrastructure');
 
 export {
+  Mutex, MutexManager, globalManager,
   PromiseContainer, globalContainer, contain,
   Supervisor, SupervisorTree, globalTree,
   CheckpointManager, globalCheckpoint,

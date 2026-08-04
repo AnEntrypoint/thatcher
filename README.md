@@ -133,36 +133,50 @@ const canEdit = await thatcher.can(user, thatcher.getEntitySpec('item'), 'edit')
 
 ```
 thatcher/
-├── src/
-│   ├── index.js           # Main entry: createThatcher()
-│   ├── cli.js             # CLI commands
-│   ├── config/
-│   │   ├── config-loader.js     # YAML loading & validation
-│   │   ├── spec-helpers.js      # Entity spec utilities
-│   │   ├── env.js               # Environment config
-│   │   └── constants.js         # HTTP codes, statuses
-│   ├── lib/
-│   │   ├── busybase-store.js    # busybase data layer (async CRUD)
-│   │   ├── query-engine.js      # Read operations (GET, search)
-│   │   ├── query-engine-write.js # Write operations (CRUD)
-│   │   ├── config-generator-engine.js  # Spec builder
-│   │   ├── hook-engine.js       # Event system
-│   │   ├── workflow-engine.js   # State machines
-│   │   ├── auth-middleware.js   # Auth checks
-│   │   ├── crud-factory.js      # Handler factory
-│   │   ├── crud-handlers.js     # HTTP handlers
-│   │   ├── validate.js          # Validation
-│   │   └── logger.js            # Structured logging
-│   ├── services/
-│   │   └── permission.service.js  # Authorization
-│   ├── adapters/
-│   │   ├── google-auth.js       # Google OAuth
-│   │   └── google-drive.js      # Drive file operations
-│   ├── plugins/
-│   │   └── index.js             # Plugin auto-discovery
-│   └── server/
-│       └── server.js            # HTTP server
-└── package.json
+  src/
+    index.js                # Main entry: createThatcher()
+    engine.js / engine.server.js  # Runtime engine, server-only auth/session surface
+    cli.js                  # CLI commands
+    config/
+      config-loader.js      # YAML loading & validation
+      spec-helpers.js       # Entity spec utilities
+      env.js                # Environment config
+      constants.js          # HTTP codes, statuses
+    lib/
+      busybase/
+        adapter.js          # busybase connection/adapter layer
+        store.js            # busybase data layer (async CRUD)
+        audit.js / audit-reads.js  # Audit log writes/reads
+        lucia-adapter.js    # Lucia auth session adapter
+      errors/
+        types.js            # AppError and error type hierarchy
+        wrap.js              # wrap() - unified handler wrapper (timeout/retry/logging)
+        recovery.js          # Circuit breaker, checkpoint, retry-with-backoff
+      validation/
+        entity-validators.js / business-validators.js / format-validators.js / security-validators.js / file-validators.js
+        csrf.js / rate-limit.js
+      config-generator-engine.js  # Spec builder
+      hook-engine.js         # Event system
+      workflow-engine.js     # State machines (legacy/canonical) - xstate-workflow-engine.js is the debug/test-only successor
+      auth-middleware.js     # Auth checks
+      crud-factory.js        # Handler factory
+      crud-handlers.js       # HTTP handlers - read + write CRUD operations
+      logger.js              # Structured logging
+    services/
+      permission.service.js         # Authorization
+      collaborator-role.service.js
+      notification-engine.js / email-sender.js
+    adapters/
+      google-auth.js         # Google OAuth
+      google-drive.js        # Drive file operations
+      google-gmail.js        # Gmail send/receive
+    plugins/
+      index.js               # Plugin auto-discovery
+    app/api/                 # Route handlers (Next.js-style file routing, [entity]/[[...path]] catch-all + explicit routes)
+    ui/                      # Server-rendered HTML components + client-side scripts
+    server/
+      server.js              # HTTP server
+  package.json
 ```
 
 ### How It Works

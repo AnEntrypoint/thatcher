@@ -1,0 +1,31 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "extends": "eslint:recommended",
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-empty": ["error", { "allowEmptyCatch": true }]
+  },
+  "overrides": [
+    {
+      "files": ["src/ui/**/*.js"],
+      "env": { "browser": true, "node": true }
+    },
+    {
+      "files": [
+        "src/lib/progress-components.js",
+        "src/lib/stage-pipeline.js",
+        "src/lib/next-shim.js",
+        "src/lib/state-transport-client.js"
+      ],
+      "env": { "browser": true, "node": true }
+    }
+  ]
+}

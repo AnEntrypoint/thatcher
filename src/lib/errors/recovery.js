@@ -43,8 +43,6 @@ export async function withCircuitBreaker(name, fn, options = {}) {
 
   try {
     const result = await fn();
-    if (breaker.state === 'half-open') {
-    }
     breaker.failures = 0;
     breaker.state = 'closed';
     return result;
@@ -247,12 +245,6 @@ export async function withRecovery(fn, options = {}) {
   } = options;
 
   let operation = fn;
-
-  if (checkpointName) {
-    const savedState = restoreCheckpoint(checkpointName);
-    if (savedState) {
-    }
-  }
 
   if (supervisor) {
     operation = () => supervise(supervisor, operation, options);

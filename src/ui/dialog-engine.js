@@ -92,21 +92,23 @@ function generateFieldHtml(field, dialogId, context) {
     case 'date':
       inputHtml = `<input type="date" id="${fieldId}" name="${name}" class="input input-bordered w-full" ${requiredAttr} ${ariaRequired} ${ariaDesc}/>`;
       break;
-    case 'select':
+    case 'select': {
       const optionsHtml = (options || []).map(opt =>
         `<option value="${opt.value}">${escapeHtml(opt.label || opt.value)}</option>`
       ).join('');
       inputHtml = `<select id="${fieldId}" name="${name}" class="select select-bordered w-full" ${requiredAttr} ${ariaRequired} ${ariaDesc}><option value="">Select...</option>${optionsHtml}</select>`;
       break;
+    }
     case 'checkbox':
       inputHtml = `<label class="flex items-center gap-2"><input type="checkbox" id="${fieldId}" name="${name}" class="checkbox" ${requiredAttr} ${ariaRequired} ${ariaDesc}/><span class="text-sm">${label}</span></label>`;
       break;
-    case 'multi-select':
+    case 'multi-select': {
       const multiOptHtml = (options || []).map(opt =>
         `<label class="flex items-center gap-2"><input type="checkbox" name="${name}" value="${opt.value}" class="checkbox"/><span class="text-sm">${escapeHtml(opt.label || opt.value)}</span></label>`
       ).join('');
       inputHtml = `<div class="flex flex-col gap-2" ${role.list}>${multiOptHtml}</div>`;
       break;
+    }
     case 'file':
       inputHtml = `<input type="file" id="${fieldId}" name="${name}" class="file-input file-input-bordered w-full" ${requiredAttr} ${ariaRequired} ${ariaDesc}/>`;
       break;

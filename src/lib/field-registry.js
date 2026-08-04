@@ -11,9 +11,10 @@ export function coerceFieldValue(value, type) {
     case 'json':
       return typeof value === 'string' ? JSON.parse(value) : value;
     case 'date':
-    case 'timestamp':
+    case 'timestamp': {
       const num = Number(value);
       return isNaN(num) ? null : num;
+    }
     case 'ref':
       return String(value);
     default:

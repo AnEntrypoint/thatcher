@@ -122,8 +122,8 @@ export const commonHandlers = {
 
   notify: {
     show(message, type = 'info') {
-      if (typeof showToast === 'function') {
-        showToast(message, type);
+      if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
       }
     },
     success(message) { this.show(message, 'success'); },

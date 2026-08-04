@@ -27,7 +27,7 @@ export function resolveSpecificParams(routeFile, pathParts) {
   for (let i = 0; i < routeSegments.length && i < urlSegments.length; i++) {
     const seg = routeSegments[i];
     if (seg.startsWith('[') && seg.endsWith(']')) {
-      const paramName = seg.replace(/^\[\.\.\./, '').replace(/[\[\]]/g, '');
+      const paramName = seg.replace(/^\[\.\.\./, '').replace(/[[\]]/g, '');
       result[paramName] = urlSegments[i];
     }
   }

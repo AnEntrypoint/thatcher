@@ -13,6 +13,8 @@
 
 import { startThatcher, Thatcher } from './index.js';
 import * as readline from 'readline';
+import fs from 'fs';
+import path from 'path';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -20,7 +22,7 @@ const command = args[0];
 async function main() {
   switch (command) {
     case 'start':
-    case 'dev':
+    case 'dev': {
       console.log(`[Thatcher] Starting in ${command} mode...`);
       const thatcher = new Thatcher({
         server: { hotReload: command === 'dev' },
@@ -34,15 +36,17 @@ async function main() {
         process.exit(1);
       }
       break;
+    }
 
-    case 'migrate':
+    case 'migrate': {
       console.log('[Thatcher] Running migrations...');
       const t1 = new Thatcher({});
       await t1.init();
       console.log('[Thatcher] Migrations complete');
       break;
+    }
 
-    case 'validate':
+    case 'validate': {
       console.log('[Thatcher] Validating configuration...');
       try {
         const t2 = new Thatcher({});
@@ -55,6 +59,7 @@ async function main() {
         process.exit(1);
       }
       break;
+    }
 
     case 'console':
     case 'repl':
