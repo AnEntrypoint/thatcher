@@ -15,6 +15,10 @@
   },
   "overrides": [
     {
+      "files": ["src/cli.js"],
+      "rules": { "no-unused-vars": "off" }
+    },
+    {
       "files": ["src/ui/**/*.js"],
       "env": { "browser": true, "node": true }
     },
