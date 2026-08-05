@@ -3,6 +3,31 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createLogger } from '../lib/logger.js';
+import { getLucia } from '../engine.server.js';
+import { requirePermission } from '../lib/auth-middleware.js';
+
+// Request-scoped session resolution: NOT engine.server.js's getUser(), which
+// reads a module-level _currentRequest global -- unsafe here since this raw
+// http server handles requests concurrently and that global would let one
+// in-flight request's cookie leak into another's session lookup mid-await.
+// getLucia() itself holds no per-request state, so calling it directly per
+// request and validating against this request's own cookie header is safe.
+async function resolveRequestUser(req) {
+  let lucia;
+  try { lucia = getLucia(); } catch { return null; }
+  const cookieHeader = req.headers?.cookie || '';
+  if (!cookieHeader) return null;
+  const cookieName = lucia.sessionCookieName || 'thatcher_session';
+  const match = cookieHeader.split(';').find(c => c.trim().startsWith(cookieName + '='));
+  if (!match) return null;
+  const sessionId = decodeURIComponent(match.split('=')[1] || '');
+  if (!sessionId) return null;
+  try {
+    const { user, session } = await lucia.validateSession(sessionId);
+    if (!user || !session) return null;
+    return user;
+  } catch { return null; }
+}
 
 const log = createLogger('[Server]');
 const pageLog = createLogger('[Page]');
@@ -203,11 +228,12 @@ async function sendResponse(res, response) {
 }
 
 async function handleGenericCrud(req, res, entity, id, action, thatcher, configEngineArg) {
-  // Simple auth: get from cookie or header
-  let user = null;
-  // In a real implementation, we'd decode session token
-  // For now, default to system user for testing
-  user = { id: 'system', role: 'admin' };
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
 
   // Prefer the engine passed down from createServer options (guaranteed the
   // same instance that was initialized at startup); fall back to thatcher /
@@ -217,15 +243,23 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
     const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
     configEngine = getConfigEngineSync();
   }
+  let spec;
   try {
-    configEngine.generateEntitySpec(entity);
+    spec = configEngine.generateEntitySpec(entity);
   } catch (e) {
     res.writeHead(404);
     res.end(JSON.stringify({ error: `Entity '${entity}' not found` }));
     return;
   }
 
-  // Permission check would go here via thatcher.can(user, spec, action)
+  const methodAction = { GET: 'list', POST: 'create', PUT: 'edit', PATCH: 'edit', DELETE: 'delete' }[req.method] || 'view';
+  try {
+    await requirePermission(user, spec, id && req.method === 'GET' ? 'view' : methodAction);
+  } catch (e) {
+    res.writeHead(e?.status || 403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: e?.message || 'Forbidden' }));
+    return;
+  }
 
   let body;
   try {
@@ -250,7 +284,7 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
             return;
           }
         } else {
-          result = await thatcher.list(entity);
+          result = await thatcher.list(entity, {}, { user });
         }
         break;
 

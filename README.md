@@ -194,7 +194,7 @@ Each entity derives from config:
 | Config Key | Purpose |
 |-----------|---------|
 | `fields` | Column definitions (type, required, ref, enum, etc.) |
-| `permission_template` | Maps roles → allowed actions |
+| `permission_template` | Maps roles -> allowed actions |
 | `workflow` | State machine name for lifecycle |
 | `row_access` | Scoping: `team`, `assigned`, `client` |
 | `list.defaultSort` | Default list ordering |
@@ -342,30 +342,30 @@ Use via `@/lib/email-sender` (included).
 All APIs accessible via thatcher instance:
 
 ### CRUD
-- `thatcher.list(entity, where, opts)` → Array
-- `thatcher.get(entity, id)` → object
-- `thatcher.create(entity, data, user)` → object
-- `thatcher.update(entity, id, data, user)` → object
-- `thatcher.delete(entity, id)` → void
+- `thatcher.list(entity, where, opts)` -> Array
+- `thatcher.get(entity, id)` -> object
+- `thatcher.create(entity, data, user)` -> object
+- `thatcher.update(entity, id, data, user)` -> object
+- `thatcher.delete(entity, id)` -> void
 
 ### Search
-- `thatcher.search(entity, query, where, opts)` → Array (uses FTS)
+- `thatcher.search(entity, query, where, opts)` -> Array (uses FTS)
 
 ### Workflow
-- `thatcher.transition(entityType, entityId, workflowName, toState, user, reason)` → object
-- `thatcher.getAvailableTransitions(workflowName, currentState, user, record)` → Array
+- `thatcher.transition(entityType, entityId, workflowName, toState, user, reason)` -> object
+- `thatcher.getAvailableTransitions(workflowName, currentState, user, record)` -> Array
 
 ### AuthZ
-- `thatcher.can(user, spec, action)` → boolean
-- `thatcher.requirePermission(user, spec, action)` → throws if denied
+- `thatcher.can(user, spec, action)` -> boolean
+- `thatcher.requirePermission(user, spec, action)` -> throws if denied
 
 ### Config
-- `thatcher.getConfigEngine()` → ConfigGeneratorEngine
-- `thatcher.getEntitySpec(entityName)` → spec object
-- `thatcher.getAllEntities()` → Array<string>
+- `thatcher.getConfigEngine()` -> ConfigGeneratorEngine
+- `thatcher.getEntitySpec(entityName)` -> spec object
+- `thatcher.getAllEntities()` -> Array<string>
 
 ### Direct DB
-- `thatcher.withTransaction(cb)` → Promise<result>
+- `thatcher.withTransaction(cb)` -> Promise<result>
 
 ## Environment Variables
 

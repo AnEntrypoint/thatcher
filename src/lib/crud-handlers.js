@@ -43,7 +43,7 @@ export function createCrudHandlers(entityName, spec) {
       let items, pagination;
 
       if (q) {
-        const result = await searchWithPagination(entityName, q, {}, finalPage, finalPageSize);
+        const result = await searchWithPagination(entityName, q, {}, finalPage, finalPageSize, { user });
         items = result.items;
         pagination = result.pagination;
       } else {
@@ -54,7 +54,7 @@ export function createCrudHandlers(entityName, spec) {
             coercedFilters[key] = fd ? coerceFieldValue(value, fd.type) : value;
           }
         }
-        const result = await listWithPagination(entityName, coercedFilters, finalPage, finalPageSize);
+        const result = await listWithPagination(entityName, coercedFilters, finalPage, finalPageSize, { user });
         items = result.items;
         pagination = result.pagination;
       }
@@ -200,7 +200,7 @@ export function createCrudHandlers(entityName, spec) {
           id,
           data: { id, uploaded_files: files },
           user,
-        });
+        }).catch(e => log.error(e.message));
         return ok({ id, uploaded_files: files });
       }
 
