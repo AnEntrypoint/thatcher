@@ -203,13 +203,17 @@ export async function count(entity, where = {}, options = {}) {
   const tbl = tableName(entity);
   let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'count');
   rows = applyVisibility(spec, rows, where, options);
+  if (options.user && (spec.rowAccess || spec.row_access)) {
+    const { permissionService } = await import('../services/permission.service.js');
+    rows = permissionService.filterRecords(options.user, spec, rows);
+  }
   return rows.length;
 }
 
-export async function listWithPagination(entity, where = {}, page = 1, pageSize = 50) {
+export async function listWithPagination(entity, where = {}, page = 1, pageSize = 50, options = {}) {
   const finalPage = Math.max(1, page);
-  const total = await count(entity, where);
-  const items = await list(entity, where, { offset: (finalPage - 1) * pageSize, limit: pageSize });
+  const total = await count(entity, where, options);
+  const items = await list(entity, where, { ...options, offset: (finalPage - 1) * pageSize, limit: pageSize });
   return { items, pagination: { page: finalPage, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
 }
 
@@ -337,11 +341,11 @@ export async function search(entity, query, where = {}, options = {}) {
   return matched;
 }
 
-export async function searchWithPagination(entity, query, where = {}, page = 1, pageSize = null) {
+export async function searchWithPagination(entity, query, where = {}, page = 1, pageSize = null, options = {}) {
   const spec = specOf(entity);
   const finalPageSize = pageSize || spec.list?.pageSize || 50;
   const finalPage = Math.max(1, page);
-  const all = await search(entity, query, where);
+  const all = await search(entity, query, where, options);
   const total = all.length;
   const items = all.slice((finalPage - 1) * finalPageSize, finalPage * finalPageSize);
   return { items, pagination: { page: finalPage, pageSize: finalPageSize, total, totalPages: Math.ceil(total / finalPageSize) } };

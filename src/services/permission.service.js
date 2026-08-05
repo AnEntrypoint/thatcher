@@ -47,12 +47,12 @@ class PermissionService {
       return false;
     }
 
-    if (scope === 'assigned' && record[ownerField] && record[ownerField] !== user.id && user.role !== partnerRole) {
+    if (scope === 'assigned' && user.role !== partnerRole && record[ownerField] !== user.id) {
       return false;
     }
 
     if (scope === 'assigned_or_team' && user.role !== partnerRole) {
-      const assignedMatch = record[ownerField] && record[ownerField] === user.id;
+      const assignedMatch = record[ownerField] === user.id;
       const teamMatch = record.team_id && user.team_id && record.team_id === user.team_id;
       if (!assignedMatch && !teamMatch) return false;
     }

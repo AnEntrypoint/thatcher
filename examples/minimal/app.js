@@ -31,7 +31,7 @@ async function main() {
   try {
     // Initialize (loads config, creates DB, registers plugins)
     await thatcher.init();
-    console.log('✓ Thatcher initialized');
+    console.log('[ok] Thatcher initialized');
 
     // Show some info
     const entities = thatcher.getAllEntities();
@@ -46,12 +46,12 @@ async function main() {
         status: 'active',
         priority: 'medium',
       }, { id: 'system', role: 'admin' });
-      console.log('✓ Created sample item');
+      console.log('[ok] Created sample item');
     }
 
     // Start server
     await thatcher.startServer();
-    console.log('✓ Server listening on http://localhost:3000');
+    console.log('[ok] Server listening on http://localhost:3000');
     console.log('Try: GET /api/item');
 
   } catch (err) {
