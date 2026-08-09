@@ -124,6 +124,51 @@ export const fieldRegistry = {
   }),
   image: createSimpleType('TEXT'),
   id: createSimpleType('TEXT PRIMARY KEY'),
+  people: createSimpleType('TEXT', {
+    coerce: (val) => (val === undefined || val === '' || val === null ? null : (typeof val === 'string' ? val : JSON.stringify(val))),
+    format: (val, field, spec, row) => {
+      const ids = Array.isArray(val) ? val : (val ? [val] : []);
+      if (!ids.length) return null;
+      return ids.map(id => row?.[`${id}_display`] || row?.assignee_names?.[id] || String(id));
+    },
+  }),
+  link: createSimpleType('TEXT', {
+    format: (val) => String(val ?? ''),
+    isValid: (val) => { if (!val) return true; try { new URL(String(val)); return true; } catch { return false; } },
+  }),
+  file: createSimpleType('TEXT', {
+    coerce: (val) => (val === undefined || val === '' || val === null ? null : (typeof val === 'string' ? val : JSON.stringify(val))),
+    format: (val) => {
+      if (!val) return null;
+      const obj = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return { name: val }; } })() : val;
+      return { name: obj.name || obj.filename || 'file', url: obj.url || null };
+    },
+  }),
+  rating: createNumberType('INTEGER', (val) => {
+    if (val === undefined || val === '' || val === null) return null;
+    const num = parseInt(val, 10);
+    if (isNaN(num)) throw new Error(`Invalid rating: ${val}`);
+    return num;
+  }, (val, field) => ({ value: Number(val) || 0, max: field?.max || 5 })),
+  progress: createNumberType('REAL', (val) => {
+    if (val === undefined || val === '' || val === null) return null;
+    const num = parseFloat(val);
+    if (isNaN(num)) throw new Error(`Invalid progress: ${val}`);
+    return num;
+  }, (val) => Math.max(0, Math.min(100, Number(val) || 0))),
+  checkbox: createSimpleType('INTEGER', {
+    coerce: (val) => (val === true || val === 'true' || val === 'on' || val === 1 ? 1 : 0),
+    format: (val) => !!val,
+  }),
+  formula: {
+    sqlType: 'TEXT',
+    coerce: () => undefined,
+    format: (val, field, spec, row) => {
+      if (typeof field?.compute !== 'function') return null;
+      try { return field.compute(row); } catch { return null; }
+    },
+    isValid: () => true,
+  },
 };
 
 export function getFieldHandler(type) {

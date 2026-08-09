@@ -63,6 +63,9 @@ export class Thatcher {
     // Load plugins
     await this.loadPlugins();
 
+    const { registerAutomationEngine } = await import(resolveModule('./lib/automation-engine.js'));
+    registerAutomationEngine();
+
     // Hot reload
     if (this.options.server.hotReload) {
       this.setupHotReload();
