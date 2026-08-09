@@ -30,7 +30,8 @@ function gridRow(entityName, item, columns) {
       : '';
     return `<td data-col="${esc(key)}"${editableAttrs}>${rendered}</td>`;
   }).join('');
-  return `<tr data-row data-navigate="/${esc(entityName)}/${esc(item.id)}" style="cursor:pointer">${cells}</tr>`;
+  const checkboxCell = `<td style="width:32px"><input type="checkbox" class="bulk-row-select" data-row-id="${esc(item.id)}" onclick="event.stopPropagation()"></td>`;
+  return `<tr data-row data-navigate="/${esc(entityName)}/${esc(item.id)}" style="cursor:pointer">${checkboxCell}${cells}</tr>`;
 }
 
 const GRID_EDIT_SCRIPT = `(function(){
@@ -77,6 +78,63 @@ const GRID_EDIT_SCRIPT = `(function(){
   },true);
 })();`;
 
+const BULK_OPS_SCRIPT = `(function(){
+  function selectedIds(){
+    return Array.prototype.slice.call(document.querySelectorAll('.bulk-row-select:checked')).map(function(cb){return cb.getAttribute('data-row-id')});
+  }
+  function updateToolbar(){
+    var ids=selectedIds();
+    var toolbar=document.getElementById('bulk-toolbar');
+    var label=document.getElementById('bulk-count-label');
+    if(ids.length>0){toolbar.style.display='flex';label.textContent=ids.length+' selected'}
+    else{toolbar.style.display='none'}
+  }
+  document.addEventListener('change',function(e){
+    if(e.target.classList&&e.target.classList.contains('bulk-row-select')){updateToolbar()}
+    if(e.target.id==='bulk-select-all'){
+      var checked=e.target.checked;
+      document.querySelectorAll('.bulk-row-select').forEach(function(cb){cb.checked=checked});
+      updateToolbar();
+    }
+  });
+  function postBulk(entity,ids,action,onDone){
+    var status=document.getElementById('bulk-status');
+    status.textContent='Processing...';
+    fetch('/api/'+entity+'/bulk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:ids,action:action})})
+      .then(function(r){return r.json().then(function(d){return {ok:r.ok,d:d}})})
+      .then(function(res){
+        if(res.ok){
+          var failed=res.d.failed||0;
+          status.textContent=res.d.succeeded+' succeeded, '+failed+' failed';
+          if(failed===0){setTimeout(function(){location.reload()},800)}
+        }else{status.textContent='Error: '+(res.d.error||'bulk operation failed')}
+        if(onDone)onDone();
+      })
+      .catch(function(err){status.textContent='Error: '+err.message});
+  }
+  window.bulkDelete=function(entity){
+    var ids=selectedIds();
+    if(!ids.length)return;
+    if(!window.confirm('Delete '+ids.length+' items?'))return;
+    postBulk(entity,ids,{type:'delete'});
+  };
+  window.bulkSetField=function(entity){
+    var ids=selectedIds();
+    if(!ids.length)return;
+    var field=document.getElementById('bulk-set-field').value;
+    var value=document.getElementById('bulk-set-value').value;
+    if(!field)return;
+    postBulk(entity,ids,{type:'set_field',field:field,value:value});
+  };
+  window.bulkTransition=function(entity,workflow){
+    var ids=selectedIds();
+    if(!ids.length)return;
+    var toState=document.getElementById('bulk-transition-target').value;
+    if(!toState)return;
+    postBulk(entity,ids,{type:'transition',workflow:workflow,toState:toState});
+  };
+})();`;
+
 export function renderGridView(user, entityName, spec, records, options = {}) {
   const label = getEntityLabel(spec, true) || entityName;
   const columns = getColumns(spec);
@@ -105,9 +163,32 @@ export function renderGridView(user, entityName, spec, records, options = {}) {
   const rows = records.map(item => gridRow(entityName, item, columns)).join('') ||
     emptyRow(columns.length || 1, `No ${esc(label.toLowerCase())} found`);
 
+  const editableFieldOpts = columns.filter(([, f]) => isEditable(f)).map(([key, f]) =>
+    `<option value="${esc(key)}">${esc(f.label || key)}</option>`
+  ).join('');
+
+  const workflowStageOpts = spec.workflowDef?.stages
+    ? spec.workflowDef.stages.map(s => `<option value="${esc(s.name)}">${esc(s.label || s.name)}</option>`).join('')
+    : '';
+  const transitionButton = spec.workflow && workflowStageOpts
+    ? `<select id="bulk-transition-target"><option value="">Transition to...</option>${workflowStageOpts}</select>
+       <button type="button" class="btn-ghost-clean" data-action="bulkTransition" data-args='["${esc(entityName)}","${esc(spec.workflow)}"]'>Apply</button>`
+    : '';
+
+  const bulkToolbar = `<div id="bulk-toolbar" style="display:none;align-items:center;gap:8px;padding:8px;background:var(--color-bg-secondary,#f5f5f5);border-radius:4px;margin-bottom:8px;flex-wrap:wrap">
+    <span id="bulk-count-label" style="font-size:13px;font-weight:600"></span>
+    <button type="button" class="btn-danger-clean" data-action="bulkDelete" data-args='["${esc(entityName)}"]'>Delete Selected</button>
+    <select id="bulk-set-field"><option value="">Set field...</option>${editableFieldOpts}</select>
+    <input type="text" id="bulk-set-value" placeholder="value" style="width:120px">
+    <button type="button" class="btn-ghost-clean" data-action="bulkSetField" data-args='["${esc(entityName)}"]'>Apply</button>
+    ${transitionButton}
+    <span id="bulk-status" style="font-size:13px"></span>
+  </div>`;
+
   const content = `<div class="page-header">
         <div><h1 class="page-title">${esc(label)}</h1><p class="page-subtitle">${records.length} total ${esc(label.toLowerCase())}</p></div>
       </div>
+      ${bulkToolbar}
       <div class="table-wrap">
         <div class="table-toolbar">
           <div class="table-search"><input id="search-input" type="text" placeholder="Search ${esc(label.toLowerCase())}..."></div>
@@ -115,10 +196,10 @@ export function renderGridView(user, entityName, spec, records, options = {}) {
           <span class="table-count" id="row-count">${records.length} items</span>
         </div>
         <table class="data-table" role="grid" data-page-size="${esc(pageSize)}">
-          <thead><tr>${headerCells}</tr></thead>
+          <thead><tr><th style="width:32px"><input type="checkbox" id="bulk-select-all"></th>${headerCells}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
 
-  return page(user, `${label} | Thatcher`, null, content, [TABLE_SCRIPT, GRID_EDIT_SCRIPT]);
+  return page(user, `${label} | Thatcher`, null, content, [TABLE_SCRIPT, GRID_EDIT_SCRIPT, BULK_OPS_SCRIPT]);
 }

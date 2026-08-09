@@ -134,6 +134,10 @@ export function createServer(options) {
           return await handleDeleteWebhook(req, res, id, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && id === 'bulk' && !action) {
+          return await handleBulkOperation(req, res, entity, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -377,6 +381,61 @@ async function requireAuthedPartner(req, res) {
     return null;
   }
   return user;
+}
+
+async function handleBulkOperation(req, res, entityName, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  let spec;
+  try {
+    spec = configEngine.generateEntitySpec(entityName);
+  } catch (e) {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: `Entity "${entityName}" not found` }));
+    return;
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const ids = Array.isArray(body?.ids) ? body.ids : null;
+  const action = body?.action;
+  if (!ids) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'ids array required' }));
+    return;
+  }
+
+  try {
+    const { runBulkOperation } = await import('../lib/bulk-operations.js');
+    const result = await runBulkOperation(entityName, spec, ids, action, user);
+    if (!result.ok) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: result.error }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
 }
 
 async function handleCreateWebhook(req, res, thatcher, configEngineArg) {
