@@ -54,6 +54,16 @@ export class ConfigGeneratorEngine {
     return this.masterConfig?.system?.multi_tenancy?.enabled === true;
   }
 
+  updateWorkflow(workflowName, updatedDef) {
+    if (!workflowName || typeof workflowName !== 'string') {
+      throw new Error('[ConfigGeneratorEngine] updateWorkflow: workflowName required');
+    }
+    const nextWorkflows = { ...(this.masterConfig.workflows || {}), [workflowName]: updatedDef };
+    this.masterConfig = deepFreeze({ ...this.masterConfig, workflows: nextWorkflows });
+    this.specCache.clear();
+    return this;
+  }
+
   registerPlugin(entityName, plugin = {}) {
     if (!entityName || typeof entityName !== 'string') {
       throw new Error('[ConfigGeneratorEngine] registerPlugin: entityName required');
