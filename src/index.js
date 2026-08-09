@@ -66,6 +66,9 @@ export class Thatcher {
     const { registerAutomationEngine } = await import(resolveModule('./lib/automation-engine.js'));
     registerAutomationEngine();
 
+    const { registerWebhookEngine } = await import(resolveModule('./lib/webhook-engine.js'));
+    registerWebhookEngine();
+
     // Hot reload
     if (this.options.server.hotReload) {
       this.setupHotReload();

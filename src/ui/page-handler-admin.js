@@ -8,6 +8,7 @@ import { renderChecklistsManagement } from '@/ui/checklist-renderer.js';
 import { renderJobManagement } from '@/ui/job-management-renderer.js';
 import { renderWorkflowList, renderWorkflowEditor } from '@/ui/workflow-builder-renderer.js';
 import { renderRolesList, renderTemplateList, renderPermissionMatrix } from '@/ui/rbac-renderer.js';
+import { renderWebhookList, renderWebhookDetail } from '@/ui/webhook-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
 import { getSystemConfig, getSettingsCounts, getAuditData, getSystemHealth, renderBuildLogsContent } from '@/ui/page-handler-helpers.js';
 import { fileURLToPath } from 'url';
@@ -162,6 +163,20 @@ export async function handleAdminPage(normalized, segments, user) {
     if (!roleActionsMap) return null;
     const roleNames = Object.keys(engine.getRoles());
     return renderPermissionMatrix(user, segments[2], roleNames, roleActionsMap);
+  }
+  if (normalized === '/admin/webhooks') {
+    let webhooks = []; try { webhooks = await list('webhook', {}); } catch {}
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const entityNames = engine.getAllEntities().filter(e => e !== 'webhook' && e !== 'webhook_delivery');
+    return renderWebhookList(user, webhooks, entityNames);
+  }
+  if (segments.length === 3 && segments[1] === 'webhooks') {
+    const webhook = await get('webhook', segments[2]);
+    if (!webhook) return null;
+    let deliveries = [];
+    try { deliveries = (await list('webhook_delivery', { webhook_id: segments[2] }, { sort: { field: 'created_at', dir: 'DESC' } })).slice(0, 20); } catch {}
+    return renderWebhookDetail(user, webhook, deliveries);
   }
   return null;
 }
