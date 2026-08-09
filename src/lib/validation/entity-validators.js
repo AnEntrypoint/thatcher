@@ -218,6 +218,79 @@ function checkContractDateOrder(entityName, data, existingRecord) {
   return null;
 }
 
+const CROSS_ENTITY_OPERATORS = {
+  equals: (a, b) => a === b,
+  not_equals: (a, b) => a !== b,
+  gt: (a, b) => Number(a) > Number(b),
+  gte: (a, b) => Number(a) >= Number(b),
+  lt: (a, b) => Number(a) < Number(b),
+  lte: (a, b) => Number(a) <= Number(b),
+};
+
+// Generic cross-entity rule evaluator: reads a field's cross_entity_rule
+// definition off the SAME spec.fields[key] shape every other field metadata
+// (visible_to/editable_by/encrypted) already lives on, so it works for any
+// entity -- built-in or custom_entity_def-registered -- carrying one, not
+// hardcoded to a single entity name the way checkStockBalance/
+// checkContractDateOrder/checkResourceCapacity are. Two shapes:
+// - simple: {ref_field, related_field, operator, value} compares the
+//   related record's field against a literal value.
+// - aggregate: {ref_field, aggregate:'sum', aggregate_field, operator,
+//   limit_field} sums a field across every OTHER record referencing the
+//   same related entity via ref_field, and compares against a limit read
+//   from the related record's limit_field.
+// Uses the same unscoped internal get()/list() lookup pattern
+// checkContractDateOrder/checkStockBalance/checkResourceCapacity already
+// use -- these run from validateEntity/validateUpdate, which today has no
+// user context threaded through, so this does not introduce a new
+// access-control gap relative to those three existing checks; it matches
+// their established behavior exactly rather than inventing a new one.
+async function checkCrossEntityRules(entityName, data, existingRecord) {
+  const spec = getSpec(entityName);
+  for (const [fieldKey, fieldDef] of Object.entries(spec.fields || {})) {
+    const rule = fieldDef.cross_entity_rule;
+    if (!rule || !rule.ref_field) continue;
+
+    const refId = data[rule.ref_field] !== undefined ? data[rule.ref_field] : existingRecord?.[rule.ref_field];
+    if (refId == null) continue;
+
+    const refFieldDef = spec.fields[rule.ref_field];
+    const relatedEntity = refFieldDef?.ref;
+    if (!relatedEntity) continue;
+
+    const { get, list } = await import('@/lib/busybase/store');
+    const related = await get(relatedEntity, refId);
+    if (!related) continue;
+
+    const operatorFn = CROSS_ENTITY_OPERATORS[rule.operator];
+    if (!operatorFn) continue;
+
+    if (rule.aggregate === 'sum') {
+      const relatedEntitySelfEntity = entityName;
+      const siblingRecords = await list(relatedEntitySelfEntity, { [rule.ref_field]: refId });
+      const selfId = existingRecord?.id;
+      const thisValue = Number(data[rule.aggregate_field] !== undefined ? data[rule.aggregate_field] : existingRecord?.[rule.aggregate_field]) || 0;
+      const othersTotal = siblingRecords
+        .filter(r => r.id !== selfId)
+        .reduce((sum, r) => sum + (Number(r[rule.aggregate_field]) || 0), 0);
+      const resultingTotal = othersTotal + thisValue;
+      const limit = Number(related[rule.limit_field]);
+      if (!Number.isFinite(limit)) continue;
+      if (!operatorFn(resultingTotal, limit)) {
+        return `${fieldKey}: sum of ${rule.aggregate_field} across ${relatedEntitySelfEntity} for this ${rule.ref_field} would be ${resultingTotal}, violating ${rule.operator} ${limit}`;
+      }
+      continue;
+    }
+
+    if (!rule.related_field) continue;
+    const relatedValue = related[rule.related_field];
+    if (!operatorFn(relatedValue, rule.value)) {
+      return `${fieldKey}: related ${relatedEntity}.${rule.related_field} (${relatedValue}) fails rule "${rule.operator} ${rule.value}"`;
+    }
+  }
+  return null;
+}
+
 const WEEKLY_CAPACITY_HOURS = 40;
 
 // Two date ranges overlap unless one entirely precedes the other -- the
@@ -287,6 +360,9 @@ export async function validateEntity(entityName, data, existingRecord = null, op
 
   const capacityErr = await checkResourceCapacity(entityName, data, existingRecord);
   if (capacityErr) errors.allocated_hours_per_week = capacityErr;
+
+  const crossEntityErr = await checkCrossEntityRules(entityName, data, existingRecord);
+  if (crossEntityErr) errors._cross_entity = crossEntityErr;
 
   return errors;
 }
@@ -368,6 +444,9 @@ export async function validateUpdate(entityName, changes, existingRecord) {
 
   const capacityErr = await checkResourceCapacity(entityName, changes, existingRecord);
   if (capacityErr) errors.allocated_hours_per_week = capacityErr;
+
+  const crossEntityErr = await checkCrossEntityRules(entityName, changes, existingRecord);
+  if (crossEntityErr) errors._cross_entity = crossEntityErr;
 
   return errors;
 }
