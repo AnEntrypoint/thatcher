@@ -206,3 +206,34 @@ export function renderCountOverTimeReport(user, entityName, spec, records, dateF
     ${barChart(buckets)}`;
   return page(user, `${label} Report | Thatcher`, null, content);
 }
+
+// One table per-product rather than a bar chart: unlike count-by-field/
+// sum-by-field's single grouped metric, a forecast is inherently multiple
+// values per row (stock, consumption rate, days-out, reorder date) -- a bar
+// chart of any single one of those would discard the others, so a table is
+// the correct shape here, reusing the same page()/esc() rendering discipline
+// as every other report rather than inventing a new chart type.
+export function renderInventoryForecastReport(user, spec, forecastRows) {
+  const label = getEntityLabel(spec, true) || 'Products';
+  const rows = forecastRows.map(p => {
+    const daysLabel = p.days_until_stockout == null ? 'Unknown' : String(Math.round(p.days_until_stockout))
+    const reorderLabel = p.reorder_date == null ? '-' : new Date(p.reorder_date * 1000).toISOString().slice(0, 10)
+    const rowCls = p.reorder_due ? 'style="background:var(--color-danger-bg,#fee2e2)"' : ''
+    return `<tr ${rowCls}>
+      <td>${esc(p.name || p.id)}</td>
+      <td>${esc(String(p.current_stock))}</td>
+      <td>${esc((p.avg_daily_consumption || 0).toFixed(2))}</td>
+      <td>${esc(daysLabel)}</td>
+      <td>${esc(reorderLabel)}${p.reorder_due ? ' <span class="pill pill-danger">Reorder Now</span>' : ''}</td>
+    </tr>`;
+  }).join('') || emptyState('No products to forecast', 'bar-chart');
+
+  const content = `<div class="page-header">
+      <div><h1 class="page-title">${esc(label)}: Inventory Forecast</h1><p class="page-subtitle">${forecastRows.length} products</p></div>
+    </div>
+    <div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Product</th><th>Current Stock</th><th>Avg Daily Use</th><th>Days Until Stockout</th><th>Suggested Reorder</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  return page(user, `Inventory Forecast | Thatcher`, null, content);
+}

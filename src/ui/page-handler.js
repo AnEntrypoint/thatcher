@@ -9,7 +9,7 @@ import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
 import { renderBoardView } from '@/ui/board-view-renderer.js';
 import { renderGridView } from '@/ui/grid-view-renderer.js';
 import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
-import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport } from '@/ui/report-renderer.js';
+import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport } from '@/ui/report-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -118,12 +118,18 @@ async function handleGenericEntityView(user, entityName, id, req) {
   if (entityName === 'product') {
     // current_stock is derived, never a stored/editable field -- summed fresh
     // from stock_movement history so it can never drift from the ledger the
-    // way a separately-writable counter could.
+    // way a separately-writable counter could. stock_movement carries no
+    // organization_id (product is a system_entity, exempt from multi-tenancy
+    // auto-scoping the same way every other system entity this session is),
+    // so this unscoped list() matches the entity's actual access model
+    // rather than bypassing a row-access check that was never in effect.
     try {
       const movements = await list('stock_movement', { product_id: id });
       const currentStock = movements.reduce((sum, m) => sum + (Number(m.quantity) || 0), 0);
-      resolvedItem = { ...resolvedItem, current_stock: currentStock };
-    } catch { resolvedItem = { ...resolvedItem, current_stock: 0 }; }
+      const { computeInventoryForecast } = await import('@/lib/inventory-forecast.js');
+      const forecast = computeInventoryForecast(resolvedItem, movements, currentStock);
+      resolvedItem = { ...resolvedItem, current_stock: currentStock, ...forecast };
+    } catch { resolvedItem = { ...resolvedItem, current_stock: 0, avg_daily_consumption: 0, days_until_stockout: null, reorder_date: null, reorder_due: false }; }
   }
   if (entityName === 'task') {
     // total_hours/billable_amount are derived from time_entry history, same
@@ -369,6 +375,22 @@ export async function handlePage(pathname, req, res) {
       const relatedSpec = getSpec(relatedEntity);
       const relatedRecords = await list(relatedEntity, {}, { user });
       return renderRollupReport(user, entityName, spec, items, refField, relatedEntity, relatedSpec, relatedRecords, rollupField);
+    }
+    if (report === 'inventory-forecast' && entityName === 'product') {
+      // items is already the {user}-scoped product list from above -- no new
+      // unscoped bulk query. stock_movement itself carries no organization_id
+      // (product is a system_entity, exempt from multi-tenancy auto-scoping
+      // like every other system entity this session), so it is read
+      // per-product the same unscoped way the detail view already does.
+      const { computeInventoryForecast } = await import('@/lib/inventory-forecast.js');
+      const forecastRows = [];
+      for (const p of items) {
+        const movements = await list('stock_movement', { product_id: p.id });
+        const currentStock = movements.reduce((sum, m) => sum + (Number(m.quantity) || 0), 0);
+        const forecast = computeInventoryForecast(p, movements, currentStock);
+        forecastRows.push({ ...p, current_stock: currentStock, ...forecast });
+      }
+      return renderInventoryForecastReport(user, spec, forecastRows);
     }
     const view = params.get('view');
     if (view === 'board') return renderBoardView(user, entityName, spec, items);
