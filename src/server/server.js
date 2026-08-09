@@ -493,6 +493,14 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
           return;
         }
         permissionService.enforceEditPermissions(user, spec, body);
+        // The edit form renders encrypted:true fields blank with a "leave
+        // blank to keep unchanged" note -- a blank submission must not
+        // overwrite the stored secret, since update() spreads body directly
+        // into the patch and encryptFields only skips ABSENT keys, not
+        // empty-string values actually present in the object.
+        for (const [fieldKey, fieldDef] of Object.entries(spec.fields || {})) {
+          if (fieldDef.encrypted && body[fieldKey] === '') delete body[fieldKey];
+        }
         {
           // validateUpdate is the authoritative server-side check for both
           // generic field-type constraints AND entity-specific business
