@@ -33,6 +33,30 @@ function weightedValueOf(opportunity) {
   return (value * probability) / 100;
 }
 
+// The historical mirror of projectDemandByMonth: past months' ACTUAL won
+// value, not future open-pipeline projection. This is the time series a
+// trend prediction (statistical-forecast.js's linearRegression) needs --
+// projectDemandByMonth's forward-looking open-pipeline sum is the wrong
+// input for "predict next period from history" since it contains no past
+// data points to fit a trend against.
+export function historicalWonValueByMonth(opportunities, nowSeconds = Math.floor(Date.now() / 1000), monthsBack = 6) {
+  const currentBucketKey = monthBucketKey(nowSeconds);
+  const buckets = new Map();
+
+  for (const opp of opportunities) {
+    if (opp.stage !== 'won') continue;
+    const closeDate = opp.actual_close_date ?? opp.expected_close_date;
+    if (closeDate == null) continue;
+    const bucketKey = monthBucketKey(Number(closeDate));
+    if (bucketKey > currentBucketKey) continue;
+    const value = Number(opp.value) || 0;
+    buckets.set(bucketKey, (buckets.get(bucketKey) || 0) + value);
+  }
+
+  const sorted = [...buckets.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  return sorted.length > monthsBack ? sorted.slice(-monthsBack) : sorted;
+}
+
 export function projectDemandByMonth(opportunities, nowSeconds = Math.floor(Date.now() / 1000)) {
   const currentBucketKey = monthBucketKey(nowSeconds);
   const buckets = new Map();

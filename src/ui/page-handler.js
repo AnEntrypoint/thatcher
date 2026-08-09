@@ -421,9 +421,18 @@ export async function handlePage(pathname, req, res) {
       // entity route uses) -- no new unscoped query, and each item already
       // carries a computed weighted_value from list()'s own formula-field
       // pass, reused directly rather than recomputed.
-      const { projectDemandByMonth } = await import('@/lib/demand-forecast.js');
+      const { projectDemandByMonth, historicalWonValueByMonth } = await import('@/lib/demand-forecast.js');
+      const { predictNext } = await import('@/lib/statistical-forecast.js');
       const buckets = projectDemandByMonth(items);
-      return renderDemandForecastReport(user, spec, buckets, items.length);
+      // Trend prediction over PAST won-value, distinct from `buckets`'
+      // forward-looking open-pipeline sum -- reuses the same {user}-scoped
+      // `items` list, no new query. Fewer than 2 historical months means no
+      // regression can be fit (linearRegression's own null-return case).
+      const historical = historicalWonValueByMonth(items);
+      const predictedNextValue = historical.length >= 2
+        ? predictNext(historical.map(([, v], i) => [i, v]))
+        : null;
+      return renderDemandForecastReport(user, spec, buckets, items.length, predictedNextValue);
     }
     const view = params.get('view');
     if (view === 'board') return renderBoardView(user, entityName, spec, items);
