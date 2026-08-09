@@ -9,7 +9,7 @@ import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
 import { renderBoardView } from '@/ui/board-view-renderer.js';
 import { renderGridView } from '@/ui/grid-view-renderer.js';
 import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
-import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport, renderDemandForecastReport, renderPivotReport } from '@/ui/report-renderer.js';
+import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport, renderDemandForecastReport, renderPivotReport, renderCohortOverTimeReport } from '@/ui/report-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -376,6 +376,12 @@ export async function handlePage(pathname, req, res) {
       const valueField = params.get('value_field') || '';
       const agg = params.get('agg') || 'count';
       return renderPivotReport(user, entityName, spec, items, rowField, colField, valueField, agg);
+    }
+    if (report === 'cohort-over-time') {
+      const dateField = params.get('date_field') || '';
+      const cohortField = params.get('cohort_field') || '';
+      const granularity = params.get('granularity') || 'month';
+      return renderCohortOverTimeReport(user, entityName, spec, items, dateField, cohortField, granularity);
     }
     if (report === 'rollup') {
       const refField = params.get('ref_field') || '';
