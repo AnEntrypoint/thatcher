@@ -405,39 +405,63 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
         }
         break;
 
-      case 'POST':
+      case 'POST': {
         // enforceEditPermissions is the authoritative field-level write check --
         // it throws if the payload touches a field the caller's role isn't
         // editable_by, so a hand-crafted request bypassing the rendered form
         // cannot smuggle a restricted field in.
         permissionService.enforceEditPermissions(user, spec, body);
         result = await thatcher.create(entity, body, user);
+        const { logAction } = await import('../lib/busybase/audit.js');
+        logAction(entity, result.id, 'create', user.id, null, result);
         result = permissionService.filterFields(user, spec, result);
         status = 201;
         break;
+      }
 
       case 'PUT':
-      case 'PATCH':
+      case 'PATCH': {
         if (!id) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'ID required' }));
+          return;
+        }
+        // Same row/org-access gap the GET path had: an update by id must be
+        // scoped the same way a read is, or a user could edit a record
+        // outside their org purely because PUT was never checked.
+        const existingForUpdate = await thatcher.get(entity, id, { user });
+        if (!existingForUpdate) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
           return;
         }
         permissionService.enforceEditPermissions(user, spec, body);
         result = await thatcher.update(entity, id, body, user);
+        const { logAction: logUpdate } = await import('../lib/busybase/audit.js');
+        logUpdate(entity, id, 'update', user.id, existingForUpdate, result);
         result = permissionService.filterFields(user, spec, result);
         break;
+      }
 
-      case 'DELETE':
+      case 'DELETE': {
         if (!id) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'ID required' }));
           return;
         }
+        const existingForDelete = await thatcher.get(entity, id, { user });
+        if (!existingForDelete) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
+          return;
+        }
         await thatcher.delete(entity, id);
+        const { logAction: logDelete } = await import('../lib/busybase/audit.js');
+        logDelete(entity, id, 'delete', user.id, existingForDelete, null);
         res.writeHead(204);
         res.end();
         return;
+      }
 
       default:
         res.writeHead(405);

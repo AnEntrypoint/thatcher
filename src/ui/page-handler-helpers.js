@@ -76,12 +76,32 @@ export async function getSystemConfig() {
   } catch { return {}; }
 }
 
-export async function getAuditData() {
+export async function getAuditData(filters = {}) {
   try {
-    const audits = await list('permission_audit', {});
+    // audit_logs is the real record-change trail logAction() writes (create/
+    // update/delete/transition on every entity); permission_audit is a
+    // separate, narrower RBAC grant/revoke/role_change log. This dashboard's
+    // own column headers (Entity Type, Entity ID) describe the former, so it
+    // reads audit_logs -- the same table entity-renderer.js's per-record
+    // History section now reads, giving one consistent audit surface.
+    const where = {};
+    if (filters.entityType) where.entity_type = filters.entityType;
+    if (filters.userId) where.user_id = filters.userId;
+    let audits = await list('audit_logs', where);
+    if (filters.fromDate) audits = audits.filter(a => (a.timestamp || a.created_at) >= filters.fromDate);
+    if (filters.toDate) audits = audits.filter(a => (a.timestamp || a.created_at) <= filters.toDate);
+    audits.sort((a, b) => (b.timestamp || b.created_at || 0) - (a.timestamp || a.created_at || 0));
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
     const recent = audits.filter(a => (a.timestamp || a.created_at) > cutoff);
-    return { summary: { total_actions: recent.length, grants: recent.filter(a => a.action === 'grant').length, revokes: recent.filter(a => a.action === 'revoke').length, role_changes: recent.filter(a => a.action === 'role_change').length }, recentActivity: audits.slice(0, 50) };
+    return {
+      summary: {
+        total_actions: recent.length,
+        creates: recent.filter(a => a.action === 'create').length,
+        updates: recent.filter(a => a.action === 'update').length,
+        deletes: recent.filter(a => a.action === 'delete').length,
+      },
+      recentActivity: audits.slice(0, 200),
+    };
   } catch { return { summary: {}, recentActivity: [] }; }
 }
 
