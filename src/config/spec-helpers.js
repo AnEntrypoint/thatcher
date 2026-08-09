@@ -96,7 +96,7 @@ export function getInitialState(spec) {
       state[key] = false;
     } else if (field.type === 'int' || field.type === 'decimal' || field.type === 'currency') {
       state[key] = 0;
-    } else if (field.type === 'json' || field.type === 'multiselect') {
+    } else if (field.type === 'json' || field.type === 'multiselect' || field.type === 'multiref') {
       state[key] = [];
     } else if (field.type === 'file' || field.type === 'attachment') {
       state[key] = null;

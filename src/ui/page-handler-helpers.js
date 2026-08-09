@@ -19,7 +19,7 @@ export function resolveEnumOptions(spec) {
 
 export async function getRefOptions(spec) {
   const refOptions = {};
-  for (const [fieldKey, field] of Object.entries(spec.fields || {}).filter(([, f]) => f.type === 'ref' && f.ref)) {
+  for (const [fieldKey, field] of Object.entries(spec.fields || {}).filter(([, f]) => (f.type === 'ref' || f.type === 'multiref') && f.ref)) {
     try { refOptions[fieldKey] = (await list(field.ref, {})).map(r => ({ value: r.id, label: r.name || r.title || r.label || r.email || r.id })); }
     catch { refOptions[fieldKey] = []; }
   }

@@ -11,6 +11,7 @@ export function coerceFieldValue(value, type) {
       return value === true || value === 'true' || value === 1;
     case 'json':
     case 'multiselect':
+    case 'multiref':
     case 'file':
     case 'attachment':
       return typeof value === 'string' ? JSON.parse(value) : value;
@@ -36,12 +37,13 @@ export function deserializeField(value, type) {
   switch (type) {
     case 'json':
     case 'multiselect':
+    case 'multiref':
     case 'file':
     case 'attachment':
       try {
         return typeof value === 'string' ? JSON.parse(value) : value;
       } catch {
-        return type === 'multiselect' ? [] : {};
+        return (type === 'multiselect' || type === 'multiref') ? [] : {};
       }
     case 'bool':
       return Boolean(value);

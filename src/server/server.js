@@ -436,6 +436,19 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
           return;
         }
         permissionService.enforceEditPermissions(user, spec, body);
+        {
+          // validateUpdate is the authoritative server-side check for both
+          // generic field-type constraints AND entity-specific business
+          // rules (e.g. task dependency completion) -- this raw-CRUD path
+          // never called it at all, so those rules were UI-only until now.
+          const { validateUpdate, hasErrors } = await import('../lib/validation/entity-validators.js');
+          const updateErrors = await validateUpdate(entity, body, existingForUpdate);
+          if (hasErrors(updateErrors)) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Validation failed', errors: updateErrors }));
+            return;
+          }
+        }
         result = await thatcher.update(entity, id, body, user);
         const { logAction: logUpdate } = await import('../lib/busybase/audit.js');
         logUpdate(entity, id, 'update', user.id, existingForUpdate, result);

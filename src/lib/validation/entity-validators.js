@@ -76,6 +76,27 @@ export async function validateField(fieldDef, value, options = {}) {
     }
   }
 
+  // Multi-ref: array-of-ids referencing another entity (e.g. task.depends_on
+  // referencing other task ids) -- every id must resolve to a real record,
+  // the same existence guarantee a single 'ref' field already gets.
+  if (fieldDef.type === 'multiref' && fieldDef.ref) {
+    const arr = Array.isArray(value) ? value : (typeof value === 'string' ? JSON.parse(value) : []);
+    try {
+      const { getBy } = await import('@/lib/busybase/store');
+      const refTable = fieldDef.ref === 'user' ? 'users' : fieldDef.ref;
+      for (const refId of arr) {
+        if (!(await getBy(refTable, 'id', refId))) {
+          return {
+            valid: false,
+            error: `${fieldDef.ref.charAt(0).toUpperCase() + fieldDef.ref.slice(1)} with id '${refId}' not found`,
+          };
+        }
+      }
+    } catch {
+      // Reference table might not exist yet
+    }
+  }
+
   return { valid: true };
 }
 
@@ -94,7 +115,7 @@ function validateType(fieldDef, value, fieldName) {
     if (typeof value !== 'boolean') return `Field '${fieldName}' must be a boolean`;
   } else if (type === 'timestamp' || type === 'date') {
     if (isNaN(Number(value))) return `Field '${fieldName}' must be a valid timestamp`;
-  } else if (type === 'multiselect') {
+  } else if (type === 'multiselect' || type === 'multiref') {
     const arr = Array.isArray(value) ? value : (typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return null; } })() : null);
     if (!Array.isArray(arr)) return `Field '${fieldName}' must be an array`;
   } else if (type === 'file' || type === 'attachment') {
@@ -176,6 +197,31 @@ async function checkUnique(fieldDef, value, { fieldName, entityName, existingRec
   return null;
 }
 
+// Task completion cannot be a client-side/UI-only rule -- a raw API PATCH
+// setting status=done must be rejected server-side the same as any other
+// write, or dependency ordering is purely cosmetic. depends_on is checked
+// against the CURRENT stored state of each referenced task (never trusting
+// a value the caller might also be trying to change in the same payload).
+async function checkTaskDependencies(entityName, changes, existingRecord) {
+  if (entityName !== 'task') return null;
+  if (changes.status !== 'done') return null;
+
+  const dependsOn = changes.depends_on !== undefined ? changes.depends_on : existingRecord?.depends_on;
+  const ids = Array.isArray(dependsOn) ? dependsOn : (typeof dependsOn === 'string' && dependsOn ? (() => { try { return JSON.parse(dependsOn); } catch { return []; } })() : []);
+  if (!ids.length) return null;
+
+  const { get } = await import('@/lib/busybase/store');
+  const incomplete = [];
+  for (const depId of ids) {
+    const dep = await get('task', depId);
+    if (!dep || dep.status !== 'done') incomplete.push(depId);
+  }
+  if (incomplete.length) {
+    return `Cannot mark done: depends on incomplete task(s) ${incomplete.join(', ')}`;
+  }
+  return null;
+}
+
 export async function validateUpdate(entityName, changes, existingRecord) {
   const spec = getSpec(entityName);
   const errors = {};
@@ -201,6 +247,9 @@ export async function validateUpdate(entityName, changes, existingRecord) {
     });
     if (uniqueErr && !errors[fieldName]) errors[fieldName] = uniqueErr;
   }
+
+  const depErr = await checkTaskDependencies(entityName, changes, existingRecord);
+  if (depErr) errors.status = depErr;
 
   return errors;
 }
