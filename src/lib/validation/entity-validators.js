@@ -45,6 +45,18 @@ export async function validateField(fieldDef, value, options = {}) {
     }
   }
 
+  // Multi-select: value validated as array by validateType above; membership checked here (needs entityName for option-list resolution, same as enum)
+  if (fieldDef.type === 'multiselect' && fieldDef.options) {
+    const allowed = resolveEnumOptions(fieldDef, entityName);
+    const arr = Array.isArray(value) ? value : (typeof value === 'string' ? JSON.parse(value) : []);
+    if (allowed.length > 0 && arr.some(v => !allowed.includes(v))) {
+      return {
+        valid: false,
+        error: `Invalid value(s) for '${fieldName}'. Expected values from: ${allowed.join(', ')}`,
+      };
+    }
+  }
+
   // Reference validation
   if (fieldDef.type === 'ref' && fieldDef.ref) {
     if (existingValue !== undefined && value === existingValue) {
@@ -72,14 +84,24 @@ function validateType(fieldDef, value, fieldName) {
 
   if (type === 'string' || type === 'text') {
     if (typeof value !== 'string') return `Field '${fieldName}' must be a string`;
-  } else if (type === 'number' || type === 'int' || type === 'decimal') {
+  } else if (type === 'number' || type === 'int' || type === 'decimal' || type === 'currency') {
     if (typeof value !== 'number' || isNaN(value)) return `Field '${fieldName}' must be a number`;
+    if (type === 'currency' && !Number.isInteger(value)) return `Field '${fieldName}' must be an integer number of cents`;
+    if (fieldDef.step && (value % fieldDef.step !== 0)) return `Field '${fieldName}' must be a multiple of ${fieldDef.step}`;
     if (min !== undefined && value < min) return `Field '${fieldName}' must be at least ${min}`;
     if (max !== undefined && value > max) return `Field '${fieldName}' must be at most ${max}`;
   } else if (type === 'boolean' || type === 'bool') {
     if (typeof value !== 'boolean') return `Field '${fieldName}' must be a boolean`;
   } else if (type === 'timestamp' || type === 'date') {
     if (isNaN(Number(value))) return `Field '${fieldName}' must be a valid timestamp`;
+  } else if (type === 'multiselect') {
+    const arr = Array.isArray(value) ? value : (typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return null; } })() : null);
+    if (!Array.isArray(arr)) return `Field '${fieldName}' must be an array`;
+  } else if (type === 'file' || type === 'attachment') {
+    const f = typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return null; } })() : value;
+    if (!f || typeof f !== 'object' || typeof f.stored_name !== 'string' || typeof f.url !== 'string') {
+      return `Field '${fieldName}' must be file metadata with stored_name and url`;
+    }
   } else if (type === 'json') {
     if (typeof value === 'string') {
       try { JSON.parse(value); } catch { return `Field '${fieldName}' must be valid JSON`; }

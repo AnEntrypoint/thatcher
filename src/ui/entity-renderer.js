@@ -63,7 +63,7 @@ function roleLabel(r) {
   return KNOWN_ROLE_LABELS[key] || (key.length > 8 ? 'Staff' : (key.charAt(0).toUpperCase() + key.slice(1)))
 }
 
-function formatFieldValue(k, v, entityName) {
+function formatFieldValue(k, v, entityName, f) {
   if (entityName === 'user' && k === 'role') return `<span class="pill pill-neutral">${roleLabel(v)}</span>`
   if (entityName === 'user' && k === 'status') {
     const cls = v === 'active' ? 'pill-success' : v === 'deleted' ? 'pill-danger' : 'pill-neutral'
@@ -71,6 +71,15 @@ function formatFieldValue(k, v, entityName) {
   }
   if (entityName === 'user' && k === 'email' && v) { const e = esc(v); return `<a href="mailto:${e}" class="text-primary hover:underline">${e}</a>` }
   if (k === 'photo_url' && v && v.startsWith('http')) return `<img src="${esc(v)}" style="width:2.5rem;height:2.5rem;border-radius:50%;object-fit:cover" alt="avatar" onerror="this.style.display='none'"/>`
+  if (f?.type === 'currency' && typeof v === 'number') return esc((f.currency_symbol || '$') + (v / 100).toFixed(2))
+  if (f?.type === 'multiselect') {
+    const arr = Array.isArray(v) ? v : (typeof v === 'string' && v ? (() => { try { return JSON.parse(v) } catch { return [] } })() : [])
+    return arr.length ? arr.map(x => `<span class="pill pill-neutral" style="margin-right:4px">${esc(x)}</span>`).join('') : '-'
+  }
+  if (f?.type === 'file' || f?.type === 'attachment') {
+    const meta = typeof v === 'object' && v ? v : (typeof v === 'string' && v ? (() => { try { return JSON.parse(v) } catch { return null } })() : null)
+    return meta?.url ? `<a href="${esc(meta.url)}" class="text-primary hover:underline" target="_blank" rel="noopener">${esc(meta.filename || 'Download')}</a>` : '-'
+  }
   return fmtVal(v, k)
 }
 
@@ -85,7 +94,7 @@ export function renderEntityDetail(entityName, item, spec, user) {
   const fieldRows = visibleFields.map(([k, f]) =>
     `<div class="detail-row">
       <span class="detail-row-label">${esc(f.label || k)}</span>
-      <span class="detail-row-value">${formatFieldValue(k, item[k], entityName)}</span>
+      <span class="detail-row-value">${formatFieldValue(k, item[k], entityName, f)}</span>
     </div>`
   ).join('')
 
@@ -159,6 +168,21 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
       const opts = (Array.isArray(f.options) ? f.options : []).map(o => { const ov = typeof o === 'string' ? o : o.value; const ol = typeof o === 'string' ? o : o.label; return `<option value="${esc(ov)}" ${val===ov?'selected':''}>${esc(ol)}</option>` }).join('')
       return `<div class="form-field">${lbl(k,f,f.required)}<select id="field-${k}" name="${k}" class="form-input" ${req}><option value="">Select ${esc(f.label||k)}...</option>${opts}</select></div>`
     }
+    if (f.type === 'multiselect' && f.options) {
+      const selected = new Set(Array.isArray(val) ? val : (typeof val === 'string' && val ? (() => { try { return JSON.parse(val) } catch { return [] } })() : []))
+      const opts = (Array.isArray(f.options) ? f.options : []).map(o => { const ov = typeof o === 'string' ? o : o.value; const ol = typeof o === 'string' ? o : o.label; return `<label style="display:flex;align-items:center;gap:6px;margin:2px 0"><input type="checkbox" name="${k}[]" value="${esc(ov)}" class="checkbox checkbox-primary" ${selected.has(ov)?'checked':''}/><span>${esc(ol)}</span></label>` }).join('')
+      return `<div class="form-field full">${lbl(k,f,f.required)}<div id="field-${k}" data-multiselect="${k}">${opts}</div></div>`
+    }
+    if (f.type === 'currency') {
+      const symbol = esc(f.currency_symbol || '$')
+      const decimalVal = typeof val === 'number' ? (val / 100).toFixed(2) : val
+      return `<div class="form-field">${lbl(k,f,f.required)}<div style="display:flex;align-items:center;gap:6px"><span>${symbol}</span><input type="number" step="0.01" id="field-${k}" name="${k}" value="${esc(decimalVal)}" class="form-input" data-currency="${k}" ${req} placeholder="0.00"/></div></div>`
+    }
+    if (f.type === 'file' || f.type === 'attachment') {
+      const existing = val && typeof val === 'object' ? val : (typeof val === 'string' && val ? (() => { try { return JSON.parse(val) } catch { return null } })() : null)
+      const existingNote = existing?.filename ? `<div style="font-size:0.8rem;color:var(--color-text-muted)" data-existing-file="${k}">Current: ${esc(existing.filename)}</div>` : ''
+      return `<div class="form-field">${lbl(k,f,f.required)}<input type="file" id="field-${k}" data-attachment="${k}" class="form-input" ${existing ? '' : req}/>${existingNote}<input type="hidden" id="field-${k}-value" name="${k}" value="${existing ? esc(JSON.stringify(existing)) : ''}"/></div>`
+    }
     return `<div class="form-field">${lbl(k,f,f.required)}<input type="${type}" id="field-${k}" name="${k}" value="${esc(val)}" class="form-input" ${req} ${placeholder}/></div>`
   }).join('\n')
 
@@ -176,7 +200,7 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
     <div class="form-section"><form id="entity-form" class="form-grid" aria-label="${isNew ? 'Create' : 'Edit'} ${esc(label)}">${templatePicker}${formFields}${pwField}
     <div class="form-actions" style="grid-column:1/-1"><button type="submit" id="submit-btn" class="btn-primary-clean"><span class="btn-text">Save</span><span class="btn-loading-text" style="display:none">Saving...</span></button>
     <a href="/${entityName}${isNew ? '' : '/' + item?.id}" class="btn-ghost-clean">Cancel</a></div></form></div></div>`
-  const script = `${TOAST_SCRIPT}const form=document.getElementById('entity-form');const sb=document.getElementById('submit-btn');form.addEventListener('submit',async(e)=>{e.preventDefault();sb.classList.add('btn-loading');sb.querySelector('.btn-text').style.display='none';sb.querySelector('.btn-loading-text').style.display='inline';sb.disabled=true;const fd=new FormData(form);const data={};for(const[k,v]of fd.entries())data[k]=v;form.querySelectorAll('input[type=checkbox]').forEach(cb=>{data[cb.name]=cb.checked});form.querySelectorAll('input[type=number]').forEach(inp=>{if(inp.name&&data[inp.name]!==undefined&&data[inp.name]!=='')data[inp.name]=Number(data[inp.name])});const url=${isNew}?'/api/${entityName}':'/api/${entityName}/${item?.id}';const method=${isNew}?'POST':'PUT';try{const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await res.json();if(res.ok){showToast('${isNew?'Created':'Updated'} successfully!','success');const ed=result.data||result;setTimeout(()=>{window.location='/${entityName}/'+(ed.id||'${item?.id}')},500)}else{showToast(result.message||result.error||'Save failed','error');sb.classList.remove('btn-loading');sb.querySelector('.btn-text').style.display='inline';sb.querySelector('.btn-loading-text').style.display='none';sb.disabled=false}}catch(err){showToast('Error: '+err.message,'error');sb.classList.remove('btn-loading');sb.querySelector('.btn-text').style.display='inline';sb.querySelector('.btn-loading-text').style.display='none';sb.disabled=false}})`
+  const script = `${TOAST_SCRIPT}const form=document.getElementById('entity-form');const sb=document.getElementById('submit-btn');form.addEventListener('submit',async(e)=>{e.preventDefault();sb.classList.add('btn-loading');sb.querySelector('.btn-text').style.display='none';sb.querySelector('.btn-loading-text').style.display='inline';sb.disabled=true;try{const fileInputs=[...form.querySelectorAll('input[type=file][data-attachment]')];for(const fi of fileInputs){const f=fi.files&&fi.files[0];if(!f)continue;const uf=new FormData();uf.append('file',f);const ures=await fetch('/api/upload',{method:'POST',body:uf});const ud=await ures.json();if(!ures.ok)throw new Error(ud.error||'File upload failed');const hidden=document.getElementById('field-'+fi.dataset.attachment+'-value');hidden.value=JSON.stringify(ud)}const fd=new FormData(form);const data={};for(const[k,v]of fd.entries()){if(k.endsWith('[]'))continue;data[k]=v}form.querySelectorAll('input[type=checkbox]:not([name$="[]"])').forEach(cb=>{data[cb.name]=cb.checked});form.querySelectorAll('[data-multiselect]').forEach(ms=>{const name=ms.dataset.multiselect;data[name]=[...ms.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value)});form.querySelectorAll('input[type=number]:not([data-currency])').forEach(inp=>{if(inp.name&&data[inp.name]!==undefined&&data[inp.name]!=='')data[inp.name]=Number(data[inp.name])});form.querySelectorAll('input[data-currency]').forEach(inp=>{const name=inp.dataset.currency;if(inp.value!=='')data[name]=Math.round(Number(inp.value)*100)});const url=${isNew}?'/api/${entityName}':'/api/${entityName}/${item?.id}';const method=${isNew}?'POST':'PUT';const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await res.json();if(res.ok){showToast('${isNew?'Created':'Updated'} successfully!','success');const ed=result.data||result;setTimeout(()=>{window.location='/${entityName}/'+(ed.id||'${item?.id}')},500)}else{showToast(result.message||result.error||'Save failed','error');sb.classList.remove('btn-loading');sb.querySelector('.btn-text').style.display='inline';sb.querySelector('.btn-loading-text').style.display='none';sb.disabled=false}}catch(err){showToast('Error: '+err.message,'error');sb.classList.remove('btn-loading');sb.querySelector('.btn-text').style.display='inline';sb.querySelector('.btn-loading-text').style.display='none';sb.disabled=false}})`
   return page(user, `${isNew ? 'Create' : 'Edit'} ${label}`, bc, content, [script])
 }
 

@@ -215,10 +215,14 @@ function coerceFieldValue(value, type) {
   switch (type) {
     case 'int':
     case 'decimal':
+    case 'currency':
       return Number(value);
     case 'bool':
       return Boolean(value);
     case 'json':
+    case 'multiselect':
+    case 'file':
+    case 'attachment':
       return typeof value === 'string' ? JSON.parse(value) : value;
     case 'date':
     case 'timestamp':

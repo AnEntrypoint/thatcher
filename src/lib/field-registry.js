@@ -4,11 +4,15 @@ export function coerceFieldValue(value, type) {
   switch (type) {
     case 'int':
     case 'decimal':
+    case 'currency':
       return Number(value);
     case 'bool':
     case 'boolean':
       return value === true || value === 'true' || value === 1;
     case 'json':
+    case 'multiselect':
+    case 'file':
+    case 'attachment':
       return typeof value === 'string' ? JSON.parse(value) : value;
     case 'date':
     case 'timestamp': {
@@ -31,10 +35,13 @@ export function deserializeField(value, type) {
 
   switch (type) {
     case 'json':
+    case 'multiselect':
+    case 'file':
+    case 'attachment':
       try {
         return typeof value === 'string' ? JSON.parse(value) : value;
       } catch {
-        return {};
+        return type === 'multiselect' ? [] : {};
       }
     case 'bool':
       return Boolean(value);

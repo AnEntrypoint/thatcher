@@ -94,10 +94,12 @@ export function getInitialState(spec) {
       state[key] = field.default;
     } else if (field.type === 'bool') {
       state[key] = false;
-    } else if (field.type === 'int' || field.type === 'decimal') {
+    } else if (field.type === 'int' || field.type === 'decimal' || field.type === 'currency') {
       state[key] = 0;
-    } else if (field.type === 'json') {
+    } else if (field.type === 'json' || field.type === 'multiselect') {
       state[key] = [];
+    } else if (field.type === 'file' || field.type === 'attachment') {
+      state[key] = null;
     } else if (field.type === 'date' || field.type === 'timestamp') {
       state[key] = null;
     } else {
