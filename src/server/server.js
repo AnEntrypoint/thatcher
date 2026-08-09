@@ -106,6 +106,14 @@ export function createServer(options) {
           return await handleCsvImport(req, res, entity, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && entity === 'organization' && id === 'switch' && !action) {
+          return await handleSwitchOrganization(req, res, thatcher, configEngine);
+        }
+
+        if (req.method === 'GET' && entity === 'organization' && id === 'memberships' && !action) {
+          return await handleListMemberships(req, res, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -326,6 +334,95 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
 
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleListMemberships(req, res, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  if (!configEngine.isMultiTenancyEnabled?.()) {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: 'Multi-tenancy is not enabled' }));
+    return;
+  }
+
+  try {
+    const { list, get } = await import('../lib/busybase/store.js');
+    const memberships = await list('user_organization', { user_id: user.id });
+    const orgs = [];
+    for (const m of memberships) {
+      const org = await get('organization', m.organization_id);
+      if (org) orgs.push({ id: org.id, name: org.name });
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ organizations: orgs, active: user.organization_id || null }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleSwitchOrganization(req, res, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  if (!configEngine.isMultiTenancyEnabled?.()) {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: 'Multi-tenancy is not enabled' }));
+    return;
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const targetOrgId = typeof body === 'object' ? body?.organization_id : null;
+  if (!targetOrgId) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'organization_id required' }));
+    return;
+  }
+
+  try {
+    const { list, update } = await import('../lib/busybase/store.js');
+    const memberships = await list('user_organization', { user_id: user.id });
+    const isMember = memberships.some(m => m.organization_id === targetOrgId);
+    if (!isMember) {
+      res.writeHead(403);
+      res.end(JSON.stringify({ error: 'Not a member of that organization' }));
+      return;
+    }
+    const updated = await update('user', user.id, { organization_id: targetOrgId });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, organization_id: updated.organization_id }));
   } catch (err) {
     apiLog.error(err.message);
     res.writeHead(500);

@@ -67,7 +67,7 @@ async function handleSearch(user, req) {
   const searchableEntities = entityFilter ? allEntityNames.filter(e => e === entityFilter) : allEntityNames;
   const results = {};
   for (const eName of searchableEntities) {
-    try { let items = await list(eName, {}); if (q) items = items.filter(i => JSON.stringify(i).toLowerCase().includes(q.toLowerCase())); if (statusFilter) items = items.filter(i => i.status === statusFilter); const spec = getSpec(eName); if (spec) items = resolveRefFields(items, spec); results[eName] = items.slice(0, 50); } catch {}
+    try { let items = await list(eName, {}, { user }); if (q) items = items.filter(i => JSON.stringify(i).toLowerCase().includes(q.toLowerCase())); if (statusFilter) items = items.filter(i => i.status === statusFilter); const spec = getSpec(eName); if (spec) items = resolveRefFields(items, spec); results[eName] = items.slice(0, 50); } catch {}
   }
   return renderAdvancedSearch(user, results, { teams, entityNames: allEntityNames });
 }
@@ -81,7 +81,7 @@ async function handleGenericEntityView(user, entityName, id) {
     return lazyEntityForm(entityName, null, resolvedSpec, user, true, await getRefOptions(resolvedSpec));
   }
   if (!canView(user, entityName)) return renderAccessDenied(user, entityName, 'view');
-  const item = await get(entityName, id); if (!item) return null;
+  const item = await get(entityName, id, { user }); if (!item) return null;
   if (item.team_id && user.team_id && item.team_id !== user.team_id && !isPartner(user)) return renderAccessDenied(user, entityName, 'view');
   if (isClientUser(user) && user.client_id && item.client_id && item.client_id !== user.client_id) return renderAccessDenied(user, entityName, 'view');
   const [resolvedItem] = resolveRefFields([item], spec);
@@ -223,7 +223,7 @@ export async function handlePage(pathname, req, res) {
     const spec = getSpec(entityName); if (!spec) return null;
     if (isClientUser(user) && !canClientAccessEntity(user, entityName)) return renderAccessDenied(user, entityName, 'list');
     if (!canList(user, entityName)) return renderAccessDenied(user, entityName, 'list');
-    let items = await list(entityName, {});
+    let items = await list(entityName, {}, { user });
     if (isClientUser(user) && user.client_id) items = items.filter(item => { if (item.client_id) return item.client_id === user.client_id; if (item.assigned_to) return item.assigned_to === user.id; return true; });
     items = resolveRefFields(items, spec);
     const params = reqUrl(req).searchParams;

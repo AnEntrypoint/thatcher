@@ -26,8 +26,17 @@ class PermissionService {
     return Array.isArray(allowed) && allowed.includes(user.role);
   }
 
+  checkOrganizationAccess(user, spec, record) {
+    if (!user) return false;
+    if (!spec.fields?.organization_id) return true;
+    if (record.organization_id == null) return true;
+    return record.organization_id === user.organization_id;
+  }
+
   checkRowAccess(user, spec, record) {
     if (!user) return false;
+    if (!this.checkOrganizationAccess(user, spec, record)) return false;
+
     const rowAccess = spec.rowAccess || spec.row_access;
     if (!rowAccess) return true;
 
