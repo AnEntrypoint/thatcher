@@ -1,6 +1,7 @@
 import { page, dataTable } from '@/ui/layout.js'
 import { fmtVal, TOAST_SCRIPT, esc } from '@/ui/render-helpers.js'
 import { canCreate, canEdit, canDelete } from '@/ui/permissions-ui.js'
+import { permissionService } from '@/services/permission.service.js'
 
 export function renderEntityList(entityName, items, spec, user, options = {}) {
   const label = spec?.labelPlural || spec?.label || entityName
@@ -85,7 +86,10 @@ function formatFieldValue(k, v, entityName, f) {
 
 export function renderEntityDetail(entityName, item, spec, user) {
   const label = spec?.label || entityName
-  const fields = spec?.fields || {}
+  // A field the caller's role isn't visible_to must never reach rendered HTML,
+  // not just be CSS-hidden -- filterFields drops it from `fields` entirely so
+  // it can't appear in visibleFields below however this function evolves.
+  const fields = permissionService.filterFields(user, spec || {}, spec?.fields || {})
   const userCanEdit = canEdit(user, entityName)
   const userCanDelete = canDelete(user, entityName)
 
@@ -141,7 +145,15 @@ export function renderEntityDetail(entityName, item, spec, user) {
 
 export function renderEntityForm(entityName, item, spec, user, isNew = false, refOptions = {}, templates = []) {
   const label = spec?.label || entityName
-  const fields = spec?.fields || {}
+  // A field the caller's role isn't editable_by must not be offered in the
+  // form at all -- omitting it here is UX (a clean form), the real
+  // enforcement is enforceEditPermissions rejecting the field server-side if
+  // a raw request includes it anyway.
+  const allFields = spec?.fields || {}
+  const fields = {}
+  for (const [k, f] of Object.entries(allFields)) {
+    if (permissionService.checkFieldAccess(user, spec || {}, k, 'edit')) fields[k] = f
+  }
   const lbl = (k, f, req) => `<label class="form-label" for="field-${k}">${esc(f.label||k)}${req ? '<span class="req">*</span>' : ''}</label>`
   const formFields = Object.entries(fields).filter(([k, f]) => k !== 'id' && !f.auto && !f.readOnly && !f.auto_generate && k !== 'password_hash').map(([k, f]) => {
     let val = item?.[k] ?? f.default ?? ''

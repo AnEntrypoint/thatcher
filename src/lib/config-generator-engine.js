@@ -513,6 +513,21 @@ export class ConfigGeneratorEngine {
       };
     }
 
+    // Field-level RBAC: a field's visible_to/editable_by (already present on
+    // spec.fields[key] via the `...field` spread above) is compiled into
+    // spec.fieldPermissions, the shape permission.service.js's checkFieldAccess
+    // already reads. A field with neither key contributes no entry here, so
+    // checkFieldAccess's `if (!perm) return true` keeps every role's access
+    // exactly as it was before this feature existed -- no regression for the
+    // overwhelming majority of fields that never set either key.
+    for (const [key, field] of Object.entries(spec.fields)) {
+      if (!field.visible_to && !field.editable_by) continue;
+      spec.fieldPermissions = spec.fieldPermissions || {};
+      spec.fieldPermissions[key] = {};
+      if (field.visible_to) spec.fieldPermissions[key].view = field.visible_to;
+      if (field.editable_by) spec.fieldPermissions[key].edit = field.editable_by;
+    }
+
     if (entityDef.permission_template) {
       const matrix = this.getPermissionTemplate(entityDef.permission_template);
       const access = {};
