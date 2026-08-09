@@ -9,7 +9,7 @@ import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
 import { renderBoardView } from '@/ui/board-view-renderer.js';
 import { renderGridView } from '@/ui/grid-view-renderer.js';
 import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
-import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport } from '@/ui/report-renderer.js';
+import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport, renderDemandForecastReport } from '@/ui/report-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -391,6 +391,16 @@ export async function handlePage(pathname, req, res) {
         forecastRows.push({ ...p, current_stock: currentStock, ...forecast });
       }
       return renderInventoryForecastReport(user, spec, forecastRows);
+    }
+    if (report === 'demand-forecast' && entityName === 'opportunity') {
+      // items is already the {user}-scoped opportunity list fetched at the
+      // top of this route (same list(entityName,{},{user}) every other
+      // entity route uses) -- no new unscoped query, and each item already
+      // carries a computed weighted_value from list()'s own formula-field
+      // pass, reused directly rather than recomputed.
+      const { projectDemandByMonth } = await import('@/lib/demand-forecast.js');
+      const buckets = projectDemandByMonth(items);
+      return renderDemandForecastReport(user, spec, buckets, items.length);
     }
     const view = params.get('view');
     if (view === 'board') return renderBoardView(user, entityName, spec, items);
