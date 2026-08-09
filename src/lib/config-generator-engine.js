@@ -79,12 +79,30 @@ const ENTITY_TEMPLATE_ENTITY_DEFAULT = {
   },
 };
 
+const SCHEDULED_JOB_ENTITY_DEFAULT = {
+  label: 'Scheduled Job',
+  label_plural: 'Scheduled Jobs',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    entity: { type: 'text', required: true, label: 'Entity' },
+    action: { type: 'json', required: true, label: 'Action' },
+    filter: { type: 'json', label: 'Filter' },
+    interval_minutes: { type: 'int', required: true, label: 'Interval (minutes)' },
+    last_run_at: { type: 'int', label: 'Last Run At' },
+    next_run_at: { type: 'int', label: 'Next Run At' },
+    enabled: { type: 'bool', default: true, label: 'Enabled' },
+    owner_id: { type: 'ref', ref: 'user', required: true, label: 'Owner' },
+  },
+};
+
 function withWebhookDefaults(masterConfig) {
   const entities = { ...(masterConfig.entities || {}) };
   let changed = false;
   if (!entities.webhook) { entities.webhook = WEBHOOK_ENTITY_DEFAULT; changed = true; }
   if (!entities.webhook_delivery) { entities.webhook_delivery = WEBHOOK_DELIVERY_ENTITY_DEFAULT; changed = true; }
   if (!entities.entity_template) { entities.entity_template = ENTITY_TEMPLATE_ENTITY_DEFAULT; changed = true; }
+  if (!entities.scheduled_job) { entities.scheduled_job = SCHEDULED_JOB_ENTITY_DEFAULT; changed = true; }
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 

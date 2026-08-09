@@ -10,6 +10,7 @@ import { renderWorkflowList, renderWorkflowEditor } from '@/ui/workflow-builder-
 import { renderRolesList, renderTemplateList, renderPermissionMatrix } from '@/ui/rbac-renderer.js';
 import { renderWebhookList, renderWebhookDetail } from '@/ui/webhook-renderer.js';
 import { renderTemplateList as renderEntityTemplateList } from '@/ui/template-renderer.js';
+import { renderScheduledJobList } from '@/ui/scheduled-job-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
 import { getSystemConfig, getSettingsCounts, getAuditData, getSystemHealth, renderBuildLogsContent } from '@/ui/page-handler-helpers.js';
 import { fileURLToPath } from 'url';
@@ -190,6 +191,14 @@ export async function handleAdminPage(normalized, segments, user) {
       templatesByEntity[t.entity].push(t);
     }
     return renderEntityTemplateList(user, entityNames, templatesByEntity);
+  }
+  if (normalized === '/admin/scheduled-jobs') {
+    if (!isPartner(user)) return renderAccessDenied(user, 'admin', 'view');
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const entityNames = engine.getAllEntities().filter(e => e !== 'scheduled_job' && e !== 'entity_template' && e !== 'webhook' && e !== 'webhook_delivery' && e !== 'user_organization');
+    let jobs = []; try { jobs = await list('scheduled_job', {}); } catch {}
+    return renderScheduledJobList(user, jobs, entityNames);
   }
   return null;
 }
