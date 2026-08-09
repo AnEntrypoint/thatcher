@@ -237,3 +237,23 @@ export function renderInventoryForecastReport(user, spec, forecastRows) {
     </table></div>`;
   return page(user, `Inventory Forecast | Thatcher`, null, content);
 }
+
+// Reuses sumBarChart (already built for sum-by-field's currency-aware bar
+// rendering) rather than inventing a third chart type -- a demand-by-month
+// bucket is the exact same [label, numericValue] shape sum-by-field already
+// renders, just currency-formatted since weighted_value derives from a
+// currency field.
+export function renderDemandForecastReport(user, spec, buckets, totalOpportunities) {
+  const label = getEntityLabel(spec, true) || 'Opportunities';
+  const valueFieldDef = spec.fields?.value || { type: 'currency' };
+  const totalProjected = buckets.reduce((sum, [, v]) => sum + v, 0);
+  const notice = !buckets.length
+    ? `<div class="report-notice">No open opportunities with a future expected close date</div>`
+    : '';
+  const content = `<div class="page-header">
+      <div><h1 class="page-title">${esc(label)}: Demand Forecast</h1><p class="page-subtitle">${totalOpportunities} total opportunities, ${esc(formatSumValue(totalProjected, valueFieldDef))} projected across ${buckets.length} future month${buckets.length === 1 ? '' : 's'}</p></div>
+    </div>
+    ${notice}
+    ${sumBarChart(buckets, valueFieldDef)}`;
+  return page(user, `Demand Forecast | Thatcher`, null, content);
+}
