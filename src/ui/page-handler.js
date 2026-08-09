@@ -28,13 +28,13 @@ function reqUrl(req) {
 
 async function handleEngagementDetail(user, engId) {
   if (!canView(user, 'engagement')) return renderAccessDenied(user, 'engagement', 'view');
-  const engagement = await get('engagement', engId);
+  const engagement = await get('engagement', engId, { user });
   if (!engagement) return null;
   let client = null; try { client = engagement.client_id ? await get('client', engagement.client_id) : null; } catch {}
-  let rfis = []; try { rfis = await list('rfi', { engagement_id: engId }); } catch {}
+  let rfis = []; try { rfis = await list('rfi', { engagement_id: engId }, { user }); } catch {}
   let sections = [];
   try {
-    sections = await list('rfi_section', { engagement_id: engId }, { sort: { field: 'sort_order', dir: 'ASC' } });
+    sections = await list('rfi_section', { engagement_id: engId }, { sort: { field: 'sort_order', dir: 'ASC' }, user });
   } catch {}
   let team = null; try { team = engagement.team_id ? await get('team', engagement.team_id) : null; } catch {}
   let assignedUsers = [];
@@ -49,7 +49,7 @@ async function handleEngagementDetail(user, engId) {
 }
 async function handleEngagementList(user, req) {
   if (!canList(user, 'engagement')) return renderAccessDenied(user, 'engagement', 'list');
-  let engagements = await list('engagement', {});
+  let engagements = await list('engagement', {}, { user });
   const clientMap = Object.fromEntries((await list('client', {})).map(c => [c.id, c.name]));
   engagements = engagements.map(e => ({ ...e, client_name: clientMap[e.client_id] || e.client_name || '-' }));
   const spec = getSpec('engagement'); if (spec) engagements = resolveRefFields(engagements, spec);
@@ -91,14 +91,14 @@ async function handleGenericEntityView(user, entityName, id) {
 }
 async function handleClientSubRoute(user, clientId, subRoute) {
   if (!canView(user, 'client')) return renderAccessDenied(user, 'client', 'view');
-  const client = await get('client', clientId); if (!client) return null;
+  const client = await get('client', clientId, { user }); if (!client) return null;
   if (isClientUser(user) && user.client_id && user.client_id !== clientId) return renderAccessDenied(user, 'client', 'view');
   if (subRoute === 'dashboard' || subRoute === 'users') return renderClientDashboard(user, client, await getClientDashboardStats(clientId));
   if (subRoute === 'progress') {
-    let engagements = []; try { engagements = (await list('engagement', {})).filter(e => e.client_id === clientId); } catch {}
+    let engagements = []; try { engagements = (await list('engagement', {}, { user })).filter(e => e.client_id === clientId); } catch {}
     const spec = getSpec('engagement'); if (spec) engagements = resolveRefFields(engagements, spec);
     let rfiStats = { total: 0, responded: 0, overdue: 0 };
-    try { const allRfis = (await list('rfi', {})).filter(r => engagements.some(e => e.id === r.engagement_id)); const now = Math.floor(Date.now() / 1000); rfiStats = { total: allRfis.length, responded: allRfis.filter(r => r.status === 'responded' || r.status === 'completed').length, overdue: allRfis.filter(r => r.due_date && r.due_date < now && r.status !== 'closed').length }; } catch {}
+    try { const allRfis = (await list('rfi', {}, { user })).filter(r => engagements.some(e => e.id === r.engagement_id)); const now = Math.floor(Date.now() / 1000); rfiStats = { total: allRfis.length, responded: allRfis.filter(r => r.status === 'responded' || r.status === 'completed').length, overdue: allRfis.filter(r => r.due_date && r.due_date < now && r.status !== 'closed').length }; } catch {}
     return renderClientProgress(user, client, engagements, rfiStats);
   }
   return null;
@@ -106,7 +106,7 @@ async function handleClientSubRoute(user, clientId, subRoute) {
 async function handleGenericEntityEdit(user, entityName, id) {
   const spec = getSpec(entityName); if (!spec) return null;
   if (!canEdit(user, entityName)) return renderAccessDenied(user, entityName, 'edit');
-  const item = await get(entityName, id); if (!item) return null;
+  const item = await get(entityName, id, { user }); if (!item) return null;
   if (item.team_id && user.team_id && item.team_id !== user.team_id && !isPartner(user)) return renderAccessDenied(user, entityName, 'edit');
   const resolvedSpec = resolveEnumOptions(spec);
   const { renderEntityForm: lazyEntityForm } = await lazyRenderer('entity-renderer.js');
@@ -131,7 +131,7 @@ export async function handlePage(pathname, req, res) {
   const user = await getUser();
   if (!user) { res.writeHead(302, { Location: '/login' }); res.end(); return REDIRECT; }
   if (normalized === '/unauthorized') return renderAccessDenied(user, 'system', 'access');
-  if (normalized === '/notifications') { let notifs=[]; try{notifs=await list('notification',{user_id:user.id},{sort:{field:'created_at',dir:'DESC'},limit:100})}catch{} const{renderNotificationsPage}=await lazyRenderer('notifications-renderer.js'); return renderNotificationsPage(user,notifs); }
+  if (normalized === '/notifications') { let notifs=[]; try{notifs=await list('notification',{user_id:user.id},{sort:{field:'created_at',dir:'DESC'},limit:100,user})}catch{} const{renderNotificationsPage}=await lazyRenderer('notifications-renderer.js'); return renderNotificationsPage(user,notifs); }
   if (normalized === '/' || normalized === '/dashboard') return renderDashboard(user, await getDashboardStats(user));
   if (normalized.startsWith('/admin/') || normalized === '/admin/jobs') return handleAdminPage(normalized, segments, user);
   if (segments[0] === 'client' && segments.length === 3 && ['dashboard', 'users', 'progress'].includes(segments[2])) return handleClientSubRoute(user, segments[1], segments[2]);
@@ -141,7 +141,7 @@ export async function handlePage(pathname, req, res) {
     let myReviews = [], sharedReviews = [], recentActivity = [];
     // OR across two columns: busybase eq() is single-column, so fetch + filter in JS.
     try {
-      const reviews = await list('review', {}, { sort: { field: 'updated_at', dir: 'DESC' } });
+      const reviews = await list('review', {}, { sort: { field: 'updated_at', dir: 'DESC' }, user });
       myReviews = reviews.filter(r => r.created_by === user.id || r.assigned_to === user.id).slice(0, 100);
     } catch {}
     // Old JOIN collaborator -> two-step: collaborator rows for this user, then their reviews.
@@ -149,12 +149,12 @@ export async function handlePage(pathname, req, res) {
       const collabs = await list('collaborator', { user_id: user.id });
       const ids = new Set(collabs.map(c => c.review_id));
       if (ids.size) {
-        const reviews = await list('review', {}, { sort: { field: 'updated_at', dir: 'DESC' } });
+        const reviews = await list('review', {}, { sort: { field: 'updated_at', dir: 'DESC' }, user });
         sharedReviews = reviews.filter(r => ids.has(r.id)).slice(0, 100);
       }
     } catch {}
     try {
-      recentActivity = (await list('audit_logs', { entity_type: 'review' }, { sort: { field: 'created_at', dir: 'DESC' } })).slice(0, 50);
+      recentActivity = (await list('audit_logs', { entity_type: 'review' }, { sort: { field: 'created_at', dir: 'DESC' }, user })).slice(0, 50);
     } catch {}
     const all = [...myReviews, ...sharedReviews];
     const stats = { myReviews, sharedReviews, recentActivity, totalReviews: all.length, activeReviews: all.filter(r => (r.status||'open') !== 'archived' && (r.status||'open') !== 'completed' && (r.status||'open') !== 'closed').length, flaggedReviews: all.filter(r => r.flagged).length, overdueReviews: 0 };
@@ -179,11 +179,11 @@ export async function handlePage(pathname, req, res) {
     let candidates = []; let reviewMap = {};
     try {
       // Old: highlights with a non-trivial comment (LIKE '%?' OR length>40), newest 50.
-      const all = await list('highlight', {}, { sort: { field: 'created_at', dir: 'DESC' } });
+      const all = await list('highlight', {}, { sort: { field: 'created_at', dir: 'DESC' }, user });
       candidates = all.filter(c => c.comment && (c.comment.includes('?') || c.comment.length > 40)).slice(0, 50);
       const revIds = [...new Set(candidates.map((c) => c.review_id))];
       if (revIds.length) {
-        const reviews = await list('review', {});
+        const reviews = await list('review', {}, { user });
         const byId = new Map(reviews.map(r => [r.id, r.name || '-']));
         reviewMap = Object.fromEntries(revIds.map(id => [id, byId.get(id) || '-']));
       }
@@ -194,19 +194,19 @@ export async function handlePage(pathname, req, res) {
   if (segments.length === 2 && (segments[0] === 'engagements' || segments[0] === 'engagement') && segments[1] !== 'new') return handleEngagementDetail(user, segments[1]);
   if (segments[0] === 'engagement' && segments.length === 3 && segments[2] === 'letter') {
     if (!canView(user, 'engagement')) return renderAccessDenied(user, 'engagement', 'view');
-    const engagement = await get('engagement', segments[1]); if (!engagement) return null;
+    const engagement = await get('engagement', segments[1], { user }); if (!engagement) return null;
     return renderLetterWorkflow(user, engagement);
   }
   if (segments[0] === 'engagement' && segments.length === 3 && segments[2] === 'report') {
     if (!canView(user, 'engagement')) return renderAccessDenied(user, 'engagement', 'view');
-    const engId = segments[1]; const engagement = await get('engagement', engId); if (!engagement) return null;
+    const engId = segments[1]; const engagement = await get('engagement', engId, { user }); if (!engagement) return null;
     let client=null,team=null,rfis=[],reviews=[],highlights=[],activity=[];
     try{client=engagement.client_id?await get('client',engagement.client_id):null}catch{}
     try{team=engagement.team_id?await get('team',engagement.team_id):null}catch{}
-    try{rfis=await list('rfi',{engagement_id:engId},{sort:{field:'created_at',dir:'DESC'}})}catch{}
-    try{reviews=await list('review',{engagement_id:engId},{sort:{field:'created_at',dir:'DESC'}})}catch{}
-    try{const rids=new Set(reviews.map(r=>r.id));if(rids.size){const allHl=await list('highlight',{});highlights=allHl.filter(h=>rids.has(h.review_id))}}catch{}
-    try{activity=(await list('audit_logs',{entity_type:'engagement',entity_id:engId},{sort:{field:'created_at',dir:'DESC'}})).slice(0,20)}catch{}
+    try{rfis=await list('rfi',{engagement_id:engId},{sort:{field:'created_at',dir:'DESC'},user})}catch{}
+    try{reviews=await list('review',{engagement_id:engId},{sort:{field:'created_at',dir:'DESC'},user})}catch{}
+    try{const rids=new Set(reviews.map(r=>r.id));if(rids.size){const allHl=await list('highlight',{},{user});highlights=allHl.filter(h=>rids.has(h.review_id))}}catch{}
+    try{activity=(await list('audit_logs',{entity_type:'engagement',entity_id:engId},{sort:{field:'created_at',dir:'DESC'},user})).slice(0,20)}catch{}
     const{renderFlexupReport}=await lazyRenderer('flexup-report-renderer.js');
     return renderFlexupReport(user,engagement,client,rfis,reviews,highlights,activity,team);
   }
@@ -215,7 +215,7 @@ export async function handlePage(pathname, req, res) {
   if (segments.length === 1 && segments[0] === 'rfi') return handleRfiList(user);
   if (segments.length === 1 && segments[0] === 'client') {
     if (!canList(user, 'client')) return renderAccessDenied(user, 'client', 'list');
-    let clients = await list('client', {});
+    let clients = await list('client', {}, { user });
     if (isClientUser(user) && user.client_id) clients = clients.filter(c => c.id === user.client_id);
     return renderClientList(user, clients);
   }
@@ -261,7 +261,7 @@ export async function handlePage(pathname, req, res) {
   if (segments.length === 2 && segments[0] === 'client' && segments[1] !== 'new') {
     if (!canView(user, 'client')) return renderAccessDenied(user, 'client', 'view');
     if (isClientUser(user) && user.client_id && user.client_id !== segments[1]) return renderAccessDenied(user, 'client', 'view');
-    const client = await get('client', segments[1]); if (!client) return null;
+    const client = await get('client', segments[1], { user }); if (!client) return null;
     return renderClientDashboard(user, client, await getClientDashboardStats(segments[1]));
   }
   if (segments.length === 2) return handleGenericEntityView(user, segments[0], segments[1]);
