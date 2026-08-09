@@ -172,6 +172,7 @@ const PROJECT_ENTITY_DEFAULT = {
     status: { type: 'enum', options: ['planning', 'active', 'on_hold', 'completed', 'cancelled'], default: 'planning', label: 'Status' },
     start_date: { type: 'date', label: 'Start Date' },
     due_date: { type: 'date', label: 'Due Date' },
+    task_count: { type: 'formula', aggregate: { related_entity: 'task', ref_field: 'project_id', aggregate_field: 'id', fn: 'count' }, label: 'Task Count', readonly: true },
   },
 };
 

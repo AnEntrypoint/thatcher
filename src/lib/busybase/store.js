@@ -199,7 +199,7 @@ export async function list(entity, where = {}, options = {}) {
   const { decryptFields } = await import('../field-encryption.js');
   const decryptedRows = rows.map(r => decryptFields(r, spec.fields));
   const { computeFormulaFields } = await import('../formula-fields.js');
-  const withFormulas = decryptedRows.map(r => computeFormulaFields(r, spec.fields));
+  const withFormulas = await Promise.all(decryptedRows.map(r => computeFormulaFields(r, spec.fields, entity)));
   return attachRefDisplays(entity, withFormulas);
 }
 
@@ -234,7 +234,7 @@ export async function get(entity, id, options = {}) {
   const { decryptFields } = await import('../field-encryption.js');
   const decrypted = decryptFields(row, spec.fields);
   const { computeFormulaFields } = await import('../formula-fields.js');
-  const withFormula = computeFormulaFields(decrypted, spec.fields);
+  const withFormula = await computeFormulaFields(decrypted, spec.fields, entity);
   const [withDisplay] = await attachRefDisplays(entity, [withFormula]);
   return withDisplay;
 }
