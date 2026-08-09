@@ -25,11 +25,57 @@ function gridRow(entityName, item, columns) {
   const cells = columns.map(([key, field]) => {
     const value = item[key];
     const rendered = fmtVal(value, key, item);
-    const editableAttr = isEditable(field) ? ` data-editable="${esc(key)}"` : '';
-    return `<td data-col="${esc(key)}"${editableAttr}>${rendered}</td>`;
+    const editableAttrs = isEditable(field)
+      ? ` data-editable="${esc(key)}" data-entity="${esc(entityName)}" data-record-id="${esc(item.id)}"`
+      : '';
+    return `<td data-col="${esc(key)}"${editableAttrs}>${rendered}</td>`;
   }).join('');
   return `<tr data-row data-navigate="/${esc(entityName)}/${esc(item.id)}" style="cursor:pointer">${cells}</tr>`;
 }
+
+const GRID_EDIT_SCRIPT = `(function(){
+  function commitCell(td){
+    var input=td.querySelector('input,select');
+    if(!input)return;
+    var value=input.value;
+    var field=td.dataset.editable, entity=td.dataset.entity, id=td.dataset.recordId;
+    var original=td.dataset.originalHtml;
+    fetch('/api/'+entity+'/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})})
+      .then(function(r){if(!r.ok)throw new Error('Save failed');return r.json()})
+      .then(function(){location.reload()})
+      .catch(function(err){td.innerHTML=original;if(window.showToast)showToast(err.message,'error')});
+  }
+  function cancelCell(td){
+    var original=td.dataset.originalHtml;
+    if(original!==undefined)td.innerHTML=original;
+  }
+  document.addEventListener('dblclick',function(e){
+    var td=e.target.closest('[data-editable]');
+    if(!td||td.querySelector('input,select'))return;
+    e.stopPropagation();
+    var field=td.dataset.editable;
+    var current=(td.textContent||'').trim();
+    td.dataset.originalHtml=td.innerHTML;
+    var input=document.createElement('input');
+    input.type='text';
+    input.value=current;
+    input.className='grid-cell-input';
+    td.innerHTML='';
+    td.appendChild(input);
+    input.focus();
+    input.select();
+    input.addEventListener('blur',function(){commitCell(td)});
+    input.addEventListener('keydown',function(ke){
+      if(ke.key==='Enter'){ke.preventDefault();input.blur()}
+      else if(ke.key==='Escape'){ke.preventDefault();cancelCell(td)}
+    });
+  });
+  document.addEventListener('click',function(e){
+    if(e.target.closest('[data-editable]')&&e.target.closest('[data-editable]').querySelector('input,select')){
+      e.stopPropagation();
+    }
+  },true);
+})();`;
 
 export function renderGridView(user, entityName, spec, records, options = {}) {
   const label = getEntityLabel(spec, true) || entityName;
@@ -74,5 +120,5 @@ export function renderGridView(user, entityName, spec, records, options = {}) {
         </table>
       </div>`;
 
-  return page(user, `${label} | Thatcher`, null, content, [TABLE_SCRIPT]);
+  return page(user, `${label} | Thatcher`, null, content, [TABLE_SCRIPT, GRID_EDIT_SCRIPT]);
 }
