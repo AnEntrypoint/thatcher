@@ -65,6 +65,11 @@ function roleLabel(r) {
 }
 
 function formatFieldValue(k, v, entityName, f) {
+  // encrypted:true fields decrypt on every list()/get() read (store.js) so
+  // the plaintext DOES reach this renderer -- redact here, the display
+  // boundary, rather than in store.js which legitimately serves the real
+  // value to business logic that needs it.
+  if (f?.encrypted) return v ? '<span class="pill pill-neutral">••••••••</span>' : '-'
   if (entityName === 'user' && k === 'role') return `<span class="pill pill-neutral">${roleLabel(v)}</span>`
   if (entityName === 'user' && k === 'status') {
     const cls = v === 'active' ? 'pill-success' : v === 'deleted' ? 'pill-danger' : 'pill-neutral'
@@ -345,6 +350,10 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
       const existing = val && typeof val === 'object' ? val : (typeof val === 'string' && val ? (() => { try { return JSON.parse(val) } catch { return null } })() : null)
       const existingNote = existing?.filename ? `<div style="font-size:0.8rem;color:var(--color-text-muted)" data-existing-file="${k}">Current: ${esc(existing.filename)}</div>` : ''
       return `<div class="form-field">${lbl(k,f,f.required)}<input type="file" id="field-${k}" data-attachment="${k}" class="form-input" ${existing ? '' : req}/>${existingNote}<input type="hidden" id="field-${k}-value" name="${k}" value="${existing ? esc(JSON.stringify(existing)) : ''}"/></div>`
+    }
+    if (f.encrypted) {
+      const encNote = val ? `<div style="font-size:0.8rem;color:var(--color-text-muted)">Currently set. Leave blank to keep unchanged.</div>` : ''
+      return `<div class="form-field">${lbl(k,f,f.required)}<input type="password" id="field-${k}" name="${k}" value="" class="form-input" autocomplete="new-password" placeholder="Enter ${esc((f.label||k).toLowerCase())}"/>${encNote}</div>`
     }
     return `<div class="form-field">${lbl(k,f,f.required)}<input type="${type}" id="field-${k}" name="${k}" value="${esc(val)}" class="form-input" ${req} ${placeholder}/></div>`
   }).join('\n')

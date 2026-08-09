@@ -277,6 +277,37 @@ function withResourceManagementDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+// Generic outbound CRM-sync connector config, not a bespoke Salesforce/HubSpot
+// integration -- provider/base_url/entity_mappings make it configurable to
+// any downstream system's sync endpoint. organization_id is an EXPLICIT
+// manually-defined field despite system_entity:true (same precedent as
+// USER_ORGANIZATION_ENTITY_DEFAULT above) because integration credentials
+// leaking cross-org via the system_entity multi-tenancy exemption would be a
+// real vulnerability, not the usual global-by-design system entity case.
+const INTEGRATION_CONNECTION_ENTITY_DEFAULT = {
+  label: 'Integration Connection',
+  label_plural: 'Integration Connections',
+  system_entity: true,
+  fields: {
+    organization_id: { type: 'ref', ref: 'organization', label: 'Organization' },
+    provider: { type: 'text', required: true, label: 'Provider' },
+    base_url: { type: 'text', required: true, label: 'Base URL' },
+    auth_type: { type: 'enum', required: true, label: 'Auth Type', options: [{ value: 'api_key', label: 'API Key' }, { value: 'oauth_token', label: 'OAuth Token' }] },
+    credential: { type: 'text', required: true, label: 'Credential', encrypted: true },
+    entity_mappings: { type: 'json', label: 'Entity Mappings' },
+    sync_direction: { type: 'enum', required: true, default: 'outbound', label: 'Sync Direction', options: [{ value: 'outbound', label: 'Outbound' }, { value: 'inbound', label: 'Inbound' }, { value: 'bidirectional', label: 'Bidirectional' }] },
+    enabled: { type: 'bool', default: true, label: 'Enabled' },
+    last_synced_at: { type: 'int', readonly: true, label: 'Last Synced At' },
+  },
+};
+
+function withIntegrationDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.integration_connection) { entities.integration_connection = INTEGRATION_CONNECTION_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
 const CUSTOM_ENTITY_DEF_ENTITY_DEFAULT = {
   label: 'Custom Entity Definition',
   label_plural: 'Custom Entity Definitions',
@@ -398,7 +429,7 @@ function withContractDefaults(masterConfig) {
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withCustomEntityDefaults(withResourceManagementDefaults(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))))))))));
+    this.masterConfig = deepFreeze(withCustomEntityDefaults(withIntegrationDefaults(withResourceManagementDefaults(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))))))))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();

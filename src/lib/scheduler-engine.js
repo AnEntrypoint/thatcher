@@ -47,6 +47,26 @@ async function runOneJob(job, nowTs) {
       targets = targets.filter(c => isWithinNoticeWindow(c, nowTs));
     }
 
+    // integration_sync is a distinct action shape from bulk field-updates --
+    // it fans out to an external system per connection rather than mutating
+    // Thatcher records, so it bypasses runBulkOperation entirely but still
+    // rides the SAME scheduled_job table/timer, not a new cron mechanism.
+    if (job.entity === 'integration_connection' && action?.type === 'integration_sync') {
+      const { syncConnection } = await import('./integration-sync-engine.js');
+      const syncResults = [];
+      for (const connection of targets) {
+        if (!connection.enabled) continue;
+        const results = await syncConnection(connection, owner);
+        syncResults.push(...results);
+        await update('integration_connection', connection.id, { last_synced_at: nowTs });
+      }
+      const nextRunAt = nowTs + job.interval_minutes * 60;
+      await update('scheduled_job', job.id, { last_run_at: nowTs, next_run_at: nextRunAt });
+      const succeeded = syncResults.filter(r => r.success).length;
+      log.info(`Job "${job.name}" ran: ${succeeded}/${syncResults.length} synced`);
+      return { job_id: job.id, ok: true, total: syncResults.length, succeeded, failed: syncResults.length - succeeded, results: syncResults };
+    }
+
     const ids = targets.map(r => r.id);
 
     let result = { ok: true, total: 0, succeeded: 0, failed: 0, results: [] };
