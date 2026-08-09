@@ -14,13 +14,44 @@
 // central infrastructure, not a candidate for deprecation.
 import { LRUCache, deepFreeze, deepClone, recursiveResolve } from './config-helpers.js';
 
+const ORGANIZATION_ENTITY_DEFAULT = {
+  label: 'Organization',
+  label_plural: 'Organizations',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+  },
+};
+
+const USER_ORGANIZATION_ENTITY_DEFAULT = {
+  label: 'Organization Membership',
+  label_plural: 'Organization Memberships',
+  system_entity: true,
+  fields: {
+    user_id: { type: 'ref', ref: 'user', required: true },
+    organization_id: { type: 'ref', ref: 'organization', required: true },
+  },
+};
+
+function withMultiTenancyDefaults(masterConfig) {
+  if (!masterConfig?.system?.multi_tenancy?.enabled) return masterConfig;
+  const entities = { ...(masterConfig.entities || {}) };
+  if (!entities.organization) entities.organization = ORGANIZATION_ENTITY_DEFAULT;
+  if (!entities.user_organization) entities.user_organization = USER_ORGANIZATION_ENTITY_DEFAULT;
+  return { ...masterConfig, entities };
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(masterConfig);
+    this.masterConfig = deepFreeze(withMultiTenancyDefaults(masterConfig));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();
+  }
+
+  isMultiTenancyEnabled() {
+    return this.masterConfig?.system?.multi_tenancy?.enabled === true;
   }
 
   registerPlugin(entityName, plugin = {}) {
@@ -315,6 +346,9 @@ export class ConfigGeneratorEngine {
       updated_at: { type: 'timestamp', readonly: true },
       status: { type: 'text' },
     };
+    if (this.isMultiTenancyEnabled() && !spec.embedded && !spec.system_entity) {
+      SYSTEM_FIELDS.organization_id = { type: 'ref', ref: 'organization', required: true, readonly: true, hidden: true };
+    }
     for (const [key, field] of Object.entries(SYSTEM_FIELDS)) {
       if (!(key in allFields)) allFields[key] = field;
     }

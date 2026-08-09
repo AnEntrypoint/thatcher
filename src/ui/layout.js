@@ -140,6 +140,7 @@ export function nav(user, pathname = '') {
       <div class="user-dropdown-email">${esc(user?.email || '')}</div>
       <div class="user-dropdown-role" style="text-transform:capitalize">${esc(user?.role || '')}</div>
     </div>
+    <div id="org-switcher" style="display:none"></div>
     <a href="/api/auth/logout" class="user-dropdown-item">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sign out
@@ -208,11 +209,13 @@ schedule()})();
 
 const NOTIF_SCRIPT = `(function(){function loadNotifCount(){fetch('/api/notifications?unread=1',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(d){var n=(d.data||[]).length;var el=document.getElementById('notif-count');if(!el)return;if(n>0){el.textContent=n>99?'99+':n;el.style.display='block'}else{el.style.display='none'}}).catch(function(){})}loadNotifCount();setInterval(loadNotifCount,60000)})();`;
 
+const ORG_SWITCHER_SCRIPT = `(function(){var loaded=false;function loadMemberships(){if(loaded)return;var el=document.getElementById('org-switcher');if(!el)return;fetch('/api/organization/memberships',{credentials:'same-origin'}).then(function(r){if(!r.ok)return null;return r.json()}).then(function(d){if(!d||!d.organizations||d.organizations.length<2){return}loaded=true;var wrap=document.createElement('div');wrap.className='user-dropdown-item';wrap.style.cursor='default';var select=document.createElement('select');select.id='org-switcher-select';select.style.width='100%';d.organizations.forEach(function(o){var opt=document.createElement('option');opt.value=o.id;opt.textContent=o.name;if(o.id===d.active)opt.selected=true;select.appendChild(opt)});wrap.appendChild(select);el.innerHTML='';el.appendChild(wrap);el.style.display='block';select.addEventListener('change',function(e){fetch('/api/organization/switch',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({organization_id:e.target.value})}).then(function(r){if(r.ok)location.reload()})})}).catch(function(){})}document.getElementById('user-avatar')&&document.getElementById('user-avatar').addEventListener('click',loadMemberships)})();`;
+
 export function page(user, title, bc, content, scripts = []) {
   const authData = user ? JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role }) : 'null'
   const authScript = `window.__AUTH__=${authData};`
   const body = `<div class="min-h-screen">${nav(user)}<main id="main-content" ${role.main} class="page-shell">${breadcrumb(bc)}${content}</main></div>`
-  return generateHtml(title, body, [authScript, NOTIF_SCRIPT, ...scripts])
+  return generateHtml(title, body, [authScript, NOTIF_SCRIPT, ORG_SWITCHER_SCRIPT, ...scripts])
 }
 
 export function fullPage(user, title, content, scripts = []) {

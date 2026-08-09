@@ -162,12 +162,13 @@ export async function list(entity, where = {}, options = {}) {
   rows = applyVisibility(spec, rows, where, options);
 
   // Row-access scoping: when a caller passes options.user AND the entity declares
-  // rowAccess, restrict the rows to what that user may see (their assigned cases,
-  // their team, etc.). Opt-in -- no user means the read is unchanged, so internal
-  // and admin callers are unaffected. This makes a config row_access spec actually
-  // enforced on the read path (previously list() took no user, so the spec was
-  // inert and a scoped enquiry would leak every row).
-  if (options.user && (spec.rowAccess || spec.row_access)) {
+  // rowAccess OR an organization_id field (multi-tenancy), restrict the rows to
+  // what that user may see (their assigned cases, their team, their organization).
+  // Opt-in -- no user means the read is unchanged, so internal and admin callers
+  // are unaffected. This makes a config row_access spec actually enforced on the
+  // read path (previously list() took no user, so the spec was inert and a scoped
+  // enquiry would leak every row).
+  if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
     const { permissionService } = await import('../services/permission.service.js');
     rows = permissionService.filterRecords(options.user, spec, rows);
   }
@@ -203,7 +204,7 @@ export async function count(entity, where = {}, options = {}) {
   const tbl = tableName(entity);
   let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'count');
   rows = applyVisibility(spec, rows, where, options);
-  if (options.user && (spec.rowAccess || spec.row_access)) {
+  if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
     const { permissionService } = await import('../services/permission.service.js');
     rows = permissionService.filterRecords(options.user, spec, rows);
   }
@@ -217,10 +218,15 @@ export async function listWithPagination(entity, where = {}, page = 1, pageSize 
   return { items, pagination: { page: finalPage, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
 }
 
-export async function get(entity, id) {
+export async function get(entity, id, options = {}) {
   const tbl = tableName(entity);
   const row = unwrap(await client().from(tbl).select('*').eq('id', id).maybeSingle(), 'get');
   if (!row) return null;
+  const spec = specOf(entity);
+  if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
+    const { permissionService } = await import('../services/permission.service.js');
+    if (!permissionService.checkRowAccess(options.user, spec, row)) return null;
+  }
   const [withDisplay] = await attachRefDisplays(entity, [row]);
   return withDisplay;
 }
@@ -242,6 +248,9 @@ export async function create(entity, data, user) {
     updated_at: 0,
     status: data.status || RECORD_STATUS.ACTIVE,
   };
+  if (spec.fields?.organization_id && !record.organization_id && user?.organization_id) {
+    record.organization_id = user.organization_id;
+  }
   for (const [key, field] of Object.entries(spec.fields || {})) {
     if (field.auto === 'uuid' && !record[key]) record[key] = genId();
     if (field.auto === 'timestamp' && !record[key]) record[key] = now();
