@@ -11,6 +11,7 @@ import { renderRolesList, renderTemplateList, renderPermissionMatrix } from '@/u
 import { renderWebhookList, renderWebhookDetail } from '@/ui/webhook-renderer.js';
 import { renderTemplateList as renderEntityTemplateList } from '@/ui/template-renderer.js';
 import { renderScheduledJobList } from '@/ui/scheduled-job-renderer.js';
+import { renderCustomEntityList } from '@/ui/custom-entity-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
 import { getSystemConfig, getSettingsCounts, getAuditData, getSystemHealth, renderBuildLogsContent } from '@/ui/page-handler-helpers.js';
 import { fileURLToPath } from 'url';
@@ -205,6 +206,11 @@ export async function handleAdminPage(normalized, segments, user, req) {
     const entityNames = engine.getAllEntities().filter(e => e !== 'scheduled_job' && e !== 'entity_template' && e !== 'webhook' && e !== 'webhook_delivery' && e !== 'user_organization');
     let jobs = []; try { jobs = await list('scheduled_job', {}); } catch {}
     return renderScheduledJobList(user, jobs, entityNames);
+  }
+  if (normalized === '/admin/custom-entities') {
+    if (!isPartner(user)) return renderAccessDenied(user, 'admin', 'view');
+    let defs = []; try { defs = await list('custom_entity_def', {}); } catch {}
+    return renderCustomEntityList(user, defs);
   }
   return null;
 }
