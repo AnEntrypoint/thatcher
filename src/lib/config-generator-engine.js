@@ -253,10 +253,49 @@ function withTimeTrackingDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+const CONTRACT_LIFECYCLE_WORKFLOW = {
+  state_field: 'status',
+  stages: [
+    { name: 'draft', label: 'Draft', forward: ['active'], backward: [] },
+    { name: 'active', label: 'Active', forward: ['expired', 'renewed', 'terminated'], backward: [] },
+    { name: 'expired', label: 'Expired', forward: ['renewed'], backward: [] },
+    { name: 'terminated', label: 'Terminated', forward: [], backward: [] },
+    { name: 'renewed', label: 'Renewed', forward: [], backward: [] },
+  ],
+};
+
+const CONTRACT_ENTITY_DEFAULT = {
+  label: 'Contract',
+  label_plural: 'Contracts',
+  system_entity: true,
+  workflow: 'contract_lifecycle',
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    organization_id: { type: 'ref', ref: 'organization', label: 'Organization' },
+    opportunity_id: { type: 'ref', ref: 'opportunity', label: 'Opportunity' },
+    value: { type: 'currency', label: 'Value' },
+    start_date: { type: 'date', required: true, label: 'Start Date' },
+    end_date: { type: 'date', required: true, label: 'End Date' },
+    status: { type: 'enum', options: ['draft', 'active', 'expired', 'terminated', 'renewed'], default: 'draft', label: 'Status' },
+    auto_renew: { type: 'bool', default: false, label: 'Auto Renew' },
+    notice_period_days: { type: 'number', min: 0, default: 30, label: 'Notice Period (days)' },
+    owner_id: { type: 'ref', ref: 'user', label: 'Owner' },
+  },
+};
+
+function withContractDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  const workflows = { ...(masterConfig.workflows || {}) };
+  let changed = false;
+  if (!entities.contract) { entities.contract = CONTRACT_ENTITY_DEFAULT; changed = true; }
+  if (!workflows.contract_lifecycle) { workflows.contract_lifecycle = CONTRACT_LIFECYCLE_WORKFLOW; changed = true; }
+  return changed ? { ...masterConfig, entities, workflows } : masterConfig;
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))))));
+    this.masterConfig = deepFreeze(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))))))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();
