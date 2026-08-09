@@ -7,6 +7,7 @@ import { renderSettingsNotifications, renderSettingsIntegrations, renderSettings
 import { renderChecklistsManagement } from '@/ui/checklist-renderer.js';
 import { renderJobManagement } from '@/ui/job-management-renderer.js';
 import { renderWorkflowList, renderWorkflowEditor } from '@/ui/workflow-builder-renderer.js';
+import { renderRolesList, renderTemplateList, renderPermissionMatrix } from '@/ui/rbac-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
 import { getSystemConfig, getSettingsCounts, getAuditData, getSystemHealth, renderBuildLogsContent } from '@/ui/page-handler-helpers.js';
 import { fileURLToPath } from 'url';
@@ -141,6 +142,26 @@ export async function handleAdminPage(normalized, segments, user) {
     const workflowDef = config.workflows?.[segments[2]];
     if (!workflowDef) return null;
     return renderWorkflowEditor(user, segments[2], workflowDef);
+  }
+  if (normalized === '/admin/roles') {
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    return renderRolesList(user, engine.getRoles());
+  }
+  if (normalized === '/admin/permissions') {
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const config = engine.getConfig();
+    return renderTemplateList(user, Object.keys(config.permission_templates || {}));
+  }
+  if (segments.length === 3 && segments[1] === 'permissions') {
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const config = engine.getConfig();
+    const roleActionsMap = config.permission_templates?.[segments[2]];
+    if (!roleActionsMap) return null;
+    const roleNames = Object.keys(engine.getRoles());
+    return renderPermissionMatrix(user, segments[2], roleNames, roleActionsMap);
   }
   return null;
 }

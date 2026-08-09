@@ -64,6 +64,16 @@ export class ConfigGeneratorEngine {
     return this;
   }
 
+  updatePermissionTemplate(templateName, roleActionsMap) {
+    if (!templateName || typeof templateName !== 'string') {
+      throw new Error('[ConfigGeneratorEngine] updatePermissionTemplate: templateName required');
+    }
+    const nextTemplates = { ...(this.masterConfig.permission_templates || {}), [templateName]: roleActionsMap };
+    this.masterConfig = deepFreeze({ ...this.masterConfig, permission_templates: nextTemplates });
+    this.specCache.clear();
+    return this;
+  }
+
   registerPlugin(entityName, plugin = {}) {
     if (!entityName || typeof entityName !== 'string') {
       throw new Error('[ConfigGeneratorEngine] registerPlugin: entityName required');
