@@ -102,6 +102,10 @@ export function createServer(options) {
         const id = parts[1] || null;
         const action = parts[2] || null;
 
+        if (req.method === 'POST' && id === 'import' && !action) {
+          return await handleCsvImport(req, res, entity, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -321,6 +325,69 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
     }
 
     res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleCsvImport(req, res, entity, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  let spec;
+  try {
+    spec = configEngine.generateEntitySpec(entity);
+  } catch (e) {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: `Entity '${entity}' not found` }));
+    return;
+  }
+
+  try {
+    await requirePermission(user, spec, 'create');
+  } catch (e) {
+    res.writeHead(e?.status || 403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: e?.message || 'Forbidden' }));
+    return;
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+
+  const csvText = typeof body === 'string' ? body : (body?.csv || '');
+  if (!csvText) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'CSV body required' }));
+    return;
+  }
+
+  try {
+    const { importCsv } = await import('../lib/csv-import.js');
+    const result = await importCsv(entity, spec, csvText, user);
+    if (!result.ok) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: result.error }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
   } catch (err) {
     apiLog.error(err.message);
