@@ -190,6 +190,21 @@ async function checkStockBalance(entityName, data) {
   return null;
 }
 
+// A contract whose end_date is not strictly after its start_date is invalid
+// regardless of what the form happened to allow -- checked wherever either
+// date is present in the payload so it also catches a create that only sets
+// one of the two dates against an existing record's other date on update.
+function checkContractDateOrder(entityName, data, existingRecord) {
+  if (entityName !== 'contract') return null;
+  const startDate = data.start_date !== undefined ? data.start_date : existingRecord?.start_date;
+  const endDate = data.end_date !== undefined ? data.end_date : existingRecord?.end_date;
+  if (startDate == null || endDate == null) return null;
+  if (Number(endDate) <= Number(startDate)) {
+    return `end_date must be after start_date`;
+  }
+  return null;
+}
+
 export async function validateEntity(entityName, data, existingRecord = null, options = {}) {
   const spec = getSpec(entityName);
   const errors = {};
@@ -219,6 +234,9 @@ export async function validateEntity(entityName, data, existingRecord = null, op
 
   const ownershipErr = checkTimeEntryOwnership(entityName, data, options);
   if (ownershipErr) errors.user_id = ownershipErr;
+
+  const dateOrderErr = checkContractDateOrder(entityName, data, existingRecord);
+  if (dateOrderErr) errors.end_date = dateOrderErr;
 
   return errors;
 }
@@ -294,6 +312,9 @@ export async function validateUpdate(entityName, changes, existingRecord) {
 
   const depErr = await checkTaskDependencies(entityName, changes, existingRecord);
   if (depErr) errors.status = depErr;
+
+  const dateOrderErr = checkContractDateOrder(entityName, changes, existingRecord);
+  if (dateOrderErr) errors.end_date = dateOrderErr;
 
   return errors;
 }

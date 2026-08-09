@@ -146,9 +146,23 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
        <div class="detail-row"><span class="detail-row-label">Billable Amount</span><span class="detail-row-value">${esc('$' + (item.billable_amount / 100).toFixed(2))}</span></div>`
     : ''
 
+  // days_until_expiry is computed (page-handler.js diffs end_date against
+  // now), never a spec.fields entry, same treatment as current_stock above.
+  const expiryRow = entityName === 'contract' && typeof item.days_until_expiry === 'number'
+    ? (() => {
+        const warn = item.status === 'active' && item.days_until_expiry <= (item.notice_period_days ?? 30)
+        const pillCls = item.days_until_expiry < 0 ? 'pill-danger' : (warn ? 'pill-warning' : 'pill-success')
+        const label = item.days_until_expiry < 0 ? `Expired ${Math.abs(item.days_until_expiry)} days ago` : `${item.days_until_expiry} days`
+        return `<div class="detail-row">
+          <span class="detail-row-label">Days Until Expiry</span>
+          <span class="detail-row-value"><span class="pill ${pillCls}">${esc(label)}${warn ? ' (Renewal Notice)' : ''}</span></span>
+        </div>`
+      })()
+    : ''
+
   const visibleFields = Object.entries(fields).filter(([k]) => k !== 'id' && !HIDDEN_FIELDS.has(k) && item[k] !== undefined)
 
-  const fieldRows = stockRow + timeTrackingRows + visibleFields.map(([k, f]) =>
+  const fieldRows = stockRow + timeTrackingRows + expiryRow + visibleFields.map(([k, f]) =>
     `<div class="detail-row">
       <span class="detail-row-label">${esc(f.label || k)}</span>
       <span class="detail-row-value">${formatFieldValue(k, item[k], entityName, f)}</span>

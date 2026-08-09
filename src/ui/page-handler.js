@@ -149,6 +149,16 @@ async function handleGenericEntityView(user, entityName, id, req) {
       resolvedItem = { ...resolvedItem, total_hours: totalHours, billable_amount: billableAmount };
     } catch { resolvedItem = { ...resolvedItem, total_hours: 0, billable_amount: 0 }; }
   }
+  if (entityName === 'contract' && resolvedItem.end_date != null) {
+    // days_until_expiry is computed from the already-access-checked record
+    // (get(...,{user}) above already returned null for a denied/absent
+    // contract before this line is ever reached), never a separate query
+    // that could leak the value to a caller who never proved they can view
+    // this specific contract.
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const daysUntilExpiry = Math.floor((Number(resolvedItem.end_date) - nowSeconds) / 86400);
+    resolvedItem = { ...resolvedItem, days_until_expiry: daysUntilExpiry };
+  }
   // get(...,{user}) above already enforced row/org access for this exact
   // record (a denied/absent record returns null before this point), so
   // fetching its audit trail here is scoped by construction -- there is no
