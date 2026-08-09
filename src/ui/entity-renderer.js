@@ -160,9 +160,23 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
       })()
     : ''
 
+  // allocated_hours_per_week/weekly_capacity_hours are computed (page-handler.js
+  // sums resource_allocation rows for this user), same not-a-spec-field
+  // treatment as current_stock/total_hours above.
+  const utilizationRow = entityName === 'user' && typeof item.allocated_hours_per_week === 'number'
+    ? (() => {
+        const over = item.allocated_hours_per_week > item.weekly_capacity_hours
+        const pillCls = over ? 'pill-danger' : 'pill-success'
+        return `<div class="detail-row">
+          <span class="detail-row-label">Resource Utilization</span>
+          <span class="detail-row-value"><span class="pill ${pillCls}">${esc(String(item.allocated_hours_per_week))}h / ${esc(String(item.weekly_capacity_hours))}h${over ? ' (Over-allocated)' : ''}</span></span>
+        </div>`
+      })()
+    : ''
+
   const visibleFields = Object.entries(fields).filter(([k]) => k !== 'id' && !HIDDEN_FIELDS.has(k) && item[k] !== undefined)
 
-  const fieldRows = stockRow + timeTrackingRows + expiryRow + visibleFields.map(([k, f]) =>
+  const fieldRows = stockRow + timeTrackingRows + expiryRow + utilizationRow + visibleFields.map(([k, f]) =>
     `<div class="detail-row">
       <span class="detail-row-label">${esc(f.label || k)}</span>
       <span class="detail-row-value">${formatFieldValue(k, item[k], entityName, f)}</span>

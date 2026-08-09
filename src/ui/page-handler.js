@@ -158,6 +158,19 @@ async function handleGenericEntityView(user, entityName, id, req) {
     const { daysUntilExpiry } = await import('@/lib/contract-expiry.js');
     resolvedItem = { ...resolvedItem, days_until_expiry: daysUntilExpiry(resolvedItem.end_date) };
   }
+  if (entityName === 'user') {
+    // Resource utilization reuses the same "sum grouped by owner" rollup
+    // shape as task/project total_hours above, just grouped by allocation
+    // rather than time entry -- no new aggregation logic, only overlapping
+    // (currently-active) allocations count toward the displayed total.
+    try {
+      const allocations = await list('resource_allocation', { user_id: id });
+      const nowTs = Math.floor(Date.now() / 1000);
+      const activeAllocations = allocations.filter(a => Number(a.start_date) <= nowTs && nowTs <= Number(a.end_date));
+      const allocatedHoursPerWeek = activeAllocations.reduce((sum, a) => sum + (Number(a.allocated_hours_per_week) || 0), 0);
+      resolvedItem = { ...resolvedItem, allocated_hours_per_week: allocatedHoursPerWeek, weekly_capacity_hours: 40 };
+    } catch { resolvedItem = { ...resolvedItem, allocated_hours_per_week: 0, weekly_capacity_hours: 40 }; }
+  }
   // get(...,{user}) above already enforced row/org access for this exact
   // record (a denied/absent record returns null before this point), so
   // fetching its audit trail here is scoped by construction -- there is no

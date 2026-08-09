@@ -253,6 +253,27 @@ function withTimeTrackingDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+const RESOURCE_ALLOCATION_ENTITY_DEFAULT = {
+  label: 'Resource Allocation',
+  label_plural: 'Resource Allocations',
+  system_entity: true,
+  fields: {
+    user_id: { type: 'ref', ref: 'user', required: true, label: 'User' },
+    project_id: { type: 'ref', ref: 'project', required: true, label: 'Project' },
+    allocated_hours_per_week: { type: 'number', required: true, min: 0, max: 168, label: 'Allocated Hours/Week' },
+    start_date: { type: 'date', required: true, label: 'Start Date' },
+    end_date: { type: 'date', required: true, label: 'End Date' },
+    role: { type: 'text', label: 'Role' },
+  },
+};
+
+function withResourceManagementDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.resource_allocation) { entities.resource_allocation = RESOURCE_ALLOCATION_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
 const CONTRACT_LIFECYCLE_WORKFLOW = {
   state_field: 'status',
   stages: [
@@ -295,7 +316,7 @@ function withContractDefaults(masterConfig) {
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))))))));
+    this.masterConfig = deepFreeze(withResourceManagementDefaults(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))))))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();
