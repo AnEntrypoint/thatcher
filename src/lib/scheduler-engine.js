@@ -35,7 +35,18 @@ async function runOneJob(job, nowTs) {
     // scoping crud-handlers.js's read path enforces for an interactive
     // request, so a job cannot reach records outside its owner's org just
     // because it runs unattended.
-    const targets = await list(job.entity, filter, { user: owner });
+    let targets = await list(job.entity, filter, { user: owner });
+
+    // job.filter can only express stored-field equality (e.g. status:active);
+    // "expiring within notice_period_days" is a per-record computed
+    // comparison, not a filterable field, so it's checked here in JS against
+    // the SAME shared math the contract detail view uses -- never a second,
+    // divergent formula.
+    if (job.entity === 'contract' && action?.type === 'notify') {
+      const { isWithinNoticeWindow } = await import('./contract-expiry.js');
+      targets = targets.filter(c => isWithinNoticeWindow(c, nowTs));
+    }
+
     const ids = targets.map(r => r.id);
 
     let result = { ok: true, total: 0, succeeded: 0, failed: 0, results: [] };

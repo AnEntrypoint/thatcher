@@ -155,9 +155,8 @@ async function handleGenericEntityView(user, entityName, id, req) {
     // contract before this line is ever reached), never a separate query
     // that could leak the value to a caller who never proved they can view
     // this specific contract.
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const daysUntilExpiry = Math.floor((Number(resolvedItem.end_date) - nowSeconds) / 86400);
-    resolvedItem = { ...resolvedItem, days_until_expiry: daysUntilExpiry };
+    const { daysUntilExpiry } = await import('@/lib/contract-expiry.js');
+    resolvedItem = { ...resolvedItem, days_until_expiry: daysUntilExpiry(resolvedItem.end_date) };
   }
   // get(...,{user}) above already enforced row/org access for this exact
   // record (a denied/absent record returns null before this point), so
