@@ -56,6 +56,33 @@ async function bulkTransitionOne(entityName, id, workflowName, toState, user) {
   return transition(entityName, id, workflowName, toState, user, 'bulk operation');
 }
 
+async function bulkNotifyOne(entityName, spec, id, user, message) {
+  // Same permission/row-access gate every other bulk action already applies
+  // -- 'notify' reads the record to build the notification, so it must not
+  // bypass the checks a plain view of that record would require.
+  await requirePermission(user, spec, 'view');
+  const existing = await get(entityName, id, { user });
+  if (!existing) throw new Error('Not found');
+  if (!permissionService.checkRowAccess(user, spec, existing)) throw new Error('Access denied');
+
+  const recipientId = existing.owner_id;
+  if (!recipientId) throw new Error('Record has no owner_id to notify');
+
+  const { createNotification } = await import('../services/notification-engine.js');
+  // createNotification stores user_id as the sole addressee -- the existing
+  // /notifications route already filters list('notification',{user_id:...})
+  // scoped by {user}, so a notification is only ever visible to the user it
+  // names, the same row-access guarantee every other entity gets.
+  return createNotification({
+    user_id: recipientId,
+    title: message || `${spec.label || entityName} update`,
+    message: message || `${spec.label || entityName} "${existing.name || id}" requires attention`,
+    entity_type: entityName,
+    entity_id: id,
+    created_by: user?.id || 'system',
+  });
+}
+
 export async function runBulkOperation(entityName, spec, ids, action, user) {
   if (!Array.isArray(ids) || !ids.length) return { ok: false, error: 'ids array required and must be non-empty' };
   if (ids.length > MAX_BULK_IDS) return { ok: false, error: `Cannot process more than ${MAX_BULK_IDS} ids in one bulk operation` };
@@ -76,6 +103,9 @@ export async function runBulkOperation(entityName, spec, ids, action, user) {
       } else if (action.type === 'transition') {
         if (!action.workflow || !action.toState) throw new Error('action.workflow and action.toState required');
         await bulkTransitionOne(entityName, id, action.workflow, action.toState, user);
+        results.push({ id, success: true });
+      } else if (action.type === 'notify') {
+        await bulkNotifyOne(entityName, spec, id, user, action.message);
         results.push({ id, success: true });
       } else {
         results.push({ id, success: false, error: `Unknown action type "${action.type}"` });
