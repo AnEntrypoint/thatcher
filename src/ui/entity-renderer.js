@@ -138,9 +138,17 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
       })()
     : ''
 
+  // total_hours/billable_amount are computed (page-handler.js sums time_entry
+  // rows, directly for a task or joined through task for a project), same
+  // not-a-spec-field treatment as current_stock above.
+  const timeTrackingRows = (entityName === 'task' || entityName === 'project') && typeof item.total_hours === 'number'
+    ? `<div class="detail-row"><span class="detail-row-label">Total Hours</span><span class="detail-row-value">${esc(String(item.total_hours))}</span></div>
+       <div class="detail-row"><span class="detail-row-label">Billable Amount</span><span class="detail-row-value">${esc('$' + (item.billable_amount / 100).toFixed(2))}</span></div>`
+    : ''
+
   const visibleFields = Object.entries(fields).filter(([k]) => k !== 'id' && !HIDDEN_FIELDS.has(k) && item[k] !== undefined)
 
-  const fieldRows = stockRow + visibleFields.map(([k, f]) =>
+  const fieldRows = stockRow + timeTrackingRows + visibleFields.map(([k, f]) =>
     `<div class="detail-row">
       <span class="detail-row-label">${esc(f.label || k)}</span>
       <span class="detail-row-value">${formatFieldValue(k, item[k], entityName, f)}</span>

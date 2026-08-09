@@ -417,7 +417,7 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
           // existence and entity-specific rules (e.g. stock-movement balance
           // enforcement below) were silently skipped for a hand-crafted create.
           const { validateEntity, hasErrors } = await import('../lib/validation/entity-validators.js');
-          const createErrors = await validateEntity(entity, body, null);
+          const createErrors = await validateEntity(entity, body, null, { actingUser: user });
           if (hasErrors(createErrors)) {
             res.writeHead(400);
             res.end(JSON.stringify({ error: 'Validation failed', errors: createErrors }));

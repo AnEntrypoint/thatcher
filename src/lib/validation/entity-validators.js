@@ -152,6 +152,22 @@ function resolveEnumOptions(fieldDef, entityName) {
   return [];
 }
 
+// A non-privileged user may only log time against their own user_id -- a
+// clerk POSTing another user's id must be rejected the same way it would be
+// UI-side, but server-side is the authoritative check per this session's SEC
+// pattern. Privileged roles (partner/manager) may log time for anyone, e.g.
+// entering a team member's hours on their behalf.
+function checkTimeEntryOwnership(entityName, data, options) {
+  if (entityName !== 'time_entry') return null;
+  const actingUser = options?.actingUser;
+  if (!actingUser) return null;
+  if (['partner', 'admin', 'manager'].includes(actingUser.role)) return null;
+  if (data.user_id !== undefined && data.user_id !== actingUser.id) {
+    return `Cannot log time for another user`;
+  }
+  return null;
+}
+
 // Stock movements are immutable history (checked at creation only, never on
 // edit -- there is no update path for them). An outbound movement (negative
 // quantity) that would drive the running balance below zero is invalid: the
@@ -174,7 +190,7 @@ async function checkStockBalance(entityName, data) {
   return null;
 }
 
-export async function validateEntity(entityName, data, existingRecord = null) {
+export async function validateEntity(entityName, data, existingRecord = null, options = {}) {
   const spec = getSpec(entityName);
   const errors = {};
 
@@ -200,6 +216,9 @@ export async function validateEntity(entityName, data, existingRecord = null) {
 
   const stockErr = await checkStockBalance(entityName, data);
   if (stockErr) errors.quantity = stockErr;
+
+  const ownershipErr = checkTimeEntryOwnership(entityName, data, options);
+  if (ownershipErr) errors.user_id = ownershipErr;
 
   return errors;
 }
