@@ -118,6 +118,10 @@ export function createServer(options) {
           return await handleUpdateWorkflow(req, res, id, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && entity === 'permission-template' && id && action === 'update') {
+          return await handleUpdatePermissionTemplate(req, res, id, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -338,6 +342,80 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
 
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+const PERMISSION_ACTIONS = new Set(['list', 'view', 'create', 'edit', 'delete', 'archive', 'export', 'manage_settings']);
+
+async function handleUpdatePermissionTemplate(req, res, templateName, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+  const { isPartner } = await import('../ui/permissions-ui.js');
+  if (!isPartner(user)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Forbidden' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  const existingTemplate = configEngine.getConfig().permission_templates?.[templateName];
+  if (!existingTemplate) {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: `Permission template "${templateName}" not found` }));
+    return;
+  }
+  const validRoles = new Set(Object.keys(configEngine.getRoles()));
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const roles = body && typeof body.roles === 'object' && !Array.isArray(body.roles) ? body.roles : null;
+  if (!roles) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'roles object required' }));
+    return;
+  }
+  for (const [roleName, actions] of Object.entries(roles)) {
+    if (!validRoles.has(roleName)) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: `unknown role "${roleName}"` }));
+      return;
+    }
+    if (!Array.isArray(actions)) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: `actions for role "${roleName}" must be an array` }));
+      return;
+    }
+    for (const a of actions) {
+      if (!PERMISSION_ACTIONS.has(a)) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: `unknown action "${a}" for role "${roleName}"` }));
+        return;
+      }
+    }
+  }
+
+  try {
+    configEngine.updatePermissionTemplate(templateName, roles);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, template: templateName, roleCount: Object.keys(roles).length }));
   } catch (err) {
     apiLog.error(err.message);
     res.writeHead(500);
