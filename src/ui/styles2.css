@@ -354,6 +354,31 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .form-hint { font-size: 0.75rem; }
 }
 
+/* Board/Kanban view: unstyled by default (relied on browser block/flow layout
+   accidentally being usable on wide desktop screens) -- explicit rules needed
+   so it doesn't collapse into an unreadable single column of stacked cards on
+   any width. */
+.board-view { display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+.board-column { flex: 0 0 280px; min-width: 280px; background: var(--color-bg, #f8fafc); border-radius: var(--radius, 8px); display: flex; flex-direction: column; max-height: 80vh; }
+.board-column-header { display: flex; justify-content: space-between; align-items: center; padding: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-muted); }
+.board-column-count { background: var(--color-border, #e2e8f0); border-radius: 9999px; padding: 2px 8px; font-size: 12px; }
+.board-column-body { flex: 1; overflow-y: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 8px; }
+.board-column-empty { padding: 16px; text-align: center; color: var(--color-text-muted); font-size: 13px; }
+.board-card { background: var(--color-surface, #fff); border: 1px solid var(--color-border, #e2e8f0); border-radius: 6px; padding: 10px 12px; cursor: pointer; }
+.board-card-title { font-size: 14px; font-weight: 500; }
+.board-card-meta { margin-top: 4px; font-size: 12px; color: var(--color-text-muted); }
+.board-empty-state { padding: 24px; text-align: center; color: var(--color-text-muted); }
+
+/* Kanban stays horizontally-scrolling (not stacked) on narrow viewports --
+   stacking would hide every column but the first, losing the at-a-glance
+   status overview that is the entire point of a board view. Columns shrink
+   slightly and snap-scroll for a touch-friendly swipe between stages. */
+@media (max-width: 768px) {
+  .board-view { scroll-snap-type: x mandatory; margin-left: calc(-1 * var(--page-gutter)); margin-right: calc(-1 * var(--page-gutter)); padding-left: var(--page-gutter); padding-right: var(--page-gutter); }
+  .board-column { flex-basis: 85vw; min-width: 240px; scroll-snap-align: start; }
+  .board-card { min-height: 44px; }
+}
+
 /* Tablet */
 @media (min-width: 769px) and (max-width: 1023px) {
   :root { --page-gutter: 1.25rem; }
