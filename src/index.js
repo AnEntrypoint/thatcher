@@ -305,9 +305,9 @@ export class Thatcher {
     return list(entity, where, opts);
   }
 
-  async get(entity, id) {
+  async get(entity, id, opts = {}) {
     const { get } = await import(resolveModule('./lib/busybase/store.js'));
-    return get(entity, id);
+    return get(entity, id, opts);
   }
 
   async create(entity, data, user) {

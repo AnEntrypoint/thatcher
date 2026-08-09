@@ -382,22 +382,37 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
     let result;
     let status = 200;
 
+    const { permissionService } = await import('../services/permission.service.js');
+
     switch (req.method) {
       case 'GET':
         if (id) {
-          result = await thatcher.get(entity, id);
+          // get(...,{user}) applies the same row/org-access scoping every other
+          // read path in the codebase uses -- this generic-CRUD GET-by-id had
+          // none at all, so any authenticated user could read any record by id
+          // across organizations. filterFields then strips any field the
+          // caller's role isn't visible_to, the field-level half of this pass.
+          result = await thatcher.get(entity, id, { user });
           if (!result) {
             res.writeHead(404);
             res.end(JSON.stringify({ error: 'Not found' }));
             return;
           }
+          result = permissionService.filterFields(user, spec, result);
         } else {
           result = await thatcher.list(entity, {}, { user });
+          result = result.map(r => permissionService.filterFields(user, spec, r));
         }
         break;
 
       case 'POST':
+        // enforceEditPermissions is the authoritative field-level write check --
+        // it throws if the payload touches a field the caller's role isn't
+        // editable_by, so a hand-crafted request bypassing the rendered form
+        // cannot smuggle a restricted field in.
+        permissionService.enforceEditPermissions(user, spec, body);
         result = await thatcher.create(entity, body, user);
+        result = permissionService.filterFields(user, spec, result);
         status = 201;
         break;
 
@@ -408,7 +423,9 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
           res.end(JSON.stringify({ error: 'ID required' }));
           return;
         }
+        permissionService.enforceEditPermissions(user, spec, body);
         result = await thatcher.update(entity, id, body, user);
+        result = permissionService.filterFields(user, spec, result);
         break;
 
       case 'DELETE':
