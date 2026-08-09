@@ -119,6 +119,14 @@ export function createServer(options) {
         const id = parts[1] || null;
         const action = parts[2] || null;
 
+        if (req.method === 'GET' && entity === 'auth' && id === 'google' && !action) {
+          return await handleOAuthGoogleStart(req, res);
+        }
+
+        if (req.method === 'GET' && entity === 'auth' && id === 'google' && action === 'callback') {
+          return await handleOAuthGoogleCallback(req, res);
+        }
+
         if (req.method === 'POST' && id === 'import' && !action) {
           return await handleCsvImport(req, res, entity, thatcher, configEngine);
         }
@@ -1123,6 +1131,112 @@ async function handleCsvImport(req, res, entity, thatcher, configEngineArg) {
     apiLog.error(err.message);
     res.writeHead(500);
     res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+function oauthRedirectUri(req) {
+  const protocol = req.headers['x-forwarded-proto'] || 'http';
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+  return `${protocol}://${host}/api/auth/google/callback`;
+}
+
+async function handleOAuthGoogleStart(req, res) {
+  const { getGoogle } = await import('../engine.server.js');
+  let google;
+  try {
+    google = getGoogle();
+  } catch (e) {
+    apiLog.error(e.message);
+    google = null;
+  }
+  if (!google) {
+    res.writeHead(302, { Location: '/login?error=oauth_not_configured' });
+    res.end();
+    return;
+  }
+
+  const { generateState, generateCodeVerifier } = await import('arctic');
+  const { createOAuthState } = await import('../lib/oauth-state-store.js');
+  const state = generateState();
+  const codeVerifier = generateCodeVerifier();
+  const stateKey = createOAuthState({ state, codeVerifier });
+
+  const url = google.createAuthorizationURL(state, codeVerifier, ['profile', 'email']);
+  url.searchParams.set('state', stateKey);
+
+  res.writeHead(302, { Location: url.toString() });
+  res.end();
+}
+
+async function handleOAuthGoogleCallback(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const code = url.searchParams.get('code');
+  const stateKey = url.searchParams.get('state');
+
+  const { consumeOAuthState } = await import('../lib/oauth-state-store.js');
+  // Single-use consume: a matched key is deleted here on first read, so a
+  // replayed callback URL cannot ride the same state twice, and a stateKey
+  // this server never issued (or one already spent) fails the lookup outright.
+  const stored = stateKey ? consumeOAuthState(stateKey) : null;
+  if (!code || !stateKey || !stored) {
+    res.writeHead(302, { Location: '/login?error=state_mismatch' });
+    res.end();
+    return;
+  }
+
+  try {
+    const { getGoogle, createSession } = await import('../engine.server.js');
+    const google = getGoogle();
+    if (!google) throw new Error('OAuth not configured');
+
+    const tokens = await google.validateAuthorizationCode(code, stored.codeVerifier);
+    const accessToken = tokens.accessToken();
+
+    const userInfoRes = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!userInfoRes.ok) throw new Error('Failed to fetch user info');
+    const googleUser = await userInfoRes.json();
+
+    // Never trust an unverified email to link/create a local account -- Google
+    // returns email_verified=false for e.g. an unverified alias, and creating
+    // or matching an account on that claim would let an attacker who controls
+    // an unverified address impersonate a real user's account.
+    if (!googleUser.email || googleUser.email_verified !== true) {
+      res.writeHead(302, { Location: '/login?error=email_not_verified' });
+      res.end();
+      return;
+    }
+
+    const { getBy, create } = await import('../lib/busybase/store.js');
+    let user = await getBy('user', 'email', googleUser.email);
+    if (!user) {
+      const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+      const configEngine = getConfigEngineSync();
+      const roles = configEngine.getRoles();
+      const defaultRole = Object.keys(roles)[0] || 'clerk';
+      user = await create('user', {
+        email: googleUser.email,
+        name: googleUser.name || googleUser.email,
+        avatar: googleUser.picture || null,
+        type: 'auditor',
+        role: defaultRole,
+        status: 'active',
+      });
+    }
+
+    const { sessionCookie } = await createSession(user.id);
+    const cookieAttrs = [`Path=${sessionCookie.attributes.path || '/'}`, 'HttpOnly', `SameSite=${sessionCookie.attributes.sameSite || 'Lax'}`];
+    if (sessionCookie.attributes.secure) cookieAttrs.push('Secure');
+    res.writeHead(302, {
+      Location: '/',
+      'Set-Cookie': `${sessionCookie.name}=${sessionCookie.value}; ${cookieAttrs.join('; ')}`,
+    });
+    res.end();
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(302, { Location: '/login?error=oauth_failed' });
+    res.end();
   }
 }
 
