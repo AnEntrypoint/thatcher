@@ -9,7 +9,7 @@ import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
 import { renderBoardView } from '@/ui/board-view-renderer.js';
 import { renderGridView } from '@/ui/grid-view-renderer.js';
 import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
-import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport, renderDemandForecastReport } from '@/ui/report-renderer.js';
+import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport, renderInventoryForecastReport, renderDemandForecastReport, renderPivotReport } from '@/ui/report-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -369,6 +369,13 @@ export async function handlePage(pathname, req, res) {
       const field = params.get('field') || '';
       const groupBy = params.get('group_by') || '';
       return renderSumByFieldReport(user, entityName, spec, items, field, groupBy);
+    }
+    if (report === 'pivot') {
+      const rowField = params.get('row_field') || '';
+      const colField = params.get('col_field') || '';
+      const valueField = params.get('value_field') || '';
+      const agg = params.get('agg') || 'count';
+      return renderPivotReport(user, entityName, spec, items, rowField, colField, valueField, agg);
     }
     if (report === 'rollup') {
       const refField = params.get('ref_field') || '';
