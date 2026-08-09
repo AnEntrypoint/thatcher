@@ -18,6 +18,18 @@ export function sanitizeHtml(str) {
 export async function validateField(fieldDef, value, options = {}) {
   const { fieldName, entityName, existingValue } = options;
 
+  // A formula field is never stored -- computed fresh from the record's own
+  // other fields at every read (busybase/store.js's computeFormulaFields).
+  // Unlike a generic readOnly field (which silently ignores a client-
+  // supplied value), a write attempt against a formula field is rejected
+  // outright: the caller almost certainly intended to set an input field,
+  // not the derived output, and silently swallowing that mistake would hide
+  // a real bug rather than surface it.
+  if (fieldDef.type === 'formula') {
+    if (value === null || value === undefined || value === '') return { valid: true };
+    return { valid: false, error: `Field '${fieldName}' is computed and cannot be set directly` };
+  }
+
   if (fieldDef.auto || fieldDef.auto_generate || fieldDef.readOnly) {
     return { valid: true };
   }
