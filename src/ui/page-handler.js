@@ -241,6 +241,16 @@ export async function handlePage(pathname, req, res) {
   if (!user) { res.writeHead(302, { Location: '/login' }); res.end(); return REDIRECT; }
   if (normalized === '/unauthorized') return renderAccessDenied(user, 'system', 'access');
   if (normalized === '/notifications') { let notifs=[]; try{notifs=await list('notification',{user_id:user.id},{sort:{field:'created_at',dir:'DESC'},limit:100,user})}catch{} const{renderNotificationsPage}=await lazyRenderer('notifications-renderer.js'); return renderNotificationsPage(user,notifs); }
+  if (normalized === '/insights') {
+    // generateInsights internally scopes every underlying list() call to
+    // {user} -- no separate access check needed here, the insights
+    // themselves can never surface a record this user couldn't already see.
+    const { generateInsights } = await import('@/lib/insights-engine.js');
+    let insights = [];
+    try { insights = await generateInsights(user); } catch {}
+    const { renderInsightsPage } = await lazyRenderer('insights-renderer.js');
+    return renderInsightsPage(user, insights);
+  }
   if (normalized === '/' || normalized === '/dashboard') return renderDashboard(user, await getDashboardStats(user));
   if (normalized.startsWith('/admin/') || normalized === '/admin/jobs') return handleAdminPage(normalized, segments, user, req);
   if (segments[0] === 'client' && segments.length === 3 && ['dashboard', 'users', 'progress'].includes(segments[2])) return handleClientSubRoute(user, segments[1], segments[2]);
