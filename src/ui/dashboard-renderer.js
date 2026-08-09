@@ -89,12 +89,12 @@ export function renderAuditDashboard(user, auditData = {}) {
   const { summary = {}, recentActivity = [] } = auditData;
   const actRows = recentActivity.slice(0, 20).map(a =>
     `<tr data-row>
-      <td data-col="time">${new Date((a.timestamp||a.created_at)*1000).toLocaleString('en-ZA')}</td>
-      <td data-col="action"><span class="pill pill-info">${a.action||'-'}</span></td>
-      <td data-col="entity">${a.entity_type||'-'}</td>
-      <td data-col="id" style="font-size:12px">${a.entity_id||'-'}</td>
-      <td data-col="user">${a.user_name||a.user_id||'-'}</td>
-      <td data-col="reason" style="font-size:12px;color:var(--color-text-muted)">${a.reason||'-'}</td>
+      <td data-col="time">${esc(new Date((a.timestamp||a.created_at)*1000).toLocaleString('en-ZA'))}</td>
+      <td data-col="action"><span class="pill pill-info">${esc(a.action||'-')}</span></td>
+      <td data-col="entity">${esc(a.entity_type||'-')}</td>
+      <td data-col="id" style="font-size:12px">${esc(a.entity_id||'-')}</td>
+      <td data-col="user">${esc(a.user_name||a.user_id||'-')}</td>
+      <td data-col="reason" style="font-size:12px;color:var(--color-text-muted)">${esc(a.reason||'-')}</td>
     </tr>`
    ).join('') || emptyRow(6, 'No audit records found');
 
@@ -124,7 +124,7 @@ export function renderAuditDashboard(user, auditData = {}) {
 export function renderSystemHealth(user, healthData = {}) {
   const { database = {}, server: srv = {}, entities = {} } = healthData;
   const entRows = Object.entries(entities).map(([n, c]) =>
-    `<tr data-row><td data-col="entity">${n}</td><td data-col="count" style="text-align:right">${c}</td></tr>`
+    `<tr data-row><td data-col="entity">${esc(n)}</td><td data-col="count" style="text-align:right">${esc(String(c))}</td></tr>`
    ).join('') || emptyRow(2, 'No data');
 
   const statsHtml = `<div class="stats-row">${[

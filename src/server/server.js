@@ -93,6 +93,20 @@ export function createServer(options) {
       // API routes
       if (pathname.startsWith('/api/')) {
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+        const { checkRateLimit } = await import('../lib/rate-limiter.js');
+        const rateUser = await resolveRequestUser(req);
+        const rateKey = rateUser ? `user:${rateUser.id}` : `ip:${req.socket?.remoteAddress || 'unknown'}`;
+        const rate = checkRateLimit(rateKey);
+        res.setHeader('X-RateLimit-Limit', String(rate.limit));
+        res.setHeader('X-RateLimit-Remaining', String(rate.remaining));
+        res.setHeader('X-RateLimit-Reset', String(Math.ceil(rate.resetMs / 1000)));
+        if (!rate.allowed) {
+          res.setHeader('Retry-After', String(Math.ceil(rate.resetMs / 1000)));
+          res.writeHead(429);
+          res.end(JSON.stringify({ error: 'Rate limit exceeded, try again later' }));
+          return;
+        }
         const parts = pathname.slice(5).split('/').filter(Boolean); // remove /api/
 
         if (parts.length === 0) {
