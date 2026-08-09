@@ -20,3 +20,4 @@ package-lock.json
 .gm/browser-profile-*/
 .agentplug-kv/
 *.stackdump
+uploads/

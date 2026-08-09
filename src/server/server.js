@@ -1,6 +1,7 @@
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { createLogger } from '../lib/logger.js';
 import { getLucia } from '../engine.server.js';
@@ -146,6 +147,10 @@ export function createServer(options) {
           return await handleDeleteEntityTemplate(req, res, id, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && entity === 'upload' && !id) {
+          return await handleFileUpload(req, res, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -204,6 +209,25 @@ export function createServer(options) {
 async function serveStaticFile(pathname, req, res) {
   if (pathname === '/' || pathname === '/index.html') {
     // Could serve SPA
+    return false;
+  }
+  if (pathname.startsWith('/uploads/')) {
+    // basename strips any traversal the URL decoder let through; uploaded
+    // files are served read-only, by their sanitized stored name only.
+    const name = path.basename(pathname.slice('/uploads/'.length));
+    const filePath = path.join(process.cwd(), 'uploads', name);
+    try {
+      if (await fileExists(filePath) && path.dirname(filePath) === path.join(process.cwd(), 'uploads')) {
+        const content = await fs.promises.readFile(filePath);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+        res.writeHead(200);
+        res.end(content);
+        return true;
+      }
+    } catch (err) {
+      if (err.code !== 'ENOENT') staticLog.error(`${filePath} ${err.code}`, { message: err.message });
+    }
     return false;
   }
   // Try to serve from public/ or static/
@@ -928,6 +952,119 @@ async function handleCsvImport(req, res, entity, thatcher, configEngineArg) {
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+const UPLOAD_ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf', 'text/plain', 'text/csv', 'application/json']);
+const UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
+
+// Sanitize to a flat, extension-preserving, path-traversal-safe name: strip
+// any directory component, keep only [a-zA-Z0-9._-], cap length. The stored
+// filename is never the client-supplied one directly -- a random prefix
+// prevents overwrite/collision and the sanitization prevents "../../etc" or
+// null-byte tricks reaching fs.writeFile.
+function sanitizeUploadFilename(name) {
+  const base = path.basename(String(name || 'file')).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 128) || 'file';
+  const prefix = crypto.randomBytes(8).toString('hex');
+  return `${prefix}_${base}`;
+}
+
+async function readMultipartFile(req) {
+  const ct = req.headers['content-type'] || '';
+  const boundaryMatch = ct.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  if (!boundaryMatch) throw new Error('Multipart boundary not found');
+  const boundary = '--' + (boundaryMatch[1] || boundaryMatch[2]).trim();
+
+  const chunks = [];
+  let size = 0;
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => { req.destroy(); reject(new Error('Request timeout')); }, 30000);
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > UPLOAD_MAX_SIZE) { clearTimeout(timeout); req.destroy(); reject(new Error('File too large')); return; }
+      chunks.push(chunk);
+    });
+    req.on('end', () => { clearTimeout(timeout); resolve(); });
+    req.on('error', (err) => { clearTimeout(timeout); reject(err); });
+  });
+
+  const buf = Buffer.concat(chunks);
+  const boundaryBuf = Buffer.from(boundary);
+  const parts = [];
+  let start = buf.indexOf(boundaryBuf);
+  while (start !== -1) {
+    const next = buf.indexOf(boundaryBuf, start + boundaryBuf.length);
+    if (next === -1) break;
+    parts.push(buf.slice(start + boundaryBuf.length, next));
+    start = next;
+  }
+
+  for (const part of parts) {
+    const headerEnd = part.indexOf('\r\n\r\n');
+    if (headerEnd === -1) continue;
+    const headerText = part.slice(0, headerEnd).toString('utf-8');
+    if (!/name="file"/i.test(headerText)) continue;
+    const filenameMatch = headerText.match(/filename="([^"]*)"/i);
+    if (!filenameMatch || !filenameMatch[1]) continue;
+    const typeMatch = headerText.match(/Content-Type:\s*([^\r\n]+)/i);
+    const contentType = (typeMatch ? typeMatch[1] : 'application/octet-stream').trim();
+    let body = part.slice(headerEnd + 4);
+    if (body.slice(-2).toString() === '\r\n') body = body.slice(0, -2);
+    return { filename: filenameMatch[1], contentType, buffer: body };
+  }
+  throw new Error('No file field found in upload');
+}
+
+async function handleFileUpload(req, res, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  let file;
+  try {
+    file = await readMultipartFile(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+
+  if (!UPLOAD_ALLOWED_TYPES.has(file.contentType)) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: `Unsupported file type: ${file.contentType}` }));
+    return;
+  }
+  if (file.buffer.length === 0) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'Empty file' }));
+    return;
+  }
+
+  try {
+    await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
+    const storedName = sanitizeUploadFilename(file.filename);
+    const destPath = path.join(UPLOAD_DIR, storedName);
+    // Belt-and-suspenders: confirm the resolved path is still inside UPLOAD_DIR
+    // even though sanitizeUploadFilename already strips traversal sequences.
+    if (path.dirname(destPath) !== UPLOAD_DIR) throw new Error('Invalid upload path');
+    await fs.promises.writeFile(destPath, file.buffer);
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      filename: file.filename,
+      stored_name: storedName,
+      content_type: file.contentType,
+      size: file.buffer.length,
+      url: `/uploads/${storedName}`,
+      uploaded_by: user.id,
+    }));
   } catch (err) {
     apiLog.error(err.message);
     res.writeHead(500);
