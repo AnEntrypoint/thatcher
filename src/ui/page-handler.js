@@ -9,7 +9,7 @@ import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
 import { renderBoardView } from '@/ui/board-view-renderer.js';
 import { renderGridView } from '@/ui/grid-view-renderer.js';
 import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
-import { renderCountByFieldReport, renderCountOverTimeReport } from '@/ui/report-renderer.js';
+import { renderCountByFieldReport, renderCountOverTimeReport, renderSumByFieldReport, renderRollupReport } from '@/ui/report-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -302,6 +302,27 @@ export async function handlePage(pathname, req, res) {
       const dateField = params.get('field') || '';
       const granularity = params.get('granularity') || 'month';
       return renderCountOverTimeReport(user, entityName, spec, items, dateField, granularity);
+    }
+    if (report === 'sum-by-field') {
+      const field = params.get('field') || '';
+      const groupBy = params.get('group_by') || '';
+      return renderSumByFieldReport(user, entityName, spec, items, field, groupBy);
+    }
+    if (report === 'rollup') {
+      const refField = params.get('ref_field') || '';
+      const rollupField = params.get('rollup_field') || '';
+      // The rollup groups by a field on the RELATED entity (refField.ref), so
+      // that entity's list access must be checked the same way viewing it
+      // directly would be -- a cross-entity report must not become a side
+      // channel for reading data the user couldn't otherwise view.
+      const refFieldDef = spec.fields?.[refField];
+      const relatedEntity = refFieldDef?.ref;
+      if (!relatedEntity || !canList(user, relatedEntity)) {
+        return renderAccessDenied(user, relatedEntity || entityName, 'view');
+      }
+      const relatedSpec = getSpec(relatedEntity);
+      const relatedRecords = await list(relatedEntity, {}, { user });
+      return renderRollupReport(user, entityName, spec, items, refField, relatedEntity, relatedSpec, relatedRecords, rollupField);
     }
     const view = params.get('view');
     if (view === 'board') return renderBoardView(user, entityName, spec, items);
