@@ -329,6 +329,62 @@ export function renderPivotReport(user, entityName, spec, records, rowField, col
   return page(user, `${label} Report | Thatcher`, null, content);
 }
 
+// Trend-by-cohort: how a metric evolves over time (rows = date periods),
+// broken down by a cohort dimension (cols = cohort values) -- a genuinely
+// distinct shape from pivotByFields' point-in-time cross-tab and
+// countOverTime's ungrouped time series. Reuses pivotByFields directly
+// rather than a parallel implementation: a synthetic '__period' field is
+// pre-computed onto cloned records via the SAME bucketDateKey granularity
+// logic countOverTime already uses, and a matching plain-text spec.fields
+// entry is added so bucketLabel's enum-lookup branch is skipped (falls
+// through to String(rawValue), exactly what a period string needs) -- then
+// it's an ordinary two-field pivot. ISO-formatted period keys (YYYY-MM,
+// YYYY-MM-DD, YYYY-Www) sort correctly under pivotByFields' existing
+// lexical row sort, so no separate chronological sort is needed.
+export function cohortOverTime(records, spec, dateField, cohortField, granularity = 'month') {
+  const periodField = '__period';
+  const augmentedRecords = [];
+  let unresolved = 0;
+  for (const r of records) {
+    const key = bucketDateKey(r[dateField], granularity);
+    if (key === null) { unresolved++; continue; }
+    augmentedRecords.push({ ...r, [periodField]: key });
+  }
+  const augmentedSpec = { ...spec, fields: { ...spec.fields, [periodField]: { type: 'text', label: 'Period' } } };
+  const { rows, cols, cells } = pivotByFields(augmentedRecords, augmentedSpec, periodField, cohortField, null, 'count');
+  return { rows, cols, cells, unresolved };
+}
+
+export function renderCohortOverTimeReport(user, entityName, spec, records, dateField, cohortField, granularity) {
+  const label = getEntityLabel(spec, true) || entityName;
+  const dateFieldDef = spec.fields?.[dateField];
+  const cohortFieldDef = spec.fields?.[cohortField];
+  if (!dateFieldDef || !cohortFieldDef) {
+    const badField = !dateFieldDef ? dateField : cohortField;
+    return page(user, `${label} | Report`, null,
+      `<div class="page-header"><h1 class="page-title">${esc(label)}</h1></div>
+      <div class="report-empty-state">Unknown field "${esc(badField)}" for this entity.</div>`);
+  }
+  const { rows, cols, cells, unresolved } = cohortOverTime(records, spec, dateField, cohortField, granularity);
+  const notice = unresolved
+    ? `<div class="report-notice">${unresolved} record${unresolved === 1 ? '' : 's'} without a resolvable date excluded</div>`
+    : '';
+  const headerCells = cols.map(c => `<th>${esc(c)}</th>`).join('');
+  const bodyRows = rows.map((r, i) => {
+    const dataCells = cells[i].map(v => `<td style="text-align:right">${esc(String(v))}</td>`).join('');
+    return `<tr><td>${esc(r)}</td>${dataCells}</tr>`;
+  }).join('') || emptyState('No data to report on', 'bar-chart');
+  const content = `<div class="page-header">
+      <div><h1 class="page-title">${esc(label)}: ${esc(cohortFieldDef.label || cohortField)} over time</h1><p class="page-subtitle">${records.length} total records, grouped by ${esc(granularity)}</p></div>
+    </div>
+    ${notice}
+    <div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Period</th>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table></div>`;
+  return page(user, `${label} Report | Thatcher`, null, content);
+}
+
 export function renderDemandForecastReport(user, spec, buckets, totalOpportunities) {
   const label = getEntityLabel(spec, true) || 'Opportunities';
   const valueFieldDef = spec.fields?.value || { type: 'currency' };
