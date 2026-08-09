@@ -157,15 +157,28 @@ function resolveEnumOptions(fieldDef, entityName) {
 // UI-side, but server-side is the authoritative check per this session's SEC
 // pattern. Privileged roles (partner/manager) may log time for anyone, e.g.
 // entering a team member's hours on their behalf.
-function checkTimeEntryOwnership(entityName, data, options) {
-  if (entityName !== 'time_entry') return null;
+// Shared self-only check: a non-privileged actingUser may only write a
+// record whose user_id matches their own id; partner/admin/manager may write
+// for anyone. One function so every self-only entity enforces identically
+// rather than each growing its own slightly-different copy over time.
+function checkSelfOnlyOwnership(data, options, actionDescription) {
   const actingUser = options?.actingUser;
   if (!actingUser) return null;
   if (['partner', 'admin', 'manager'].includes(actingUser.role)) return null;
   if (data.user_id !== undefined && data.user_id !== actingUser.id) {
-    return `Cannot log time for another user`;
+    return `Cannot ${actionDescription} for another user`;
   }
   return null;
+}
+
+function checkTimeEntryOwnership(entityName, data, options) {
+  if (entityName !== 'time_entry') return null;
+  return checkSelfOnlyOwnership(data, options, 'log time');
+}
+
+function checkResourceAllocationOwnership(entityName, data, options) {
+  if (entityName !== 'resource_allocation') return null;
+  return checkSelfOnlyOwnership(data, options, 'create a resource allocation');
 }
 
 // Stock movements are immutable history (checked at creation only, never on
@@ -205,6 +218,40 @@ function checkContractDateOrder(entityName, data, existingRecord) {
   return null;
 }
 
+const WEEKLY_CAPACITY_HOURS = 40;
+
+// Two date ranges overlap unless one entirely precedes the other -- the
+// standard interval-intersection test, not a same-day/exact-match check.
+function rangesOverlap(startA, endA, startB, endB) {
+  return Number(startA) <= Number(endB) && Number(startB) <= Number(endA);
+}
+
+// A user's total weekly allocation across every project they're assigned to,
+// for any date range that overlaps the new/changed allocation, must not
+// exceed a configurable weekly capacity. Checked against EVERY OTHER
+// existing allocation for that user (excluding the record being updated, if
+// any) plus the new one -- never trusting a client-supplied total.
+async function checkResourceCapacity(entityName, data, existingRecord) {
+  if (entityName !== 'resource_allocation') return null;
+  const userId = data.user_id !== undefined ? data.user_id : existingRecord?.user_id;
+  const startDate = data.start_date !== undefined ? data.start_date : existingRecord?.start_date;
+  const endDate = data.end_date !== undefined ? data.end_date : existingRecord?.end_date;
+  const hours = Number(data.allocated_hours_per_week !== undefined ? data.allocated_hours_per_week : existingRecord?.allocated_hours_per_week);
+  if (!userId || startDate == null || endDate == null || !Number.isFinite(hours)) return null;
+
+  const { list } = await import('@/lib/busybase/store');
+  const existingAllocations = await list('resource_allocation', { user_id: userId });
+  const overlapping = existingAllocations.filter(a =>
+    a.id !== existingRecord?.id && rangesOverlap(startDate, endDate, a.start_date, a.end_date)
+  );
+  const overlappingTotal = overlapping.reduce((sum, a) => sum + (Number(a.allocated_hours_per_week) || 0), 0);
+  const resultingTotal = overlappingTotal + hours;
+  if (resultingTotal > WEEKLY_CAPACITY_HOURS) {
+    return `Over-allocated: this would bring the user's weekly total to ${resultingTotal}h against overlapping allocations, exceeding the ${WEEKLY_CAPACITY_HOURS}h capacity`;
+  }
+  return null;
+}
+
 export async function validateEntity(entityName, data, existingRecord = null, options = {}) {
   const spec = getSpec(entityName);
   const errors = {};
@@ -232,11 +279,14 @@ export async function validateEntity(entityName, data, existingRecord = null, op
   const stockErr = await checkStockBalance(entityName, data);
   if (stockErr) errors.quantity = stockErr;
 
-  const ownershipErr = checkTimeEntryOwnership(entityName, data, options);
+  const ownershipErr = checkTimeEntryOwnership(entityName, data, options) || checkResourceAllocationOwnership(entityName, data, options);
   if (ownershipErr) errors.user_id = ownershipErr;
 
   const dateOrderErr = checkContractDateOrder(entityName, data, existingRecord);
   if (dateOrderErr) errors.end_date = dateOrderErr;
+
+  const capacityErr = await checkResourceCapacity(entityName, data, existingRecord);
+  if (capacityErr) errors.allocated_hours_per_week = capacityErr;
 
   return errors;
 }
@@ -315,6 +365,9 @@ export async function validateUpdate(entityName, changes, existingRecord) {
 
   const dateOrderErr = checkContractDateOrder(entityName, changes, existingRecord);
   if (dateOrderErr) errors.end_date = dateOrderErr;
+
+  const capacityErr = await checkResourceCapacity(entityName, changes, existingRecord);
+  if (capacityErr) errors.allocated_hours_per_week = capacityErr;
 
   return errors;
 }
