@@ -151,6 +151,10 @@ export function createServer(options) {
           return await handleChangesSince(req, res, parts[1], parts[2], parts[4]);
         }
 
+        if (req.method === 'GET' && entity === 'resource-optimizer' && id === 'suggest') {
+          return await handleResourceOptimizerSuggest(req, res);
+        }
+
         if (req.method === 'GET' && entity === 'auth' && id === 'google' && !action) {
           return await handleOAuthGoogleStart(req, res);
         }
@@ -1587,6 +1591,46 @@ async function handlePresenceHeartbeat(req, res, entityName, id) {
   heartbeat(entityName, id, user.id, user.name || user.email || user.id);
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ ok: true }));
+}
+
+async function handleResourceOptimizerSuggest(req, res) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const startDate = Number(url.searchParams.get('start_date'));
+  const endDate = Number(url.searchParams.get('end_date'));
+  const hoursNeeded = Number(url.searchParams.get('hours_needed'));
+  if (!Number.isFinite(startDate) || !Number.isFinite(endDate) || !Number.isFinite(hoursNeeded)) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'start_date, end_date, and hours_needed are required numeric query params' }));
+    return;
+  }
+
+  // Self-only unless partner/manager -- the SAME privilege boundary
+  // resource_allocation's own checkTimeEntryOwnership-derived ownership
+  // check already enforces on write. A non-privileged caller asking for
+  // suggestions must not learn how loaded ANY other user is (that leaks
+  // workload/capacity across the org), so their candidate pool is
+  // themselves alone rather than filtered results from a broader query.
+  const isPrivileged = ['partner', 'admin', 'manager'].includes(user.role);
+  let candidateUserIds;
+  if (isPrivileged) {
+    const { list } = await import('../lib/busybase/store.js');
+    const users = await list('user', {});
+    candidateUserIds = users.map(u => u.id);
+  } else {
+    candidateUserIds = [user.id];
+  }
+
+  const { suggestBestFitUsers } = await import('../lib/resource-optimizer.js');
+  const suggestions = await suggestBestFitUsers(candidateUserIds, startDate, endDate, hoursNeeded);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ suggestions }));
 }
 
 async function handlePresenceGet(req, res, entityName, id) {

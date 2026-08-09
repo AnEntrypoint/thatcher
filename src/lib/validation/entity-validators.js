@@ -303,19 +303,14 @@ async function checkCrossEntityRules(entityName, data, existingRecord) {
   return null;
 }
 
-const WEEKLY_CAPACITY_HOURS = 40;
-
-// Two date ranges overlap unless one entirely precedes the other -- the
-// standard interval-intersection test, not a same-day/exact-match check.
-function rangesOverlap(startA, endA, startB, endB) {
-  return Number(startA) <= Number(endB) && Number(startB) <= Number(endA);
-}
-
 // A user's total weekly allocation across every project they're assigned to,
 // for any date range that overlaps the new/changed allocation, must not
 // exceed a configurable weekly capacity. Checked against EVERY OTHER
 // existing allocation for that user (excluding the record being updated, if
-// any) plus the new one -- never trusting a client-supplied total.
+// any) plus the new one -- never trusting a client-supplied total. The
+// overlap/load math itself lives in resource-capacity.js, shared with
+// resource-optimizer.js's suggestion ranking so both compute a user's
+// committed load identically.
 async function checkResourceCapacity(entityName, data, existingRecord) {
   if (entityName !== 'resource_allocation') return null;
   const userId = data.user_id !== undefined ? data.user_id : existingRecord?.user_id;
@@ -324,15 +319,11 @@ async function checkResourceCapacity(entityName, data, existingRecord) {
   const hours = Number(data.allocated_hours_per_week !== undefined ? data.allocated_hours_per_week : existingRecord?.allocated_hours_per_week);
   if (!userId || startDate == null || endDate == null || !Number.isFinite(hours)) return null;
 
-  const { list } = await import('@/lib/busybase/store');
-  const existingAllocations = await list('resource_allocation', { user_id: userId });
-  const overlapping = existingAllocations.filter(a =>
-    a.id !== existingRecord?.id && rangesOverlap(startDate, endDate, a.start_date, a.end_date)
-  );
-  const overlappingTotal = overlapping.reduce((sum, a) => sum + (Number(a.allocated_hours_per_week) || 0), 0);
+  const { userCommittedHours, DEFAULT_WEEKLY_CAPACITY_HOURS } = await import('@/lib/resource-capacity');
+  const overlappingTotal = await userCommittedHours(userId, startDate, endDate, existingRecord?.id);
   const resultingTotal = overlappingTotal + hours;
-  if (resultingTotal > WEEKLY_CAPACITY_HOURS) {
-    return `Over-allocated: this would bring the user's weekly total to ${resultingTotal}h against overlapping allocations, exceeding the ${WEEKLY_CAPACITY_HOURS}h capacity`;
+  if (resultingTotal > DEFAULT_WEEKLY_CAPACITY_HOURS) {
+    return `Over-allocated: this would bring the user's weekly total to ${resultingTotal}h against overlapping allocations, exceeding the ${DEFAULT_WEEKLY_CAPACITY_HOURS}h capacity`;
   }
   return null;
 }
