@@ -147,7 +147,12 @@ export function getTransitionStatus(record) {
 }
 
 export async function transition(entityType, entityId, workflowName, toState, user, reason = '') {
-  const record = await get(entityType, entityId);
+  // get(...,{user}) enforces the same row/org access scoping every other read
+  // path applies -- without it, a transition could read and act on a record
+  // outside the caller's org/row-access simply because this is a state-machine
+  // write rather than a plain field update, the exact bypass class bulk-ops'
+  // delete/set_field actions already close via the same call shape.
+  const record = await get(entityType, entityId, { user });
   if (!record) throw new AppError('Record not found', 'NOT_FOUND', HTTP.NOT_FOUND);
 
   validateTransition(workflowName, record.status || record.stage, toState, user);

@@ -106,10 +106,64 @@ function withWebhookDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+const LEAD_ENTITY_DEFAULT = {
+  label: 'Lead',
+  label_plural: 'Leads',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    company: { type: 'text', label: 'Company' },
+    email: { type: 'email', label: 'Email' },
+    phone: { type: 'text', label: 'Phone' },
+    source: { type: 'text', label: 'Source' },
+    status: { type: 'enum', options: ['new', 'contacted', 'qualified', 'disqualified'], default: 'new', label: 'Status' },
+    owner_id: { type: 'ref', ref: 'user', label: 'Owner' },
+    notes: { type: 'textarea', label: 'Notes' },
+  },
+};
+
+const OPPORTUNITY_PIPELINE_WORKFLOW = {
+  state_field: 'stage',
+  stages: [
+    { name: 'prospecting', label: 'Prospecting', forward: ['qualification'], backward: [] },
+    { name: 'qualification', label: 'Qualification', forward: ['proposal'], backward: ['prospecting'] },
+    { name: 'proposal', label: 'Proposal', forward: ['negotiation'], backward: ['qualification'] },
+    { name: 'negotiation', label: 'Negotiation', forward: ['won', 'lost'], backward: ['proposal'] },
+    { name: 'won', label: 'Won', forward: [], backward: [] },
+    { name: 'lost', label: 'Lost', forward: [], backward: [] },
+  ],
+};
+
+const OPPORTUNITY_ENTITY_DEFAULT = {
+  label: 'Opportunity',
+  label_plural: 'Opportunities',
+  system_entity: true,
+  workflow: 'opportunity_pipeline',
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    lead_id: { type: 'ref', ref: 'lead', label: 'Lead' },
+    value: { type: 'currency', label: 'Value' },
+    stage: { type: 'enum', options: ['prospecting', 'qualification', 'proposal', 'negotiation', 'won', 'lost'], default: 'prospecting', label: 'Stage' },
+    expected_close_date: { type: 'date', label: 'Expected Close Date' },
+    owner_id: { type: 'ref', ref: 'user', label: 'Owner' },
+    probability: { type: 'number', min: 0, max: 100, label: 'Probability (%)' },
+  },
+};
+
+function withCrmDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  const workflows = { ...(masterConfig.workflows || {}) };
+  let changed = false;
+  if (!entities.lead) { entities.lead = LEAD_ENTITY_DEFAULT; changed = true; }
+  if (!entities.opportunity) { entities.opportunity = OPPORTUNITY_ENTITY_DEFAULT; changed = true; }
+  if (!workflows.opportunity_pipeline) { workflows.opportunity_pipeline = OPPORTUNITY_PIPELINE_WORKFLOW; changed = true; }
+  return changed ? { ...masterConfig, entities, workflows } : masterConfig;
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)));
+    this.masterConfig = deepFreeze(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();

@@ -127,6 +127,10 @@ export function createServer(options) {
           return await handleOAuthGoogleCallback(req, res);
         }
 
+        if (req.method === 'POST' && id && action === 'transition') {
+          return await handleEntityTransition(req, res, entity, id, thatcher, configEngine);
+        }
+
         if (req.method === 'POST' && id === 'import' && !action) {
           return await handleCsvImport(req, res, entity, thatcher, configEngine);
         }
@@ -502,6 +506,61 @@ async function handleBulkOperation(req, res, entityName, thatcher, configEngineA
   } catch (err) {
     apiLog.error(err.message);
     res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleEntityTransition(req, res, entityName, id, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  let spec;
+  try {
+    spec = configEngine.generateEntitySpec(entityName);
+  } catch {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: `Entity "${entityName}" not found` }));
+    return;
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const workflowName = body?.workflow || spec.workflow;
+  const toState = body?.toState;
+  if (!workflowName || !toState) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'workflow and toState required' }));
+    return;
+  }
+
+  try {
+    const { requirePermission } = await import('../lib/auth-middleware.js');
+    await requirePermission(user, spec, 'edit');
+    const { transition } = await import('../lib/workflow-engine.js');
+    // transition() itself now reads via get(...,{user}) -- the same
+    // row/org-access-scoped path every other read uses -- so a caller
+    // cannot drag-drop a record outside their access into a new stage.
+    const updated = await transition(entityName, id, workflowName, toState, user, body?.reason || '');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, data: updated }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(err.status || 400);
     res.end(JSON.stringify({ error: err.message }));
   }
 }
