@@ -125,6 +125,30 @@ async function handleGenericEntityView(user, entityName, id, req) {
       resolvedItem = { ...resolvedItem, current_stock: currentStock };
     } catch { resolvedItem = { ...resolvedItem, current_stock: 0 }; }
   }
+  if (entityName === 'task') {
+    // total_hours/billable_amount are derived from time_entry history, same
+    // never-a-stored-counter discipline as product.current_stock above.
+    try {
+      const entries = await list('time_entry', { task_id: id });
+      const totalHours = entries.reduce((sum, e) => sum + (Number(e.hours) || 0), 0);
+      const billableAmount = entries.filter(e => e.billable).reduce((sum, e) => sum + (Number(e.hours) || 0) * (Number(e.rate) || 0), 0);
+      resolvedItem = { ...resolvedItem, total_hours: totalHours, billable_amount: billableAmount };
+    } catch { resolvedItem = { ...resolvedItem, total_hours: 0, billable_amount: 0 }; }
+  }
+  if (entityName === 'project') {
+    // Project-level rollup joins through task the same way the rollup report
+    // added last pass joins entity A through a ref field to entity B -- no
+    // new join logic, just the same id-lookup-then-aggregate shape.
+    try {
+      const tasks = await list('task', { project_id: id });
+      const taskIds = new Set(tasks.map(t => t.id));
+      const allEntries = await list('time_entry', {});
+      const projectEntries = allEntries.filter(e => taskIds.has(e.task_id));
+      const totalHours = projectEntries.reduce((sum, e) => sum + (Number(e.hours) || 0), 0);
+      const billableAmount = projectEntries.filter(e => e.billable).reduce((sum, e) => sum + (Number(e.hours) || 0) * (Number(e.rate) || 0), 0);
+      resolvedItem = { ...resolvedItem, total_hours: totalHours, billable_amount: billableAmount };
+    } catch { resolvedItem = { ...resolvedItem, total_hours: 0, billable_amount: 0 }; }
+  }
   // get(...,{user}) above already enforced row/org access for this exact
   // record (a denied/absent record returns null before this point), so
   // fetching its audit trail here is scoped by construction -- there is no

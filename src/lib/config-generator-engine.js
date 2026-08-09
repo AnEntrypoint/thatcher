@@ -231,10 +231,32 @@ function withInventoryDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+const TIME_ENTRY_ENTITY_DEFAULT = {
+  label: 'Time Entry',
+  label_plural: 'Time Entries',
+  system_entity: true,
+  fields: {
+    task_id: { type: 'ref', ref: 'task', required: true, label: 'Task' },
+    user_id: { type: 'ref', ref: 'user', required: true, label: 'User' },
+    date: { type: 'date', required: true, label: 'Date' },
+    hours: { type: 'number', required: true, min: 0, max: 24, label: 'Hours' },
+    billable: { type: 'bool', default: true, label: 'Billable' },
+    rate: { type: 'currency', label: 'Rate' },
+    notes: { type: 'textarea', label: 'Notes' },
+  },
+};
+
+function withTimeTrackingDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.time_entry) { entities.time_entry = TIME_ENTRY_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))))));
+    this.masterConfig = deepFreeze(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();
