@@ -84,7 +84,34 @@ function formatFieldValue(k, v, entityName, f) {
   return fmtVal(v, k)
 }
 
-export function renderEntityDetail(entityName, item, spec, user) {
+function formatHistoryDiff(before, after) {
+  const keys = new Set([...Object.keys(before || {}), ...Object.keys(after || {})])
+  const changed = [...keys].filter(k => JSON.stringify(before?.[k]) !== JSON.stringify(after?.[k]) && !['updated_at', '_version'].includes(k))
+  if (!changed.length) return ''
+  return changed.map(k => {
+    const from = before?.[k] !== undefined ? esc(String(before[k])) : '<em>none</em>'
+    const to = after?.[k] !== undefined ? esc(String(after[k])) : '<em>none</em>'
+    return `<div class="history-field-change"><strong>${esc(k)}</strong>: ${from} &rarr; ${to}</div>`
+  }).join('')
+}
+
+function renderHistorySection(history) {
+  if (!history || !history.length) return ''
+  const rows = history.map(h => {
+    const when = esc(new Date((h.createdAt || 0) * 1000).toLocaleString('en-ZA'))
+    const diff = h.action === 'update' ? formatHistoryDiff(h.beforeState, h.afterState) : ''
+    return `<div class="history-entry">
+      <div class="history-entry-header"><span class="pill pill-info">${esc(h.action || '-')}</span><span class="history-entry-time">${when}</span><span class="history-entry-user">${esc(h.userId || '-')}</span></div>
+      ${diff ? `<div class="history-entry-diff">${diff}</div>` : ''}
+    </div>`
+  }).join('')
+  return `<div class="card-clean" style="margin-top:1.5rem"><div class="card-clean-body">
+    <h3 style="margin-bottom:12px">History</h3>
+    <div class="history-list">${rows}</div>
+  </div></div>`
+}
+
+export function renderEntityDetail(entityName, item, spec, user, history = []) {
   const label = spec?.label || entityName
   // A field the caller's role isn't visible_to must never reach rendered HTML,
   // not just be CSS-hidden -- filterFields drops it from `fields` entirely so
@@ -135,6 +162,7 @@ export function renderEntityDetail(entityName, item, spec, user) {
     <div class="card-clean">
       <div class="card-clean-body"><div class="detail-grid">${fieldRows || '<p style="color:var(--color-text-muted);font-size:0.875rem;grid-column:1/-1">No details available</p>'}</div></div>
     </div>
+    ${renderHistorySection(history)}
     `
 
   // Canonical gmConfirm (session-13): showDeleteConfirm runs the styled confirm then DELETEs; no bespoke dialog markup/show-hide.

@@ -115,8 +115,26 @@ async function handleGenericEntityView(user, entityName, id, req) {
   if (item.team_id && user.team_id && item.team_id !== user.team_id && !isPartner(user)) return renderAccessDenied(user, entityName, 'view');
   if (isClientUser(user) && user.client_id && item.client_id && item.client_id !== user.client_id) return renderAccessDenied(user, entityName, 'view');
   const [resolvedItem] = resolveRefFields([item], spec);
+  // get(...,{user}) above already enforced row/org access for this exact
+  // record (a denied/absent record returns null before this point), so
+  // fetching its audit trail here is scoped by construction -- there is no
+  // separate access check to duplicate for the history view.
+  let history = [];
+  try {
+    const { getEntityAuditTrail } = await import('@/lib/busybase/audit-reads.js');
+    const { permissionService } = await import('@/services/permission.service.js');
+    const rawHistory = await getEntityAuditTrail(entityName, id);
+    // Field-level RBAC must hold for audit diffs too -- a viewer who can't see
+    // a restricted field on the live record must not see it in a before/after
+    // snapshot either, or field-level RBAC would be trivially bypassed via history.
+    history = rawHistory.map(h => ({
+      ...h,
+      beforeState: h.beforeState ? permissionService.filterFields(user, spec, h.beforeState) : null,
+      afterState: h.afterState ? permissionService.filterFields(user, spec, h.afterState) : null,
+    }));
+  } catch {}
   const { renderEntityDetail: lazyEntityDetail } = await lazyRenderer('entity-renderer.js');
-  return lazyEntityDetail(entityName, resolvedItem, spec, user);
+  return lazyEntityDetail(entityName, resolvedItem, spec, user, history);
 }
 async function handleClientSubRoute(user, clientId, subRoute) {
   if (!canView(user, 'client')) return renderAccessDenied(user, 'client', 'view');
@@ -162,7 +180,7 @@ export async function handlePage(pathname, req, res) {
   if (normalized === '/unauthorized') return renderAccessDenied(user, 'system', 'access');
   if (normalized === '/notifications') { let notifs=[]; try{notifs=await list('notification',{user_id:user.id},{sort:{field:'created_at',dir:'DESC'},limit:100,user})}catch{} const{renderNotificationsPage}=await lazyRenderer('notifications-renderer.js'); return renderNotificationsPage(user,notifs); }
   if (normalized === '/' || normalized === '/dashboard') return renderDashboard(user, await getDashboardStats(user));
-  if (normalized.startsWith('/admin/') || normalized === '/admin/jobs') return handleAdminPage(normalized, segments, user);
+  if (normalized.startsWith('/admin/') || normalized === '/admin/jobs') return handleAdminPage(normalized, segments, user, req);
   if (segments[0] === 'client' && segments.length === 3 && ['dashboard', 'users', 'progress'].includes(segments[2])) return handleClientSubRoute(user, segments[1], segments[2]);
   if (isClerk(user) && segments.length >= 1 && ['user', 'team'].includes(segments[0])) return renderAccessDenied(user, segments[0], 'list');
   if (normalized === '/mwr' || normalized === '/mwr/home') {

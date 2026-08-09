@@ -21,10 +21,16 @@ async function lazyRenderer(name) {
   return import(`file://${__dirname_adm}${name}?t=${t}`);
 }
 
-export async function handleAdminPage(normalized, segments, user) {
+export async function handleAdminPage(normalized, segments, user, req) {
   if (normalized === '/admin/audit') {
     if (!isPartner(user) && !isManager(user)) return renderAccessDenied(user, 'admin', 'view');
-    const auditData = await getAuditData();
+    const params = req ? new URL(req.url, `http://${req.headers.host}`).searchParams : new URLSearchParams();
+    const filters = {};
+    if (params.get('entity_type')) filters.entityType = params.get('entity_type');
+    if (params.get('user_id')) filters.userId = params.get('user_id');
+    if (params.get('from_date')) filters.fromDate = Math.floor(new Date(params.get('from_date')).getTime() / 1000);
+    if (params.get('to_date')) filters.toDate = Math.floor(new Date(params.get('to_date')).getTime() / 1000) + 86400;
+    const auditData = await getAuditData(filters);
     return renderAuditDashboard(user, auditData);
   }
   if (!isPartner(user)) return renderAccessDenied(user, 'admin', 'view');

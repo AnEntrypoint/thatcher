@@ -100,12 +100,20 @@ export function renderAuditDashboard(user, auditData = {}) {
 
   const statsHtml = `<div class="stats-row">${[
     { label: 'Total Actions (30d)', value: summary.total_actions || 0 },
-    { label: 'Permission Grants',   value: summary.grants || 0 },
-    { label: 'Permission Revokes',  value: summary.revokes || 0 },
-    { label: 'Role Changes',        value: summary.role_changes || 0 },
+    { label: 'Creates',             value: summary.creates || 0 },
+    { label: 'Updates',             value: summary.updates || 0 },
+    { label: 'Deletes',             value: summary.deletes || 0 },
   ].map(s => `<div class="stat-card"><div class="stat-card-value">${s.value}</div><div class="stat-card-label">${s.label}</div></div>`).join('')}</div>`;
 
   const content = `<div class="page-header"><h1 class="page-title">Audit Dashboard</h1><a href="/permission_audit" class="btn-ghost-clean">View All Records</a></div>
+    <form method="GET" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <input type="text" name="entity_type" placeholder="Entity type" class="form-input" style="width:160px">
+      <input type="text" name="user_id" placeholder="User ID" class="form-input" style="width:160px">
+      <input type="date" name="from_date" class="form-input">
+      <input type="date" name="to_date" class="form-input">
+      <button type="submit" class="btn-primary-clean">Filter</button>
+      <a href="/admin/audit" class="btn-ghost-clean">Clear</a>
+    </form>
     ${statsHtml}
     <div class="table-wrap">
       <div class="table-toolbar">
