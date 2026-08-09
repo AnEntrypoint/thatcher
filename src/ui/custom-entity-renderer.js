@@ -44,12 +44,26 @@ export function renderCustomEntityList(user, defs) {
       var idx=fieldRowCount++;
       var row=document.createElement('div');
       row.className='field-row';
-      row.style.cssText='display:flex;gap:6px;margin:4px 0';
-      row.innerHTML='<input type="text" class="form-input field-key" placeholder="key" style="flex:1">'+
+      row.style.cssText='display:flex;flex-direction:column;gap:4px;margin:4px 0;padding:6px;border:1px solid var(--color-border,#eee);border-radius:4px';
+      row.innerHTML='<div style="display:flex;gap:6px">'+
+        '<input type="text" class="form-input field-key" placeholder="key" style="flex:1">'+
         '<select class="form-input field-type" style="flex:1">${typeOpts}</select>'+
         '<input type="text" class="form-input field-label" placeholder="label" style="flex:1">'+
         '<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="checkbox" class="field-required">required</label>'+
-        '<button type="button" class="btn-ghost-clean" data-action="removeFieldRow">x</button>';
+        '<button type="button" class="btn-ghost-clean" data-action="removeFieldRow">x</button>'+
+        '</div>'+
+        '<details><summary style="font-size:12px;cursor:pointer">Cross-entity rule (optional)</summary>'+
+        '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">'+
+        '<input type="text" class="form-input rule-ref-field" placeholder="ref field, e.g. project_id" style="flex:1;min-width:120px">'+
+        '<input type="text" class="form-input rule-related-field" placeholder="related field, e.g. status" style="flex:1;min-width:120px">'+
+        '<select class="form-input rule-operator" style="flex:1;min-width:100px">'+
+        '<option value="">No rule</option><option value="equals">equals</option><option value="not_equals">not_equals</option>'+
+        '<option value="gt">gt</option><option value="gte">gte</option><option value="lt">lt</option><option value="lte">lte</option>'+
+        '</select>'+
+        '<input type="text" class="form-input rule-value" placeholder="value (simple rule)" style="flex:1;min-width:100px">'+
+        '<input type="text" class="form-input rule-aggregate-field" placeholder="aggregate field (sum, optional)" style="flex:1;min-width:140px">'+
+        '<input type="text" class="form-input rule-limit-field" placeholder="limit field on related entity (optional)" style="flex:1;min-width:160px">'+
+        '</div></details>';
       container.appendChild(row);
     }
     window.addFieldRow=addFieldRow;
@@ -69,7 +83,23 @@ export function renderCustomEntityList(user, defs) {
         var type=row.querySelector('.field-type').value;
         var flabel=row.querySelector('.field-label').value.trim();
         var required=row.querySelector('.field-required').checked;
-        if(key)fields.push({key:key,type:type,label:flabel||key,required:required});
+        if(!key)return;
+        var field={key:key,type:type,label:flabel||key,required:required};
+        var ruleOperator=row.querySelector('.rule-operator').value;
+        if(ruleOperator){
+          var refField=row.querySelector('.rule-ref-field').value.trim();
+          var relatedField=row.querySelector('.rule-related-field').value.trim();
+          var aggregateField=row.querySelector('.rule-aggregate-field').value.trim();
+          var limitField=row.querySelector('.rule-limit-field').value.trim();
+          if(refField){
+            if(aggregateField&&limitField){
+              field.cross_entity_rule={ref_field:refField,aggregate:'sum',aggregate_field:aggregateField,operator:ruleOperator,limit_field:limitField};
+            } else if(relatedField){
+              field.cross_entity_rule={ref_field:refField,related_field:relatedField,operator:ruleOperator,value:row.querySelector('.rule-value').value};
+            }
+          }
+        }
+        fields.push(field);
       });
       if(!fields.length){status.textContent='At least one field required';return}
       status.textContent='Creating...';

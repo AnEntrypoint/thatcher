@@ -342,6 +342,7 @@ export function customEntityDefToEntityDef(row) {
       required: !!f.required,
       options: f.options || undefined,
       ref: f.ref || undefined,
+      cross_entity_rule: f.cross_entity_rule || undefined,
     };
   }
   return {
