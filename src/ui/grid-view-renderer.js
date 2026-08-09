@@ -4,7 +4,7 @@ import { getDefaultSort, getAvailableFilters, getPageSize, getEntityLabel } from
 
 const EMBEDDED_TYPES = new Set(['json', 'embedded']);
 
-function getColumns(spec) {
+export function getColumns(spec) {
   const fields = spec?.fields || {};
   const override = spec?.list?.columns;
   if (Array.isArray(override) && override.length) {
