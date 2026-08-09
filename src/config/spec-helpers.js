@@ -19,6 +19,22 @@ export function getSpec(name, configEngine) {
   }
 }
 
+export function getAllEntityNames(configEngine) {
+  if (!configEngine) {
+    const g = globalThis.__thatcherConfigEngine;
+    if (g) configEngine = g;
+  }
+  if (!configEngine) return [];
+  try {
+    return configEngine.getAllEntities().filter(name => {
+      const spec = getSpec(name, configEngine);
+      return spec && !spec.embedded && !spec.system_entity;
+    });
+  } catch {
+    return [];
+  }
+}
+
 export function getNavItems(configEngine) {
   try {
     const allEntities = configEngine.getAllEntities();

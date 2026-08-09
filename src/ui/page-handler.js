@@ -1,6 +1,6 @@
 import { getUser, setCurrentRequest } from '@/engine.server.js';
 import { hasGoogleAuth } from '@/config/env.js';
-import { getSpec } from '@/config/spec-helpers.js';
+import { getSpec, getAllEntityNames } from '@/config/spec-helpers.js';
 import { list, get } from '@/lib/busybase/store.js';
 import { renderLogin, renderDashboard, renderAccessDenied, renderPasswordReset, renderPasswordResetConfirm, REDIRECT } from '@/ui/renderer.js';
 import { renderClientDashboard, renderClientList } from '@/ui/client-renderer.js';
@@ -63,11 +63,13 @@ async function handleSearch(user, req) {
   const url = reqUrl(req);
   const q = url.searchParams.get('q') || '', entityFilter = url.searchParams.get('entity') || '', statusFilter = url.searchParams.get('status') || '';
   let teams = []; try { teams = await list('team', {}); } catch {}
+  const allEntityNames = getAllEntityNames().filter(eName => canList(user, eName));
+  const searchableEntities = entityFilter ? allEntityNames.filter(e => e === entityFilter) : allEntityNames;
   const results = {};
-  for (const eName of (entityFilter ? [entityFilter] : ['engagement', 'client', 'rfi', 'review'])) {
+  for (const eName of searchableEntities) {
     try { let items = await list(eName, {}); if (q) items = items.filter(i => JSON.stringify(i).toLowerCase().includes(q.toLowerCase())); if (statusFilter) items = items.filter(i => i.status === statusFilter); const spec = getSpec(eName); if (spec) items = resolveRefFields(items, spec); results[eName] = items.slice(0, 50); } catch {}
   }
-  return renderAdvancedSearch(user, results, { teams, stages: ['info_gathering', 'commencement', 'team_execution', 'partner_review', 'finalization', 'closeout'] });
+  return renderAdvancedSearch(user, results, { teams, entityNames: allEntityNames });
 }
 async function handleGenericEntityView(user, entityName, id) {
   const spec = getSpec(entityName); if (!spec) return null;
