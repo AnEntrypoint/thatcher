@@ -224,11 +224,19 @@ export async function handlePage(pathname, req, res) {
     let items = await list(entityName, {});
     if (isClientUser(user) && user.client_id) items = items.filter(item => { if (item.client_id) return item.client_id === user.client_id; if (item.assigned_to) return item.assigned_to === user.id; return true; });
     items = resolveRefFields(items, spec);
-    const view = reqUrl(req).searchParams.get('view');
+    const params = reqUrl(req).searchParams;
+    if (params.get('export') === 'csv') {
+      const { buildCsv, csvFilename } = await lazyRenderer('csv-export.js');
+      const csv = buildCsv(entityName, spec, items);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${csvFilename(entityName)}"`);
+      res.setHeader('Content-Length', Buffer.byteLength(csv, 'utf-8'));
+      res.writeHead(200); res.end(csv); return 'HANDLED';
+    }
+    const view = params.get('view');
     if (view === 'board') return renderBoardView(user, entityName, spec, items);
     if (view === 'grid') return renderGridView(user, entityName, spec, items);
     if (view === 'calendar') {
-      const params = reqUrl(req).searchParams;
       const month = params.has('month') ? Number(params.get('month')) : undefined;
       const year = params.has('year') ? Number(params.get('year')) : undefined;
       return renderCalendarView(user, entityName, spec, items, { month, year });
