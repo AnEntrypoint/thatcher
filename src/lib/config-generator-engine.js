@@ -160,10 +160,47 @@ function withCrmDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities, workflows } : masterConfig;
 }
 
+const PROJECT_ENTITY_DEFAULT = {
+  label: 'Project',
+  label_plural: 'Projects',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    description: { type: 'textarea', label: 'Description' },
+    owner_id: { type: 'ref', ref: 'user', label: 'Owner' },
+    status: { type: 'enum', options: ['planning', 'active', 'on_hold', 'completed', 'cancelled'], default: 'planning', label: 'Status' },
+    start_date: { type: 'date', label: 'Start Date' },
+    due_date: { type: 'date', label: 'Due Date' },
+  },
+};
+
+const TASK_ENTITY_DEFAULT = {
+  label: 'Task',
+  label_plural: 'Tasks',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    project_id: { type: 'ref', ref: 'project', label: 'Project' },
+    assignee_id: { type: 'ref', ref: 'user', label: 'Assignee' },
+    status: { type: 'enum', options: ['todo', 'in_progress', 'blocked', 'done'], default: 'todo', label: 'Status' },
+    priority: { type: 'enum', options: ['low', 'medium', 'high', 'urgent'], default: 'medium', label: 'Priority' },
+    due_date: { type: 'date', label: 'Due Date' },
+    depends_on: { type: 'multiref', ref: 'task', label: 'Depends On' },
+  },
+};
+
+function withProjectDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.project) { entities.project = PROJECT_ENTITY_DEFAULT; changed = true; }
+  if (!entities.task) { entities.task = TASK_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))));
+    this.masterConfig = deepFreeze(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();

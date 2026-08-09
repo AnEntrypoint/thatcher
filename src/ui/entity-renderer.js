@@ -77,6 +77,10 @@ function formatFieldValue(k, v, entityName, f) {
     const arr = Array.isArray(v) ? v : (typeof v === 'string' && v ? (() => { try { return JSON.parse(v) } catch { return [] } })() : [])
     return arr.length ? arr.map(x => `<span class="pill pill-neutral" style="margin-right:4px">${esc(x)}</span>`).join('') : '-'
   }
+  if (f?.type === 'multiref' && f.ref) {
+    const arr = Array.isArray(v) ? v : (typeof v === 'string' && v ? (() => { try { return JSON.parse(v) } catch { return [] } })() : [])
+    return arr.length ? arr.map(x => `<a href="/${esc(f.ref)}/${esc(x)}" class="pill pill-neutral" style="margin-right:4px;text-decoration:none">${esc(x)}</a>`).join('') : '-'
+  }
   if (f?.type === 'file' || f?.type === 'attachment') {
     const meta = typeof v === 'object' && v ? v : (typeof v === 'string' && v ? (() => { try { return JSON.parse(v) } catch { return null } })() : null)
     return meta?.url ? `<a href="${esc(meta.url)}" class="text-primary hover:underline" target="_blank" rel="noopener">${esc(meta.filename || 'Download')}</a>` : '-'
@@ -211,6 +215,11 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
     if (f.type === 'multiselect' && f.options) {
       const selected = new Set(Array.isArray(val) ? val : (typeof val === 'string' && val ? (() => { try { return JSON.parse(val) } catch { return [] } })() : []))
       const opts = (Array.isArray(f.options) ? f.options : []).map(o => { const ov = typeof o === 'string' ? o : o.value; const ol = typeof o === 'string' ? o : o.label; return `<label style="display:flex;align-items:center;gap:6px;margin:2px 0"><input type="checkbox" name="${k}[]" value="${esc(ov)}" class="checkbox checkbox-primary" ${selected.has(ov)?'checked':''}/><span>${esc(ol)}</span></label>` }).join('')
+      return `<div class="form-field full">${lbl(k,f,f.required)}<div id="field-${k}" data-multiselect="${k}">${opts}</div></div>`
+    }
+    if (f.type === 'multiref' && refOptions[k]) {
+      const selected = new Set(Array.isArray(val) ? val : (typeof val === 'string' && val ? (() => { try { return JSON.parse(val) } catch { return [] } })() : []))
+      const opts = refOptions[k].filter(o => o.value !== item?.id).map(o => `<label style="display:flex;align-items:center;gap:6px;margin:2px 0"><input type="checkbox" name="${k}[]" value="${esc(o.value)}" class="checkbox checkbox-primary" ${selected.has(o.value)?'checked':''}/><span>${esc(o.label)}</span></label>`).join('') || '<p style="font-size:0.8rem;color:var(--color-text-muted)">No options available</p>'
       return `<div class="form-field full">${lbl(k,f,f.required)}<div id="field-${k}" data-multiselect="${k}">${opts}</div></div>`
     }
     if (f.type === 'currency') {

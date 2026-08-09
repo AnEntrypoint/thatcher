@@ -221,6 +221,7 @@ function coerceFieldValue(value, type) {
       return Boolean(value);
     case 'json':
     case 'multiselect':
+    case 'multiref':
     case 'file':
     case 'attachment':
       return typeof value === 'string' ? JSON.parse(value) : value;
