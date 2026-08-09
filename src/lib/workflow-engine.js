@@ -30,6 +30,11 @@ const log = createLogger('[WorkflowEngine]');
 const LOCKOUT_SECONDS = 300; // 5 minutes default
 const workflowCache = new Map();
 
+export function clearWorkflowCache(workflowName) {
+  if (workflowName) workflowCache.delete(workflowName);
+  else workflowCache.clear();
+}
+
 function getWorkflowDef(workflowName) {
   if (workflowCache.has(workflowName)) {
     return workflowCache.get(workflowName);

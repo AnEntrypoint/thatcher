@@ -6,6 +6,7 @@ import { renderSettingsTemplates, renderSettingsChecklists, renderSettingsEntity
 import { renderSettingsNotifications, renderSettingsIntegrations, renderSettingsRecreation, renderSettingsReviewSettings, renderSettingsFileReview, renderSettingsMwrPermissions } from '@/ui/settings/review.js';
 import { renderChecklistsManagement } from '@/ui/checklist-renderer.js';
 import { renderJobManagement } from '@/ui/job-management-renderer.js';
+import { renderWorkflowList, renderWorkflowEditor } from '@/ui/workflow-builder-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
 import { getSystemConfig, getSettingsCounts, getAuditData, getSystemHealth, renderBuildLogsContent } from '@/ui/page-handler-helpers.js';
 import { fileURLToPath } from 'url';
@@ -126,6 +127,20 @@ export async function handleAdminPage(normalized, segments, user) {
     try { const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js'); const engine = getConfigEngineSync(); const config = engine.getConfig(); jobs = (config.jobs || []).map(j => ({ ...j, status: j.enabled === false ? 'disabled' : 'scheduled' })); } catch {}
     let logs = []; try { logs = (await list('job_log', {})).slice(0, 20); } catch {}
     return renderJobManagement(user, jobs, logs);
+  }
+  if (normalized === '/admin/workflows') {
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const config = engine.getConfig();
+    return renderWorkflowList(user, Object.keys(config.workflows || {}));
+  }
+  if (segments.length === 3 && segments[1] === 'workflows') {
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const config = engine.getConfig();
+    const workflowDef = config.workflows?.[segments[2]];
+    if (!workflowDef) return null;
+    return renderWorkflowEditor(user, segments[2], workflowDef);
   }
   return null;
 }

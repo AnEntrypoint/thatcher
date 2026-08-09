@@ -114,6 +114,10 @@ export function createServer(options) {
           return await handleListMemberships(req, res, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && entity === 'workflow' && id && action === 'update') {
+          return await handleUpdateWorkflow(req, res, id, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -334,6 +338,85 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
 
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleUpdateWorkflow(req, res, workflowName, thatcher, configEngineArg) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return;
+  }
+  const { isPartner } = await import('../ui/permissions-ui.js');
+  if (!isPartner(user)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Forbidden' }));
+    return;
+  }
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+  const existingDef = configEngine.getConfig().workflows?.[workflowName];
+  if (!existingDef) {
+    res.writeHead(404);
+    res.end(JSON.stringify({ error: `Workflow "${workflowName}" not found` }));
+    return;
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const stages = Array.isArray(body?.stages) ? body.stages : null;
+  if (!stages || !stages.length) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'stages array required and must be non-empty' }));
+    return;
+  }
+  const seenNames = new Set();
+  for (const s of stages) {
+    if (!s || typeof s.name !== 'string' || !s.name.trim()) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: 'every stage requires a non-empty name' }));
+      return;
+    }
+    if (seenNames.has(s.name)) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: `duplicate stage name "${s.name}"` }));
+      return;
+    }
+    seenNames.add(s.name);
+  }
+  const validNames = new Set(stages.map(s => s.name));
+  for (const s of stages) {
+    for (const target of (s.forward || [])) {
+      if (!validNames.has(target)) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: `stage "${s.name}" has a forward transition to unknown stage "${target}"` }));
+        return;
+      }
+    }
+  }
+
+  try {
+    const updatedDef = { ...existingDef, stages };
+    configEngine.updateWorkflow(workflowName, updatedDef);
+    const { clearWorkflowCache } = await import('../lib/workflow-engine.js');
+    clearWorkflowCache(workflowName);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, workflow: workflowName, stageCount: stages.length }));
   } catch (err) {
     apiLog.error(err.message);
     res.writeHead(500);
