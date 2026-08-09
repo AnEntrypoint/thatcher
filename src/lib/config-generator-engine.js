@@ -274,6 +274,84 @@ function withResourceManagementDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+const CUSTOM_ENTITY_DEF_ENTITY_DEFAULT = {
+  label: 'Custom Entity Definition',
+  label_plural: 'Custom Entity Definitions',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, unique: true, label: 'Name' },
+    label: { type: 'text', required: true, label: 'Label' },
+    label_plural: { type: 'text', label: 'Label (Plural)' },
+    fields: { type: 'json', required: true, label: 'Fields' },
+    owner_id: { type: 'ref', ref: 'user', label: 'Owner' },
+  },
+};
+
+function withCustomEntityDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.custom_entity_def) { entities.custom_entity_def = CUSTOM_ENTITY_DEF_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
+// Every field type this session has established, plus 'id' held reserved by
+// itself since a custom entity spec is never allowed to declare it (the
+// system fields loop in generateEntitySpec injects 'id' unconditionally).
+const KNOWN_FIELD_TYPES = new Set([
+  'text', 'textarea', 'email', 'number', 'int', 'decimal', 'currency', 'date',
+  'timestamp', 'enum', 'bool', 'boolean', 'multiselect', 'ref', 'multiref',
+  'file', 'attachment', 'json',
+]);
+
+// A custom field key colliding with a reserved system field would let a
+// crafted custom_entity_def silently override id/created_at/created_by/
+// updated_at/status -- fields every entity's audit trail, sort defaults, and
+// soft-delete logic assume are the framework's own. Rejected outright rather
+// than allowing the collision and hoping the "declared field wins" merge
+// order in generateEntitySpec never causes trouble.
+const RESERVED_FIELD_KEYS = new Set(['id', 'created_at', 'created_by', 'updated_at', 'status']);
+
+export function validateCustomEntityFields(fieldDefs) {
+  if (!Array.isArray(fieldDefs)) return { valid: false, error: 'fields must be an array' };
+  for (const f of fieldDefs) {
+    if (!f || typeof f.key !== 'string' || !f.key) return { valid: false, error: 'every field requires a key' };
+    if (RESERVED_FIELD_KEYS.has(f.key)) return { valid: false, error: `field key "${f.key}" collides with a reserved system field` };
+    if (!KNOWN_FIELD_TYPES.has(f.type)) return { valid: false, error: `unrecognized field type "${f.type}" for field "${f.key}"` };
+  }
+  return { valid: true };
+}
+
+function slugifyEntityName(name) {
+  return String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+// Turns a custom_entity_def row's {key,type,label,required,options,ref}
+// array into the SAME spec.fields[key] shape every code-registered system
+// entity already uses, so generateEntitySpec's downstream logic (system
+// field injection, permission_template resolution, workflow linkage) never
+// has to know a given entity came from the database instead of source code.
+export function customEntityDefToEntityDef(row) {
+  const fieldsArr = typeof row.fields === 'string' ? JSON.parse(row.fields) : row.fields;
+  const { valid, error } = validateCustomEntityFields(fieldsArr);
+  if (!valid) throw new Error(`[custom_entity_def "${row.name}"] ${error}`);
+  const fields = {};
+  for (const f of fieldsArr) {
+    fields[f.key] = {
+      type: f.type,
+      label: f.label || f.key,
+      required: !!f.required,
+      options: f.options || undefined,
+      ref: f.ref || undefined,
+    };
+  }
+  return {
+    label: row.label || row.name,
+    label_plural: row.label_plural || row.label || row.name,
+    system_entity: false,
+    fields,
+  };
+}
+
 const CONTRACT_LIFECYCLE_WORKFLOW = {
   state_field: 'status',
   stages: [
@@ -316,7 +394,7 @@ function withContractDefaults(masterConfig) {
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withResourceManagementDefaults(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))))))));
+    this.masterConfig = deepFreeze(withCustomEntityDefaults(withResourceManagementDefaults(withContractDefaults(withTimeTrackingDefaults(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))))))))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();
@@ -344,6 +422,26 @@ export class ConfigGeneratorEngine {
     this.masterConfig = deepFreeze({ ...this.masterConfig, permission_templates: nextTemplates });
     this.specCache.clear();
     return this;
+  }
+
+  // Merges one custom_entity_def row into masterConfig.entities, keyed by a
+  // slugified version of its name -- after this call, generateEntitySpec(slug)
+  // returns a real usable spec and every generic CRUD/view/report route that
+  // reads config.entities works for it with zero entity-specific code, the
+  // same reuse discipline every code-registered system entity already gets.
+  // A slug colliding with an EXISTING entity (system or another custom one)
+  // is rejected rather than silently overwriting it.
+  registerCustomEntity(row) {
+    const slug = slugifyEntityName(row.name);
+    if (!slug) throw new Error('[ConfigGeneratorEngine] registerCustomEntity: name produces an empty slug');
+    if (this.masterConfig.entities?.[slug] && !this.masterConfig.entities[slug]._fromCustomEntityDef) {
+      throw new Error(`[ConfigGeneratorEngine] registerCustomEntity: "${slug}" collides with an existing entity`);
+    }
+    const entityDef = { ...customEntityDefToEntityDef(row), _fromCustomEntityDef: true };
+    const nextEntities = { ...(this.masterConfig.entities || {}), [slug]: entityDef };
+    this.masterConfig = deepFreeze({ ...this.masterConfig, entities: nextEntities });
+    this.specCache.clear();
+    return slug;
   }
 
   registerPlugin(entityName, plugin = {}) {

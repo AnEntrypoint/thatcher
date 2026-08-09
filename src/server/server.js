@@ -83,6 +83,22 @@ export function createServer(options) {
       if (!systemInitialized) {
         const { loadPlugins } = await load(path.join(__dirname, '../plugins/index.js'));
         await loadPlugins(configEngine);
+        // Custom entities are DB rows, not code -- they can only be loaded
+        // once both the config engine AND the store are available, which is
+        // exactly this first-request boundary (the engine itself must be
+        // constructible with no DB dependency, per its existing contract).
+        // A bad row must not crash server startup for every other entity, so
+        // registration failures are logged and skipped individually.
+        try {
+          const { list } = await import('../lib/busybase/store.js');
+          const customDefs = await list('custom_entity_def', {});
+          for (const row of customDefs) {
+            try { configEngine.registerCustomEntity(row); }
+            catch (e) { log.error(`Failed to register custom entity "${row.name}": ${e.message}`); }
+          }
+        } catch (e) {
+          log.error(`Failed to load custom_entity_def rows: ${e.message}`);
+        }
         systemInitialized = true;
         log.info('System ready');
       }
@@ -189,6 +205,14 @@ export function createServer(options) {
 
         if (req.method === 'POST' && entity === 'entity_template' && id && action === 'delete') {
           return await handleDeleteEntityTemplate(req, res, id, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'custom_entity_def' && id === 'create' && !action) {
+          return await handleCreateCustomEntityDef(req, res, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'custom_entity_def' && id && action === 'delete') {
+          return await handleDeleteCustomEntityDef(req, res, id, thatcher, configEngine);
         }
 
         if (req.method === 'POST' && entity === 'upload' && !id) {
@@ -710,6 +734,92 @@ async function handleDeleteEntityTemplate(req, res, templateId, thatcher, config
       return;
     }
     await remove('entity_template', templateId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleCreateCustomEntityDef(req, res, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const { name, label, label_plural, fields } = body || {};
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'name required' }));
+    return;
+  }
+  if (!label || typeof label !== 'string' || !label.trim()) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'label required' }));
+    return;
+  }
+
+  const { validateCustomEntityFields } = await import('../lib/config-generator-engine.js');
+  // Same allow-listed field-type vocabulary and reserved-key rejection every
+  // custom entity gets, checked here BEFORE the record is ever persisted --
+  // a bad definition must never reach the store, let alone registerCustomEntity.
+  const fieldValidation = validateCustomEntityFields(fields);
+  if (!fieldValidation.valid) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: fieldValidation.error }));
+    return;
+  }
+
+  try {
+    const record = { name: name.trim(), label: label.trim(), label_plural: (label_plural || '').trim() || undefined, fields, owner_id: user.id };
+    // Register FIRST -- if the slug collides with an existing entity or the
+    // shape is otherwise invalid at the engine level, the definition is
+    // never persisted, so a rejected custom_entity_def never lingers as a
+    // dead row claiming a slug it was never actually allowed to use.
+    const slug = configEngine.registerCustomEntity(record);
+    const { create } = await import('../lib/busybase/store.js');
+    const created = await create('custom_entity_def', record, user);
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, id: created.id, slug }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleDeleteCustomEntityDef(req, res, defId, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  try {
+    const { remove, get } = await import('../lib/busybase/store.js');
+    const existing = await get('custom_entity_def', defId);
+    if (!existing) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Custom entity definition not found' }));
+      return;
+    }
+    await remove('custom_entity_def', defId);
+    // Deliberately does NOT unregister the entity from the running config
+    // engine -- existing data for that entity must remain readable this
+    // session; removal only takes full effect on next restart's fresh
+    // custom_entity_def load, the same "config changes need a reload"
+    // contract updateWorkflow/updatePermissionTemplate already carry.
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
   } catch (err) {
