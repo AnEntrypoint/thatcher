@@ -152,6 +152,28 @@ function resolveEnumOptions(fieldDef, entityName) {
   return [];
 }
 
+// Stock movements are immutable history (checked at creation only, never on
+// edit -- there is no update path for them). An outbound movement (negative
+// quantity) that would drive the running balance below zero is invalid: the
+// balance is the sum of every OTHER movement for this product plus the new
+// one, computed fresh from stored data, never trusting a client-supplied
+// "current stock" value that doesn't exist as an editable field.
+async function checkStockBalance(entityName, data) {
+  if (entityName !== 'stock_movement') return null;
+  const quantity = Number(data.quantity);
+  if (!Number.isFinite(quantity) || quantity >= 0) return null;
+  if (!data.product_id) return null;
+
+  const { list } = await import('@/lib/busybase/store');
+  const existingMovements = await list('stock_movement', { product_id: data.product_id });
+  const currentBalance = existingMovements.reduce((sum, m) => sum + (Number(m.quantity) || 0), 0);
+  const resultingBalance = currentBalance + quantity;
+  if (resultingBalance < 0) {
+    return `Insufficient stock: current balance is ${currentBalance}, this movement would result in ${resultingBalance}`;
+  }
+  return null;
+}
+
 export async function validateEntity(entityName, data, existingRecord = null) {
   const spec = getSpec(entityName);
   const errors = {};
@@ -175,6 +197,9 @@ export async function validateEntity(entityName, data, existingRecord = null) {
     });
     if (uniqueErr && !errors[fieldName]) errors[fieldName] = uniqueErr;
   }
+
+  const stockErr = await checkStockBalance(entityName, data);
+  if (stockErr) errors.quantity = stockErr;
 
   return errors;
 }
