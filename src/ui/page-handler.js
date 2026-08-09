@@ -9,6 +9,7 @@ import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
 import { renderBoardView } from '@/ui/board-view-renderer.js';
 import { renderGridView } from '@/ui/grid-view-renderer.js';
 import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
+import { renderCountByFieldReport, renderCountOverTimeReport } from '@/ui/report-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -234,6 +235,16 @@ export async function handlePage(pathname, req, res) {
       res.setHeader('Content-Disposition', `attachment; filename="${csvFilename(entityName)}"`);
       res.setHeader('Content-Length', Buffer.byteLength(csv, 'utf-8'));
       res.writeHead(200); res.end(csv); return 'HANDLED';
+    }
+    const report = params.get('report');
+    if (report === 'count-by-field') {
+      const field = params.get('field') || '';
+      return renderCountByFieldReport(user, entityName, spec, items, field);
+    }
+    if (report === 'count-over-time') {
+      const dateField = params.get('field') || '';
+      const granularity = params.get('granularity') || 'month';
+      return renderCountOverTimeReport(user, entityName, spec, items, dateField, granularity);
     }
     const view = params.get('view');
     if (view === 'board') return renderBoardView(user, entityName, spec, items);
