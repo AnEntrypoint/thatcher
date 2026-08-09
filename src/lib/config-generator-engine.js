@@ -209,6 +209,7 @@ const PRODUCT_ENTITY_DEFAULT = {
     description: { type: 'textarea', label: 'Description' },
     unit_price: { type: 'currency', label: 'Unit Price' },
     reorder_threshold: { type: 'number', min: 0, label: 'Reorder Threshold' },
+    lead_time_days: { type: 'number', min: 0, default: 14, label: 'Lead Time (days)' },
   },
 };
 

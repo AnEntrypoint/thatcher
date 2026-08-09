@@ -139,6 +139,24 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
       })()
     : ''
 
+  // Forecast fields are computed alongside current_stock (page-handler.js's
+  // inventory-forecast.js), same not-a-spec-field treatment.
+  const forecastRow = entityName === 'product' && item.days_until_stockout !== undefined
+    ? (() => {
+        const daysLabel = item.days_until_stockout == null ? 'Unknown (no recent consumption)' : `${Math.round(item.days_until_stockout)} days`
+        const reorderLabel = item.reorder_date == null ? '-' : new Date(item.reorder_date * 1000).toISOString().slice(0, 10)
+        const pillCls = item.reorder_due ? 'pill-danger' : 'pill-success'
+        return `<div class="detail-row">
+          <span class="detail-row-label">Days Until Stockout</span>
+          <span class="detail-row-value">${esc(daysLabel)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-row-label">Suggested Reorder Date</span>
+          <span class="detail-row-value"><span class="pill ${pillCls}">${esc(reorderLabel)}${item.reorder_due ? ' (Reorder Now)' : ''}</span></span>
+        </div>`
+      })()
+    : ''
+
   // total_hours/billable_amount are computed (page-handler.js sums time_entry
   // rows, directly for a task or joined through task for a project), same
   // not-a-spec-field treatment as current_stock above.
@@ -177,7 +195,7 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
 
   const visibleFields = Object.entries(fields).filter(([k]) => k !== 'id' && !HIDDEN_FIELDS.has(k) && item[k] !== undefined)
 
-  const fieldRows = stockRow + timeTrackingRows + expiryRow + utilizationRow + visibleFields.map(([k, f]) =>
+  const fieldRows = stockRow + forecastRow + timeTrackingRows + expiryRow + utilizationRow + visibleFields.map(([k, f]) =>
     `<div class="detail-row">
       <span class="detail-row-label">${esc(f.label || k)}</span>
       <span class="detail-row-value">${formatFieldValue(k, item[k], entityName, f)}</span>
