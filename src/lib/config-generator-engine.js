@@ -41,10 +41,45 @@ function withMultiTenancyDefaults(masterConfig) {
   return { ...masterConfig, entities };
 }
 
+const WEBHOOK_ENTITY_DEFAULT = {
+  label: 'Webhook',
+  label_plural: 'Webhooks',
+  system_entity: true,
+  fields: {
+    entity: { type: 'text', required: true, label: 'Entity' },
+    trigger: { type: 'text', required: true, label: 'Trigger' },
+    url: { type: 'text', required: true, label: 'URL' },
+    secret: { type: 'text', required: true, label: 'Secret', hidden: true },
+    enabled: { type: 'bool', default: true, label: 'Enabled' },
+  },
+};
+
+const WEBHOOK_DELIVERY_ENTITY_DEFAULT = {
+  label: 'Webhook Delivery',
+  label_plural: 'Webhook Deliveries',
+  system_entity: true,
+  fields: {
+    webhook_id: { type: 'ref', ref: 'webhook', required: true },
+    event: { type: 'text' },
+    status_code: { type: 'int' },
+    success: { type: 'bool' },
+    attempt: { type: 'int' },
+    error: { type: 'text' },
+  },
+};
+
+function withWebhookDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.webhook) { entities.webhook = WEBHOOK_ENTITY_DEFAULT; changed = true; }
+  if (!entities.webhook_delivery) { entities.webhook_delivery = WEBHOOK_DELIVERY_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withMultiTenancyDefaults(masterConfig));
+    this.masterConfig = deepFreeze(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();

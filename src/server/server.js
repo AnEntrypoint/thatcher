@@ -122,6 +122,18 @@ export function createServer(options) {
           return await handleUpdatePermissionTemplate(req, res, id, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && entity === 'webhook' && id === 'create' && !action) {
+          return await handleCreateWebhook(req, res, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'webhook' && id && action === 'update') {
+          return await handleUpdateWebhookRecord(req, res, id, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'webhook' && id && action === 'delete') {
+          return await handleDeleteWebhook(req, res, id, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -350,6 +362,137 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
 }
 
 const PERMISSION_ACTIONS = new Set(['list', 'view', 'create', 'edit', 'delete', 'archive', 'export', 'manage_settings']);
+
+async function requireAuthedPartner(req, res) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return null;
+  }
+  const { isPartner } = await import('../ui/permissions-ui.js');
+  if (!isPartner(user)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Forbidden' }));
+    return null;
+  }
+  return user;
+}
+
+async function handleCreateWebhook(req, res, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const { entity, trigger, url: targetUrl } = body || {};
+  if (!entity || typeof entity !== 'string') {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'entity required' }));
+    return;
+  }
+  if (!['create', 'update', 'delete', 'transition'].includes(trigger)) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'trigger must be one of create/update/delete/transition' }));
+    return;
+  }
+  const { validateWebhookUrl } = await import('../lib/webhook-engine.js');
+  const validation = await validateWebhookUrl(targetUrl || '');
+  if (!validation.ok) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: validation.error }));
+    return;
+  }
+
+  try {
+    const crypto = await import('crypto');
+    const secret = crypto.randomBytes(32).toString('hex');
+    const { create } = await import('../lib/busybase/store.js');
+    const record = await create('webhook', { entity, trigger, url: targetUrl, secret, enabled: true }, user);
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, id: record.id }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleUpdateWebhookRecord(req, res, webhookId, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const patch = {};
+  if (typeof body?.enabled === 'boolean') patch.enabled = body.enabled;
+  if (typeof body?.url === 'string') {
+    const { validateWebhookUrl } = await import('../lib/webhook-engine.js');
+    const validation = await validateWebhookUrl(body.url);
+    if (!validation.ok) {
+      res.writeHead(400);
+      res.end(JSON.stringify({ error: validation.error }));
+      return;
+    }
+    patch.url = body.url;
+  }
+  if (!Object.keys(patch).length) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'nothing to update' }));
+    return;
+  }
+
+  try {
+    const { update, get } = await import('../lib/busybase/store.js');
+    const existing = await get('webhook', webhookId);
+    if (!existing) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Webhook not found' }));
+      return;
+    }
+    await update('webhook', webhookId, patch);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, id: webhookId }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleDeleteWebhook(req, res, webhookId, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  try {
+    const { remove, get } = await import('../lib/busybase/store.js');
+    const existing = await get('webhook', webhookId);
+    if (!existing) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Webhook not found' }));
+      return;
+    }
+    await remove('webhook', webhookId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
 
 async function handleUpdatePermissionTemplate(req, res, templateName, thatcher, configEngineArg) {
   const user = await resolveRequestUser(req);
