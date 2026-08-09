@@ -9,6 +9,7 @@ import { renderJobManagement } from '@/ui/job-management-renderer.js';
 import { renderWorkflowList, renderWorkflowEditor } from '@/ui/workflow-builder-renderer.js';
 import { renderRolesList, renderTemplateList, renderPermissionMatrix } from '@/ui/rbac-renderer.js';
 import { renderWebhookList, renderWebhookDetail } from '@/ui/webhook-renderer.js';
+import { renderTemplateList as renderEntityTemplateList } from '@/ui/template-renderer.js';
 import { isPartner, isManager } from '@/ui/permissions-ui.js';
 import { getSystemConfig, getSettingsCounts, getAuditData, getSystemHealth, renderBuildLogsContent } from '@/ui/page-handler-helpers.js';
 import { fileURLToPath } from 'url';
@@ -177,6 +178,18 @@ export async function handleAdminPage(normalized, segments, user) {
     let deliveries = [];
     try { deliveries = (await list('webhook_delivery', { webhook_id: segments[2] }, { sort: { field: 'created_at', dir: 'DESC' } })).slice(0, 20); } catch {}
     return renderWebhookDetail(user, webhook, deliveries);
+  }
+  if (normalized === '/admin/templates') {
+    const { getConfigEngineSync } = await import('@/lib/config-generator-engine.js');
+    const engine = getConfigEngineSync();
+    const entityNames = engine.getAllEntities().filter(e => e !== 'entity_template' && e !== 'webhook' && e !== 'webhook_delivery' && e !== 'user_organization');
+    let allTemplates = []; try { allTemplates = await list('entity_template', {}); } catch {}
+    const templatesByEntity = {};
+    for (const t of allTemplates) {
+      if (!templatesByEntity[t.entity]) templatesByEntity[t.entity] = [];
+      templatesByEntity[t.entity].push(t);
+    }
+    return renderEntityTemplateList(user, entityNames, templatesByEntity);
   }
   return null;
 }

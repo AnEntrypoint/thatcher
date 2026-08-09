@@ -72,14 +72,43 @@ async function handleSearch(user, req) {
   }
   return renderAdvancedSearch(user, results, { teams, entityNames: allEntityNames });
 }
-async function handleGenericEntityView(user, entityName, id) {
+const SYSTEM_FIELDS_TO_STRIP = new Set(['id', 'created_at', 'created_by', 'updated_at', 'status', 'organization_id']);
+
+async function handleGenericEntityView(user, entityName, id, req) {
   const spec = getSpec(entityName); if (!spec) return null;
   if (isClientUser(user) && !canClientAccessEntity(user, entityName)) return renderAccessDenied(user, entityName, 'view');
   if (id === 'new') {
     if (!canCreate(user, entityName)) return renderAccessDenied(user, entityName, 'create');
     const resolvedSpec = resolveEnumOptions(spec);
     const { renderEntityForm: lazyEntityForm } = await lazyRenderer('entity-renderer.js');
-    return lazyEntityForm(entityName, null, resolvedSpec, user, true, await getRefOptions(resolvedSpec));
+
+    let prefill = null;
+    const params = req ? reqUrl(req).searchParams : null;
+    const cloneFromId = params?.get('clone_from');
+    const templateId = params?.get('template');
+    if (cloneFromId) {
+      const source = await get(entityName, cloneFromId, { user });
+      if (source) {
+        prefill = {};
+        for (const [key, value] of Object.entries(source)) {
+          if (!SYSTEM_FIELDS_TO_STRIP.has(key)) prefill[key] = value;
+        }
+      }
+    } else if (templateId) {
+      const template = await get('entity_template', templateId);
+      if (template && template.entity === entityName) {
+        try {
+          prefill = typeof template.field_values === 'string' ? JSON.parse(template.field_values || '{}') : (template.field_values || {});
+        } catch {
+          prefill = {};
+        }
+      }
+    }
+
+    let templates = [];
+    try { templates = await list('entity_template', { entity: entityName }); } catch {}
+
+    return lazyEntityForm(entityName, prefill, resolvedSpec, user, true, await getRefOptions(resolvedSpec), templates);
   }
   if (!canView(user, entityName)) return renderAccessDenied(user, entityName, 'view');
   const item = await get(entityName, id, { user }); if (!item) return null;
@@ -264,7 +293,7 @@ export async function handlePage(pathname, req, res) {
     const client = await get('client', segments[1], { user }); if (!client) return null;
     return renderClientDashboard(user, client, await getClientDashboardStats(segments[1]));
   }
-  if (segments.length === 2) return handleGenericEntityView(user, segments[0], segments[1]);
+  if (segments.length === 2) return handleGenericEntityView(user, segments[0], segments[1], req);
   if (segments.length === 3 && segments[2] === 'edit') return handleGenericEntityEdit(user, segments[0], segments[1]);
 
   return null;

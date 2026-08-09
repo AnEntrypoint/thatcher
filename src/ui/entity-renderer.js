@@ -111,12 +111,13 @@ export function renderEntityDetail(entityName, item, spec, user) {
     </div>` : `<div style="margin-bottom:1.5rem"><h1 style="font-size:1.5rem;font-weight:700">${displayNameSafe}</h1></div>`
 
   const editBtn = userCanEdit ? `<a href="/${entityName}/${item.id}/edit" class="btn btn-outline btn-sm">Edit</a>` : ''
+  const cloneBtn = canCreate(user, entityName) ? `<a href="/${entityName}/new?clone_from=${esc(item.id)}" class="btn btn-outline btn-sm">Clone</a>` : ''
   const delBtn = userCanDelete ? `<button data-action="showDeleteConfirm" class="btn btn-error btn-outline btn-sm">Delete</button>` : ''
 
   const content = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div style="flex:1">${headerExtra}</div>
-      <div style="display:flex;gap:0.5rem;margin-left:1rem">${editBtn}${delBtn}</div>
+      <div style="display:flex;gap:0.5rem;margin-left:1rem">${editBtn}${cloneBtn}${delBtn}</div>
     </div>
     <div class="card-clean">
       <div class="card-clean-body"><div class="detail-grid">${fieldRows || '<p style="color:var(--color-text-muted);font-size:0.875rem;grid-column:1/-1">No details available</p>'}</div></div>
@@ -129,7 +130,7 @@ export function renderEntityDetail(entityName, item, spec, user) {
   return page(user, `${label} Detail`, bc, content, [script])
 }
 
-export function renderEntityForm(entityName, item, spec, user, isNew = false, refOptions = {}) {
+export function renderEntityForm(entityName, item, spec, user, isNew = false, refOptions = {}, templates = []) {
   const label = spec?.label || entityName
   const fields = spec?.fields || {}
   const lbl = (k, f, req) => `<label class="form-label" for="field-${k}">${esc(f.label||k)}${req ? '<span class="req">*</span>' : ''}</label>`
@@ -165,8 +166,14 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
   const bc = isNew
     ? [{ href: '/', label: 'Dashboard' }, { href: `/${entityName}`, label: spec?.labelPlural || label }, { label: 'Create' }]
     : [{ href: '/', label: 'Dashboard' }, { href: `/${entityName}`, label: spec?.labelPlural || label }, { href: `/${entityName}/${item?.id}`, label: item?.name || item?.title || `#${item?.id}` }, { label: 'Edit' }]
+  const templatePicker = isNew && templates.length
+    ? `<div class="form-field full"><label class="form-label" for="template-picker">Start from template</label>
+        <select id="template-picker" onchange="if(this.value)window.location='/${entityName}/new?template='+this.value">
+          <option value="">Blank</option>${templates.map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join('')}
+        </select></div>`
+    : ''
   const content = `<div class="form-shell"><div style="margin-bottom:24px"><h1 style="font-size:24px;font-weight:700">${isNew ? 'Create' : 'Edit'} ${esc(label)}</h1></div>
-    <div class="form-section"><form id="entity-form" class="form-grid" aria-label="${isNew ? 'Create' : 'Edit'} ${esc(label)}">${formFields}${pwField}
+    <div class="form-section"><form id="entity-form" class="form-grid" aria-label="${isNew ? 'Create' : 'Edit'} ${esc(label)}">${templatePicker}${formFields}${pwField}
     <div class="form-actions" style="grid-column:1/-1"><button type="submit" id="submit-btn" class="btn-primary-clean"><span class="btn-text">Save</span><span class="btn-loading-text" style="display:none">Saving...</span></button>
     <a href="/${entityName}${isNew ? '' : '/' + item?.id}" class="btn-ghost-clean">Cancel</a></div></form></div></div>`
   const script = `${TOAST_SCRIPT}const form=document.getElementById('entity-form');const sb=document.getElementById('submit-btn');form.addEventListener('submit',async(e)=>{e.preventDefault();sb.classList.add('btn-loading');sb.querySelector('.btn-text').style.display='none';sb.querySelector('.btn-loading-text').style.display='inline';sb.disabled=true;const fd=new FormData(form);const data={};for(const[k,v]of fd.entries())data[k]=v;form.querySelectorAll('input[type=checkbox]').forEach(cb=>{data[cb.name]=cb.checked});form.querySelectorAll('input[type=number]').forEach(inp=>{if(inp.name&&data[inp.name]!==undefined&&data[inp.name]!=='')data[inp.name]=Number(data[inp.name])});const url=${isNew}?'/api/${entityName}':'/api/${entityName}/${item?.id}';const method=${isNew}?'POST':'PUT';try{const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await res.json();if(res.ok){showToast('${isNew?'Created':'Updated'} successfully!','success');const ed=result.data||result;setTimeout(()=>{window.location='/${entityName}/'+(ed.id||'${item?.id}')},500)}else{showToast(result.message||result.error||'Save failed','error');sb.classList.remove('btn-loading');sb.querySelector('.btn-text').style.display='inline';sb.querySelector('.btn-loading-text').style.display='none';sb.disabled=false}}catch(err){showToast('Error: '+err.message,'error');sb.classList.remove('btn-loading');sb.querySelector('.btn-text').style.display='inline';sb.querySelector('.btn-loading-text').style.display='none';sb.disabled=false}})`

@@ -68,11 +68,23 @@ const WEBHOOK_DELIVERY_ENTITY_DEFAULT = {
   },
 };
 
+const ENTITY_TEMPLATE_ENTITY_DEFAULT = {
+  label: 'Entity Template',
+  label_plural: 'Entity Templates',
+  system_entity: true,
+  fields: {
+    entity: { type: 'text', required: true, label: 'Entity' },
+    name: { type: 'text', required: true, label: 'Name' },
+    field_values: { type: 'json', label: 'Field Values' },
+  },
+};
+
 function withWebhookDefaults(masterConfig) {
   const entities = { ...(masterConfig.entities || {}) };
   let changed = false;
   if (!entities.webhook) { entities.webhook = WEBHOOK_ENTITY_DEFAULT; changed = true; }
   if (!entities.webhook_delivery) { entities.webhook_delivery = WEBHOOK_DELIVERY_ENTITY_DEFAULT; changed = true; }
+  if (!entities.entity_template) { entities.entity_template = ENTITY_TEMPLATE_ENTITY_DEFAULT; changed = true; }
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 

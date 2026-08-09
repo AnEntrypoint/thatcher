@@ -138,6 +138,14 @@ export function createServer(options) {
           return await handleBulkOperation(req, res, entity, thatcher, configEngine);
         }
 
+        if (req.method === 'POST' && entity === 'entity_template' && id === 'create' && !action) {
+          return await handleCreateEntityTemplate(req, res, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'entity_template' && id && action === 'delete') {
+          return await handleDeleteEntityTemplate(req, res, id, thatcher, configEngine);
+        }
+
         // Check if user has custom route for this
         const userRoutePath = path.join(process.cwd(), 'app/api', ...parts, 'route.js');
         const routeExists = await fileExists(userRoutePath);
@@ -431,6 +439,77 @@ async function handleBulkOperation(req, res, entityName, thatcher, configEngineA
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleCreateEntityTemplate(req, res, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const { entity, name, field_values } = body || {};
+  if (!entity || typeof entity !== 'string') {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'entity required' }));
+    return;
+  }
+  try {
+    configEngine.generateEntitySpec(entity);
+  } catch {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: `Unknown entity "${entity}"` }));
+    return;
+  }
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'name required' }));
+    return;
+  }
+
+  try {
+    const { create } = await import('../lib/busybase/store.js');
+    const record = await create('entity_template', { entity, name: name.trim(), field_values: field_values || {} }, user);
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, id: record.id }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleDeleteEntityTemplate(req, res, templateId, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  try {
+    const { remove, get } = await import('../lib/busybase/store.js');
+    const existing = await get('entity_template', templateId);
+    if (!existing) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Template not found' }));
+      return;
+    }
+    await remove('entity_template', templateId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
   } catch (err) {
     apiLog.error(err.message);
     res.writeHead(500);
