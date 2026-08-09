@@ -6,6 +6,9 @@ import { renderLogin, renderDashboard, renderAccessDenied, renderPasswordReset, 
 import { renderClientDashboard, renderClientList } from '@/ui/client-renderer.js';
 import { canList, canView, canCreate, canEdit, isPartner, isClerk, isClientUser, canClientAccessEntity } from '@/ui/permissions-ui.js';
 import { renderEngagementGrid } from '@/ui/engagement-grid-renderer.js';
+import { renderBoardView } from '@/ui/board-view-renderer.js';
+import { renderGridView } from '@/ui/grid-view-renderer.js';
+import { renderCalendarView, renderTimelineView } from '@/ui/calendar-view-renderer.js';
 import { renderClientProgress } from '@/ui/client-progress-renderer.js';
 import { renderLetterWorkflow } from '@/ui/letter-workflow-renderer.js';
 import { renderAdvancedSearch } from '@/ui/advanced-search-renderer.js';
@@ -220,8 +223,19 @@ export async function handlePage(pathname, req, res) {
     if (!canList(user, entityName)) return renderAccessDenied(user, entityName, 'list');
     let items = await list(entityName, {});
     if (isClientUser(user) && user.client_id) items = items.filter(item => { if (item.client_id) return item.client_id === user.client_id; if (item.assigned_to) return item.assigned_to === user.id; return true; });
+    items = resolveRefFields(items, spec);
+    const view = reqUrl(req).searchParams.get('view');
+    if (view === 'board') return renderBoardView(user, entityName, spec, items);
+    if (view === 'grid') return renderGridView(user, entityName, spec, items);
+    if (view === 'calendar') {
+      const params = reqUrl(req).searchParams;
+      const month = params.has('month') ? Number(params.get('month')) : undefined;
+      const year = params.has('year') ? Number(params.get('year')) : undefined;
+      return renderCalendarView(user, entityName, spec, items, { month, year });
+    }
+    if (view === 'timeline') return renderTimelineView(user, entityName, spec, items);
     const { renderEntityList: lazyEntityList } = await lazyRenderer('entity-renderer.js');
-    return lazyEntityList(entityName, resolveRefFields(items, spec), spec, user);
+    return lazyEntityList(entityName, items, spec, user);
   }
   if (segments.length === 2 && segments[0] === 'client' && segments[1] !== 'new') {
     if (!canView(user, 'client')) return renderAccessDenied(user, 'client', 'view');
