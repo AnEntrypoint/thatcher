@@ -385,17 +385,26 @@ export function renderCohortOverTimeReport(user, entityName, spec, records, date
   return page(user, `${label} Report | Thatcher`, null, content);
 }
 
-export function renderDemandForecastReport(user, spec, buckets, totalOpportunities) {
+// predictedNextValue (optional) is a statistical trend prediction --
+// distinct from `buckets`' own totalProjected sum, which is a sum of
+// already-weighted open pipeline, not a prediction fitted from historical
+// won-value data. null/undefined renders no trend line, same page shape as
+// before this parameter existed.
+export function renderDemandForecastReport(user, spec, buckets, totalOpportunities, predictedNextValue = null) {
   const label = getEntityLabel(spec, true) || 'Opportunities';
   const valueFieldDef = spec.fields?.value || { type: 'currency' };
   const totalProjected = buckets.reduce((sum, [, v]) => sum + v, 0);
   const notice = !buckets.length
     ? `<div class="report-notice">No open opportunities with a future expected close date</div>`
     : '';
+  const trendNotice = predictedNextValue != null
+    ? `<div class="report-notice">Statistical trend prediction (linear regression over historical won value): next month ~${esc(formatSumValue(predictedNextValue, valueFieldDef))}</div>`
+    : '';
   const content = `<div class="page-header">
       <div><h1 class="page-title">${esc(label)}: Demand Forecast</h1><p class="page-subtitle">${totalOpportunities} total opportunities, ${esc(formatSumValue(totalProjected, valueFieldDef))} projected across ${buckets.length} future month${buckets.length === 1 ? '' : 's'}</p></div>
     </div>
     ${notice}
+    ${trendNotice}
     ${sumBarChart(buckets, valueFieldDef)}`;
   return page(user, `Demand Forecast | Thatcher`, null, content);
 }

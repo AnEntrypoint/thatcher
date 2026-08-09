@@ -7,6 +7,7 @@
 import { daysUntilStockout, isReorderDue } from './inventory-forecast.js';
 import { daysUntilExpiry } from './contract-expiry.js';
 import { userCommittedHours, DEFAULT_WEEKLY_CAPACITY_HOURS } from './resource-capacity.js';
+import { zScoreAnomaly } from './statistical-forecast.js';
 
 const SEVERITY_ORDER = { critical: 0, warning: 1, info: 2 };
 
@@ -87,6 +88,36 @@ export function pipelineDropInsights(monthlyBuckets) {
   return results;
 }
 
+// Statistical, not rule-based: flags a product whose most recent day's
+// consumption is a z-score outlier relative to ITS OWN historical daily
+// consumption -- the same absolute consumption number can be perfectly
+// normal for a high-variance product and anomalous for a low-variance one,
+// which stockoutRiskInsights' fixed day-threshold cannot express since it
+// only reasons about days-until-stockout, never about whether today's rate
+// itself is unusual for this specific product.
+export function statisticalAnomalyInsights(products, movementsByProductId) {
+  const results = [];
+  for (const product of products) {
+    const movements = movementsByProductId[product.id] || [];
+    const byDay = new Map();
+    for (const m of movements) {
+      if (Number(m.quantity) >= 0) continue;
+      const day = new Date((Number(m.created_at) || 0) * 1000).toISOString().slice(0, 10);
+      byDay.set(day, (byDay.get(day) || 0) + Math.abs(Number(m.quantity) || 0));
+    }
+    const days = [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    if (days.length < 3) continue;
+    const latestValue = days[days.length - 1][1];
+    const history = days.slice(0, -1).map(([, v]) => v);
+    const { isAnomaly, zScore } = zScoreAnomaly(history, latestValue, 2);
+    if (isAnomaly) {
+      const direction = latestValue > (history.reduce((a, b) => a + b, 0) / history.length) ? 'above' : 'below';
+      results.push(insight('warning', 'anomaly', `${product.name || product.id}'s latest daily consumption is statistically ${direction} its historical pattern (z-score ${zScore.toFixed(2)})`, 'product', product.id));
+    }
+  }
+  return results;
+}
+
 export function sortBySeverity(insights) {
   return [...insights].sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 3) - (SEVERITY_ORDER[b.severity] ?? 3));
 }
@@ -109,6 +140,7 @@ export async function generateInsights(user, entityType = null) {
       movementsByProductId[product.id] = await list('stock_movement', { product_id: product.id });
     }
     results.push(...stockoutRiskInsights(products, movementsByProductId));
+    results.push(...statisticalAnomalyInsights(products, movementsByProductId));
   }
 
   if (!entityType || entityType === 'contract') {
