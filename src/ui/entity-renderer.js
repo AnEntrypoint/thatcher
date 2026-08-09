@@ -124,9 +124,23 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
   const userCanEdit = canEdit(user, entityName)
   const userCanDelete = canDelete(user, entityName)
 
+  // current_stock is computed (page-handler.js sums stock_movement rows),
+  // never a spec.fields entry -- rendered as its own row rather than folded
+  // into the generic field loop below, which only knows about spec fields.
+  const stockRow = entityName === 'product' && typeof item.current_stock === 'number'
+    ? (() => {
+        const low = item.reorder_threshold != null && item.current_stock <= item.reorder_threshold
+        const pillCls = low ? 'pill-danger' : 'pill-success'
+        return `<div class="detail-row">
+          <span class="detail-row-label">Current Stock</span>
+          <span class="detail-row-value"><span class="pill ${pillCls}">${esc(String(item.current_stock))}${low ? ' (Low Stock)' : ''}</span></span>
+        </div>`
+      })()
+    : ''
+
   const visibleFields = Object.entries(fields).filter(([k]) => k !== 'id' && !HIDDEN_FIELDS.has(k) && item[k] !== undefined)
 
-  const fieldRows = visibleFields.map(([k, f]) =>
+  const fieldRows = stockRow + visibleFields.map(([k, f]) =>
     `<div class="detail-row">
       <span class="detail-row-label">${esc(f.label || k)}</span>
       <span class="detail-row-value">${formatFieldValue(k, item[k], entityName, f)}</span>

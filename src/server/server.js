@@ -411,6 +411,19 @@ async function handleGenericCrud(req, res, entity, id, action, thatcher, configE
         // editable_by, so a hand-crafted request bypassing the rendered form
         // cannot smuggle a restricted field in.
         permissionService.enforceEditPermissions(user, spec, body);
+        {
+          // Same gap PUT/PATCH had (fixed last pass): this raw-CRUD POST
+          // never called any field validation, so required/min-max/enum/ref-
+          // existence and entity-specific rules (e.g. stock-movement balance
+          // enforcement below) were silently skipped for a hand-crafted create.
+          const { validateEntity, hasErrors } = await import('../lib/validation/entity-validators.js');
+          const createErrors = await validateEntity(entity, body, null);
+          if (hasErrors(createErrors)) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ error: 'Validation failed', errors: createErrors }));
+            return;
+          }
+        }
         result = await thatcher.create(entity, body, user);
         const { logAction } = await import('../lib/busybase/audit.js');
         logAction(entity, result.id, 'create', user.id, null, result);

@@ -114,7 +114,17 @@ async function handleGenericEntityView(user, entityName, id, req) {
   const item = await get(entityName, id, { user }); if (!item) return null;
   if (item.team_id && user.team_id && item.team_id !== user.team_id && !isPartner(user)) return renderAccessDenied(user, entityName, 'view');
   if (isClientUser(user) && user.client_id && item.client_id && item.client_id !== user.client_id) return renderAccessDenied(user, entityName, 'view');
-  const [resolvedItem] = resolveRefFields([item], spec);
+  let [resolvedItem] = resolveRefFields([item], spec);
+  if (entityName === 'product') {
+    // current_stock is derived, never a stored/editable field -- summed fresh
+    // from stock_movement history so it can never drift from the ledger the
+    // way a separately-writable counter could.
+    try {
+      const movements = await list('stock_movement', { product_id: id });
+      const currentStock = movements.reduce((sum, m) => sum + (Number(m.quantity) || 0), 0);
+      resolvedItem = { ...resolvedItem, current_stock: currentStock };
+    } catch { resolvedItem = { ...resolvedItem, current_stock: 0 }; }
+  }
   // get(...,{user}) above already enforced row/org access for this exact
   // record (a denied/absent record returns null before this point), so
   // fetching its audit trail here is scoped by construction -- there is no

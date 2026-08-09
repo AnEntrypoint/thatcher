@@ -197,10 +197,44 @@ function withProjectDefaults(masterConfig) {
   return changed ? { ...masterConfig, entities } : masterConfig;
 }
 
+const PRODUCT_ENTITY_DEFAULT = {
+  label: 'Product',
+  label_plural: 'Products',
+  system_entity: true,
+  fields: {
+    name: { type: 'text', required: true, label: 'Name' },
+    sku: { type: 'text', required: true, unique: true, label: 'SKU' },
+    description: { type: 'textarea', label: 'Description' },
+    unit_price: { type: 'currency', label: 'Unit Price' },
+    reorder_threshold: { type: 'number', min: 0, label: 'Reorder Threshold' },
+  },
+};
+
+const STOCK_MOVEMENT_ENTITY_DEFAULT = {
+  label: 'Stock Movement',
+  label_plural: 'Stock Movements',
+  system_entity: true,
+  fields: {
+    product_id: { type: 'ref', ref: 'product', required: true, label: 'Product' },
+    quantity: { type: 'number', required: true, label: 'Quantity' },
+    movement_type: { type: 'enum', options: ['receipt', 'sale', 'adjustment', 'return'], required: true, label: 'Movement Type' },
+    reference: { type: 'text', label: 'Reference' },
+    notes: { type: 'textarea', label: 'Notes' },
+  },
+};
+
+function withInventoryDefaults(masterConfig) {
+  const entities = { ...(masterConfig.entities || {}) };
+  let changed = false;
+  if (!entities.product) { entities.product = PRODUCT_ENTITY_DEFAULT; changed = true; }
+  if (!entities.stock_movement) { entities.stock_movement = STOCK_MOVEMENT_ENTITY_DEFAULT; changed = true; }
+  return changed ? { ...masterConfig, entities } : masterConfig;
+}
+
 export class ConfigGeneratorEngine {
   constructor(masterConfig) {
     if (!masterConfig) throw new Error('[ConfigGeneratorEngine] masterConfig is required');
-    this.masterConfig = deepFreeze(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig)))));
+    this.masterConfig = deepFreeze(withInventoryDefaults(withProjectDefaults(withCrmDefaults(withWebhookDefaults(withMultiTenancyDefaults(masterConfig))))));
     this.specCache = new LRUCache(100);
     this.debugMode = false;
     this._plugins = new Map();
