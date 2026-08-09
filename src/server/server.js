@@ -73,6 +73,8 @@ export function createServer(options) {
     });
   };
 
+  import('../lib/scheduler-engine.js').then(({ startScheduler }) => startScheduler()).catch(e => log.error(e.message));
+
   const server = http.createServer(async (req, res) => {
     globalThis.__debug__.activeRequests.count++;
 
@@ -149,6 +151,18 @@ export function createServer(options) {
 
         if (req.method === 'POST' && entity === 'upload' && !id) {
           return await handleFileUpload(req, res, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'scheduled_job' && id === 'create' && !action) {
+          return await handleCreateScheduledJob(req, res, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'scheduled_job' && id && action === 'update') {
+          return await handleUpdateScheduledJob(req, res, id, thatcher, configEngine);
+        }
+
+        if (req.method === 'POST' && entity === 'scheduled_job' && id && action === 'delete') {
+          return await handleDeleteScheduledJob(req, res, id, thatcher, configEngine);
         }
 
         // Check if user has custom route for this
@@ -532,6 +546,145 @@ async function handleDeleteEntityTemplate(req, res, templateId, thatcher, config
       return;
     }
     await remove('entity_template', templateId);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleCreateScheduledJob(req, res, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  let configEngine = configEngineArg || thatcher?.configEngine || globalThis.__thatcherConfigEngine;
+  if (!configEngine) {
+    const { getConfigEngineSync } = await import('../lib/config-generator-engine.js');
+    configEngine = getConfigEngineSync();
+  }
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+  const { name, entity, action, filter, interval_minutes } = body || {};
+  if (!entity || typeof entity !== 'string') {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'entity required' }));
+    return;
+  }
+  try {
+    configEngine.generateEntitySpec(entity);
+  } catch {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: `Unknown entity "${entity}"` }));
+    return;
+  }
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'name required' }));
+    return;
+  }
+  if (!action || typeof action !== 'object' || typeof action.type !== 'string') {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'action.type required' }));
+    return;
+  }
+  const intervalMinutes = Number(interval_minutes);
+  if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'interval_minutes must be a positive number' }));
+    return;
+  }
+
+  try {
+    const { create } = await import('../lib/busybase/store.js');
+    const { now } = await import('../lib/id-helpers.js');
+    const nowTs = now();
+    const record = await create('scheduled_job', {
+      name: name.trim(),
+      entity,
+      action,
+      filter: filter || {},
+      interval_minutes: intervalMinutes,
+      last_run_at: null,
+      next_run_at: nowTs,
+      enabled: true,
+      owner_id: user.id,
+    }, user);
+    res.writeHead(201, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, id: record.id }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleUpdateScheduledJob(req, res, jobId, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  let body;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: e.message }));
+    return;
+  }
+
+  try {
+    const { update, get } = await import('../lib/busybase/store.js');
+    const existing = await get('scheduled_job', jobId);
+    if (!existing) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Job not found' }));
+      return;
+    }
+    const patch = {};
+    if (typeof body?.enabled === 'boolean') patch.enabled = body.enabled;
+    if (typeof body?.name === 'string' && body.name.trim()) patch.name = body.name.trim();
+    if (body?.interval_minutes !== undefined) {
+      const intervalMinutes = Number(body.interval_minutes);
+      if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'interval_minutes must be a positive number' }));
+        return;
+      }
+      patch.interval_minutes = intervalMinutes;
+    }
+    if (body?.filter !== undefined) patch.filter = body.filter;
+    if (body?.action !== undefined) patch.action = body.action;
+    const record = await update('scheduled_job', jobId, patch);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, data: record }));
+  } catch (err) {
+    apiLog.error(err.message);
+    res.writeHead(500);
+    res.end(JSON.stringify({ error: err.message }));
+  }
+}
+
+async function handleDeleteScheduledJob(req, res, jobId, thatcher, configEngineArg) {
+  const user = await requireAuthedPartner(req, res);
+  if (!user) return;
+
+  try {
+    const { remove, get } = await import('../lib/busybase/store.js');
+    const existing = await get('scheduled_job', jobId);
+    if (!existing) {
+      res.writeHead(404);
+      res.end(JSON.stringify({ error: 'Job not found' }));
+      return;
+    }
+    await remove('scheduled_job', jobId);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true }));
   } catch (err) {
