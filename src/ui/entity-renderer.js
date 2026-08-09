@@ -199,6 +199,13 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
       <div style="flex:1">${headerExtra}</div>
       <div style="display:flex;gap:0.5rem;margin-left:1rem">${editBtn}${cloneBtn}${delBtn}</div>
     </div>
+    <div id="stale-data-banner" style="display:none;margin-bottom:12px" class="card-clean">
+      <div class="card-clean-body" style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px">This record was updated by someone else -- refresh to see changes.</span>
+        <button type="button" class="btn-ghost-clean" onclick="window.location.reload()">Refresh</button>
+      </div>
+    </div>
+    <div id="presence-indicator" style="display:none;margin-bottom:12px;font-size:13px;color:var(--color-text-muted)"></div>
     <div class="card-clean">
       <div class="card-clean-body"><div class="detail-grid">${fieldRows || '<p style="color:var(--color-text-muted);font-size:0.875rem;grid-column:1/-1">No details available</p>'}</div></div>
     </div>
@@ -207,8 +214,38 @@ export function renderEntityDetail(entityName, item, spec, user, history = []) {
 
   // Canonical gmConfirm (session-13): showDeleteConfirm runs the styled confirm then DELETEs; no bespoke dialog markup/show-hide.
   const script = `${TOAST_SCRIPT}window.showDeleteConfirm=async()=>{const ok=await window.gmConfirm({title:'Delete ${entityName}',message:'Delete this ${entityName}? This cannot be undone.',confirmLabel:'Delete',danger:true});if(!ok)return;try{const res=await fetch('/api/${entityName}/${item.id}',{method:'DELETE'});if(res.ok){showToast('Deleted successfully','success');setTimeout(()=>{window.location='/${entityName}'},500)}else{const d=await res.json().catch(()=>({}));showToast(d.message||d.error||'Delete failed','error')}}catch(err){showToast('Error: '+err.message,'error')}}`
+  const collabScript = `(function(){
+    var entity='${entityName}',id='${esc(String(item.id))}';
+    var openedAt=Math.floor(Date.now()/1000);
+    function heartbeat(){fetch('/api/presence/'+entity+'/'+id+'/heartbeat',{method:'POST'}).catch(function(){})}
+    function pollPresence(){
+      fetch('/api/presence/'+entity+'/'+id).then(function(r){return r.json()}).then(function(d){
+        var el=document.getElementById('presence-indicator');
+        if(!el)return;
+        var viewers=d.viewers||[];
+        if(viewers.length){
+          el.style.display='block';
+          el.textContent=(viewers.length===1?'1 other person is':viewers.length+' other people are')+' currently viewing this: '+viewers.map(function(v){return v.userName}).join(', ');
+        } else {
+          el.style.display='none';
+        }
+      }).catch(function(){})
+    }
+    function pollChanges(){
+      fetch('/api/changes/'+entity+'/'+id+'/since/'+openedAt).then(function(r){return r.json()}).then(function(d){
+        if(d.changed){
+          var el=document.getElementById('stale-data-banner');
+          if(el)el.style.display='block';
+        }
+      }).catch(function(){})
+    }
+    heartbeat();pollPresence();pollChanges();
+    setInterval(heartbeat,10000);
+    setInterval(pollPresence,10000);
+    setInterval(pollChanges,8000);
+  })();`
   const bc = [{ href: '/', label: 'Dashboard' }, { href: `/${entityName}`, label: spec?.labelPlural || label }, { label: item.name || item.title || `#${item.id}` }]
-  return page(user, `${label} Detail`, bc, content, [script])
+  return page(user, `${label} Detail`, bc, content, [script, collabScript])
 }
 
 export function renderEntityForm(entityName, item, spec, user, isNew = false, refOptions = {}, templates = []) {

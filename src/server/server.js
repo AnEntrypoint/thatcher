@@ -119,6 +119,22 @@ export function createServer(options) {
         const id = parts[1] || null;
         const action = parts[2] || null;
 
+        // presence/changes are meta-routes over an (entity,id) pair, not
+        // themselves entities -- parts[1]/parts[2] here are the TARGET
+        // entity name and record id, distinct from the entity/id/action
+        // parsed above for the generic CRUD routes.
+        if (req.method === 'POST' && entity === 'presence' && parts[1] && parts[2] && parts[3] === 'heartbeat') {
+          return await handlePresenceHeartbeat(req, res, parts[1], parts[2]);
+        }
+
+        if (req.method === 'GET' && entity === 'presence' && parts[1] && parts[2] && !parts[3]) {
+          return await handlePresenceGet(req, res, parts[1], parts[2]);
+        }
+
+        if (req.method === 'GET' && entity === 'changes' && parts[1] && parts[2] && parts[3] === 'since' && parts[4]) {
+          return await handleChangesSince(req, res, parts[1], parts[2], parts[4]);
+        }
+
         if (req.method === 'GET' && entity === 'auth' && id === 'google' && !action) {
           return await handleOAuthGoogleStart(req, res);
         }
@@ -1425,6 +1441,67 @@ async function readMultipartFile(req) {
     return { filename: filenameMatch[1], contentType, buffer: body };
   }
   throw new Error('No file field found in upload');
+}
+
+async function verifyRecordAccess(req, res, entityName, id) {
+  const user = await resolveRequestUser(req);
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Authentication required' }));
+    return null;
+  }
+  const { get } = await import('../lib/busybase/store.js');
+  let record;
+  try {
+    record = await get(entityName, id, { user });
+  } catch {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return null;
+  }
+  if (!record) {
+    // A record the caller cannot access and a record that doesn't exist
+    // resolve identically here on purpose -- distinguishing them would leak
+    // that a specific id exists to someone who isn't allowed to see it.
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return null;
+  }
+  return user;
+}
+
+async function handlePresenceHeartbeat(req, res, entityName, id) {
+  const user = await verifyRecordAccess(req, res, entityName, id);
+  if (!user) return;
+  const { heartbeat } = await import('../lib/presence-tracker.js');
+  heartbeat(entityName, id, user.id, user.name || user.email || user.id);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ ok: true }));
+}
+
+async function handlePresenceGet(req, res, entityName, id) {
+  const user = await verifyRecordAccess(req, res, entityName, id);
+  if (!user) return;
+  const { getViewers } = await import('../lib/presence-tracker.js');
+  const viewers = getViewers(entityName, id, user.id);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ viewers }));
+}
+
+async function handleChangesSince(req, res, entityName, id, timestampStr) {
+  const user = await verifyRecordAccess(req, res, entityName, id);
+  if (!user) return;
+  const since = Number(timestampStr);
+  if (!Number.isFinite(since)) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Invalid timestamp' }));
+    return;
+  }
+  const { getEntityAuditTrail } = await import('../lib/busybase/audit-reads.js');
+  const trail = await getEntityAuditTrail(entityName, id);
+  const changed = trail.some(entry => (entry.createdAt || 0) > since);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ changed }));
 }
 
 async function handleFileUpload(req, res, thatcher, configEngineArg) {
