@@ -147,6 +147,7 @@ const OPPORTUNITY_ENTITY_DEFAULT = {
     expected_close_date: { type: 'date', label: 'Expected Close Date' },
     owner_id: { type: 'ref', ref: 'user', label: 'Owner' },
     probability: { type: 'number', min: 0, max: 100, label: 'Probability (%)' },
+    weighted_value: { type: 'formula', formula: 'value * probability / 100', label: 'Weighted Value', readonly: true },
   },
 };
 
@@ -300,7 +301,7 @@ function withCustomEntityDefaults(masterConfig) {
 const KNOWN_FIELD_TYPES = new Set([
   'text', 'textarea', 'email', 'number', 'int', 'decimal', 'currency', 'date',
   'timestamp', 'enum', 'bool', 'boolean', 'multiselect', 'ref', 'multiref',
-  'file', 'attachment', 'json',
+  'file', 'attachment', 'json', 'formula',
 ]);
 
 // A custom field key colliding with a reserved system field would let a

@@ -73,6 +73,7 @@ function formatFieldValue(k, v, entityName, f) {
   if (entityName === 'user' && k === 'email' && v) { const e = esc(v); return `<a href="mailto:${e}" class="text-primary hover:underline">${e}</a>` }
   if (k === 'photo_url' && v && v.startsWith('http')) return `<img src="${esc(v)}" style="width:2.5rem;height:2.5rem;border-radius:50%;object-fit:cover" alt="avatar" onerror="this.style.display='none'"/>`
   if (f?.type === 'currency' && typeof v === 'number') return esc((f.currency_symbol || '$') + (v / 100).toFixed(2))
+  if (f?.type === 'formula') return v == null ? '-' : esc(String(Math.round(v * 100) / 100)) + ' <span class="pill pill-neutral" style="margin-left:4px;font-size:10px">computed</span>'
   if (f?.type === 'multiselect') {
     const arr = Array.isArray(v) ? v : (typeof v === 'string' && v ? (() => { try { return JSON.parse(v) } catch { return [] } })() : [])
     return arr.length ? arr.map(x => `<span class="pill pill-neutral" style="margin-right:4px">${esc(x)}</span>`).join('') : '-'
@@ -274,7 +275,12 @@ export function renderEntityForm(entityName, item, spec, user, isNew = false, re
     if (permissionService.checkFieldAccess(user, spec || {}, k, 'edit')) fields[k] = f
   }
   const lbl = (k, f, req) => `<label class="form-label" for="field-${k}">${esc(f.label||k)}${req ? '<span class="req">*</span>' : ''}</label>`
-  const formFields = Object.entries(fields).filter(([k, f]) => k !== 'id' && !f.auto && !f.readOnly && !f.auto_generate && k !== 'password_hash').map(([k, f]) => {
+  // f.readonly (lowercase) is the actual normalized key generateEntitySpec
+  // sets -- f.readOnly (camelCase) is never present on a spec object, so
+  // this exclusion was previously silently dead: a field marked readonly
+  // without ALSO being marked auto (e.g. a formula field) would render as
+  // an editable input despite the label claiming otherwise.
+  const formFields = Object.entries(fields).filter(([k, f]) => k !== 'id' && !f.auto && !f.readonly && !f.auto_generate && f.type !== 'formula' && k !== 'password_hash').map(([k, f]) => {
     let val = item?.[k] ?? f.default ?? ''
     const req = f.required ? 'required' : ''
     const type = f.type === 'number' || f.type === 'int' || f.type === 'decimal' ? 'number' : f.type === 'email' ? 'email' : f.type === 'timestamp' || f.type === 'date' ? 'date' : f.type === 'bool' ? 'checkbox' : 'text'
