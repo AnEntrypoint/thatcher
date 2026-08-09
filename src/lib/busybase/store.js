@@ -196,7 +196,9 @@ export async function list(entity, where = {}, options = {}) {
     const lim = options.limit ? parseInt(options.limit, 10) : rows.length;
     rows = rows.slice(off, off + lim);
   }
-  return attachRefDisplays(entity, rows);
+  const { decryptFields } = await import('../field-encryption.js');
+  const decryptedRows = rows.map(r => decryptFields(r, spec.fields));
+  return attachRefDisplays(entity, decryptedRows);
 }
 
 export async function count(entity, where = {}, options = {}) {
@@ -227,7 +229,9 @@ export async function get(entity, id, options = {}) {
     const { permissionService } = await import('../services/permission.service.js');
     if (!permissionService.checkRowAccess(options.user, spec, row)) return null;
   }
-  const [withDisplay] = await attachRefDisplays(entity, [row]);
+  const { decryptFields } = await import('../field-encryption.js');
+  const decrypted = decryptFields(row, spec.fields);
+  const [withDisplay] = await attachRefDisplays(entity, [decrypted]);
   return withDisplay;
 }
 
@@ -255,15 +259,23 @@ export async function create(entity, data, user) {
     if (field.auto === 'uuid' && !record[key]) record[key] = genId();
     if (field.auto === 'timestamp' && !record[key]) record[key] = now();
   }
+  // Encrypt any field marked encrypted:true BEFORE the null/undefined
+  // sentinel coercion below, so a real value never reaches the insert as
+  // plaintext -- this is the single choke point every create() call passes
+  // through, so no caller needs to know the field is encrypted at all.
+  const { encryptFields } = await import('../field-encryption.js');
+  const encryptedRecord = encryptFields(record, spec.fields);
   // LanceDB cannot infer a column's type from a null on first insert; coerce any
   // null/undefined to a typed sentinel ('' for strings) so the insert schema is stable.
-  for (const k of Object.keys(record)) {
-    if (record[k] === null || record[k] === undefined) record[k] = '';
+  for (const k of Object.keys(encryptedRecord)) {
+    if (encryptedRecord[k] === null || encryptedRecord[k] === undefined) encryptedRecord[k] = '';
   }
-  unwrap(await client().from(tbl).insert(record), 'create');
+  unwrap(await client().from(tbl).insert(encryptedRecord), 'create');
   // Always return the locally-constructed record: it holds the genId we put in
   // the TEXT id column. The store's insert() may return a rowid/driver shape, so
-  // trusting `created` would hand callers the wrong id.
+  // trusting `created` would hand callers the wrong id. Return the UNENCRYPTED
+  // record -- the caller gets back plaintext, matching what get()/list() will
+  // also return after decrypting the stored ciphertext.
   return record;
 }
 
@@ -284,14 +296,19 @@ export async function create(entity, data, user) {
 // unconditional-write behaviour, unchanged for every existing caller; _version
 // is added as a new column, ignored by every reader that doesn't ask for it.
 export async function update(entity, id, data, opts = {}) {
-  specOf(entity);
+  const spec = specOf(entity);
   const tbl = tableName(entity);
 
   const existing = await get(entity, id);
   if (!existing) throw new Error(`${entity} with id ${id} not found`);
 
   const currentVersion = Number(existing._version) || 0;
-  const patch = { ...data, updated_at: now(), _version: currentVersion + 1 };
+  const { encryptFields } = await import('../field-encryption.js');
+  // Encrypt only the fields actually present in this partial update -- a
+  // caller updating an unrelated field must not force-decrypt/re-encrypt an
+  // encrypted field it never touched (encryptFields already skips fields
+  // absent from the object, so this is naturally a no-op for those).
+  const patch = encryptFields({ ...data, updated_at: now(), _version: currentVersion + 1 }, spec.fields);
   let builder = client().from(tbl).update(patch).eq('id', id);
   if (opts.expectedVersion != null) {
     builder = builder.eq('_version', opts.expectedVersion);
