@@ -254,6 +254,20 @@ export async function create(entity, data, user) {
     created_by: user?.id || '',
     created_at: now(),
     updated_at: 0,
+    // Every row is born with a real _version=0 rather than an absent/null
+    // column: update()'s optimistic-concurrency guard only ever forwards
+    // opts.expectedVersion when the caller's own prior read shows
+    // `_version != null` (see every case-store.js call site) -- a row
+    // created without this field stays genuinely SQL-NULL until its first
+    // update(), during which window ANY concurrent first-write race on that
+    // row skips the version guard entirely (both callers see _version==null,
+    // both correctly conclude there is nothing to compare against, and
+    // neither forwards expectedVersion at all) -- unconditional last-write-
+    // wins with silent data loss on the very first edit. Stamping _version:0
+    // at creation closes that window: the next caller's read always sees a
+    // real number, so the very first update() after create() is guarded
+    // exactly like every subsequent one.
+    _version: 0,
     status: data.status || RECORD_STATUS.ACTIVE,
   };
   if (spec.fields?.organization_id && !record.organization_id && user?.organization_id) {
@@ -307,12 +321,13 @@ export async function update(entity, id, data, opts = {}) {
   if (!existing) throw new Error(`${entity} with id ${id} not found`);
 
   const currentVersion = Number(existing._version) || 0;
+  const nextVersion = currentVersion + 1;
   const { encryptFields } = await import('../field-encryption.js');
   // Encrypt only the fields actually present in this partial update -- a
   // caller updating an unrelated field must not force-decrypt/re-encrypt an
   // encrypted field it never touched (encryptFields already skips fields
   // absent from the object, so this is naturally a no-op for those).
-  const patch = encryptFields({ ...data, updated_at: now(), _version: currentVersion + 1 }, spec.fields);
+  const patch = encryptFields({ ...data, updated_at: now(), _version: nextVersion }, spec.fields);
   let builder = client().from(tbl).update(patch).eq('id', id);
   if (opts.expectedVersion != null) {
     builder = builder.eq('_version', opts.expectedVersion);
@@ -324,7 +339,44 @@ export async function update(entity, id, data, opts = {}) {
     conflictErr.code = 'conflict';
     throw conflictErr;
   }
-  return get(entity, id);
+  const after = await get(entity, id);
+  // busybase's PATCH endpoint (rest/v1 server handler) synthesizes its response
+  // body from the PRE-write row snapshot plus the request patch, rather than
+  // confirming how many rows the underlying conditional UPDATE actually
+  // touched -- so `rows.length === 0` above never fires under real concurrency:
+  // two callers can both pass the read-existence check with the same stale
+  // _version before either's UPDATE lands, and the loser's conditional
+  // UPDATE...WHERE _version=? matches zero rows server-side while busybase
+  // still echoes back a fabricated "success" body built from stale data. Nor
+  // does re-checking _version alone fully close the gap: two racers starting
+  // from the same stale existing._version both compute the identical
+  // nextVersion, so if BOTH conditional UPDATEs coincidentally target the
+  // same row (only possible on the loser's side if the WHERE clause somehow
+  // still matched, but confirmed as a real busybase response-fabrication
+  // path above), a bare version-number comparison cannot tell winner from
+  // loser when they land on the same target number. The one thing genuinely
+  // unique per caller is the caller's OWN requested field values -- if this
+  // call asked to set a field to X and the freshly re-read row shows a
+  // DIFFERENT value for that same field, some other writer's patch is what
+  // actually persisted (whether it landed before, during, or after this
+  // call's own UPDATE), and that mismatch IS the conflict: computed from
+  // live state, never trusted from busybase's own echoed response. A field
+  // this call's own patch happened to set to the SAME value another writer
+  // also chose is indistinguishable from a genuine win, same as any
+  // best-effort optimistic-concurrency check based on observable state
+  // rather than a true database-native compare-and-swap primitive -- the
+  // encrypted-field case is skipped (compares ciphertext, never plaintext)
+  // since encryption is expected to be non-deterministic per call.
+  if (opts.expectedVersion != null) {
+    const encryptedKeys = new Set(Object.keys(spec.fields || {}).filter(k => spec.fields[k]?.encrypted));
+    const mismatched = Object.keys(data).filter(k => !encryptedKeys.has(k) && after?.[k] !== data[k]);
+    if (mismatched.length || Number(after?._version) !== nextVersion) {
+      const conflictErr = new Error(`${entity} ${id} was modified by another writer since it was last read`);
+      conflictErr.code = 'conflict';
+      throw conflictErr;
+    }
+  }
+  return after;
 }
 
 export async function remove(entity, id) {
