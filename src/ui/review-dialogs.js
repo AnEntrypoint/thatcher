@@ -1,4 +1,5 @@
 import { createDialog } from '@/ui/dialog-factory.js';
+import { esc } from '@/ui/render-helpers.js';
 
 export function reviewCreateDialog() {
   const body = `<div class="modal-form-group"><label for="rcd-name">Name</label><input id="rcd-name" class="input input-bordered w-full" placeholder="Review name"/></div>
@@ -90,6 +91,6 @@ export function reviewNotificationDialog(reviewId) {
   const footer = `<button class="btn btn-ghost btn-sm" data-dialog-close="review-notification-dialog">Cancel</button><button class="btn btn-primary btn-sm" data-action="rndSend">Send</button>`;
   return createDialog('review-notification-dialog', 'Send Notification', body, footer) + `
   <script>
-  window.rndSend=async function(){var msg=document.getElementById('rnd-message').value.trim();if(!msg){showToast('Enter a message','error');return}try{var r=await fetch('/api/mwr/review/${reviewId}/notify',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});if(r.ok){showToast('Notification sent','success');document.getElementById('review-notification-dialog').style.display='none'}else showToast('Failed','error')}catch(e){showToast('Error: '+e.message,'error')}};
+  window.rndSend=async function(){var msg=document.getElementById('rnd-message').value.trim();if(!msg){showToast('Enter a message','error');return}try{var r=await fetch('/api/mwr/review/${esc(reviewId)}/notify',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});if(r.ok){showToast('Notification sent','success');document.getElementById('review-notification-dialog').style.display='none'}else showToast('Failed','error')}catch(e){showToast('Error: '+e.message,'error')}};
   </script>`;
 }
