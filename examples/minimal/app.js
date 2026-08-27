@@ -3,7 +3,7 @@
  * Demonstrates programmatic usage of thatcher SDK
  */
 
-import { createThatcher, Thatchers } from 'thatcher';
+import { createThatcher } from 'thatcher';
 import path from 'path';
 import fs from 'fs';
 

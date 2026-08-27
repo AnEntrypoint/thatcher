@@ -30,20 +30,20 @@ export function generateHtml(title, bodyContent, scripts = []) {
   }`
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="ds-247420" data-accent="green">
 <head>
   <meta charset="UTF-8">
-  <script>(function(){try{var t=localStorage.getItem('thatcher-theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})();</script>
+  <script>(function(){try{var t=localStorage.getItem('thatcher-theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'paper'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','paper')}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <link href="/ui/rippleui.css" rel="stylesheet"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta name="theme-color" content="#04141f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>${title}</title>
   <link rel="preload" href="/ui/client.js" as="script" crossorigin>
+  <link rel="preload" href="/ui/247420.css" as="style">
+  <link href="/ui/247420.css" rel="stylesheet"/>
   <link rel="preload" href="/ui/styles2.css" as="style">
   <link href="/ui/styles2.css" rel="stylesheet"/>
   <style>
@@ -188,7 +188,7 @@ window.fmtDateInput=function(ts){var d=toDate(ts);if(!d)return '';var p=function
 window.dateToUnixTimestamp=function(v){var d=toDate(v);return d?Math.floor(d.getTime()/1000):null};
 window.fmtCurrency=function(amount,currency){if(amount==null||amount==='')return '-';var n=Number(amount);if(isNaN(n))return String(amount);var sym=currency==='USD'?'$':currency==='EUR'?'€':'R';return sym+' '+n.toLocaleString('en-ZA',{minimumFractionDigits:0,maximumFractionDigits:2})};})();
 window.showToast=window.showToast||function(m,t){var c=document.getElementById('toast-container');if(!c){c=document.createElement('div');c.id='toast-container';c.className='toast-container';document.body.appendChild(c)}var d=document.createElement('div');d.className='toast toast-'+(t||'info');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove()},300)},3000)}
-window.toggleTheme=function(){var cur=document.documentElement.getAttribute('data-theme')||'light';var next=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('thatcher-theme',next)}catch(_){}}
+window.toggleTheme=function(){var cur=document.documentElement.getAttribute('data-theme')||'paper';var next=cur==='dark'?'paper':'dark';document.documentElement.setAttribute('data-theme',next);try{localStorage.setItem('thatcher-theme',next)}catch(_){}}
 function toggleUserMenu(e){e.stopPropagation();var d=document.getElementById('user-dropdown');var visible=d.style.display==='block';d.style.display=visible?'none':'block'}
 document.addEventListener('click',function(e){var d=document.getElementById('user-dropdown');if(d&&!d.contains(e.target)&&e.target.id!=='user-avatar'){d.style.display='none'}})
 function toggleMobileNav(){var btn=document.querySelector('.nav-hamburger');var open=btn.getAttribute('aria-expanded')==='true';btn.setAttribute('aria-expanded',String(!open));var drawer=document.getElementById('mobile-nav-drawer');var panel=document.getElementById('mobile-nav-panel');drawer.style.display=open?'none':'block';drawer.setAttribute('aria-hidden',String(open));panel.style.transform=open?'translateX(-100%)':'translateX(0)'}

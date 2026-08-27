@@ -94,11 +94,19 @@ export async function pipeHook(name, data = {}) {
 }
 
 function registerHookDebug() {
-  if (globalThis.__debug__) {
+  // The setter trap below fires the instant `globalThis.__debug__ = {}` is
+  // assigned (server.js's createServer), synchronously, before that same
+  // assignment's caller has had a chance to attach .expose/.get/.list onto
+  // the fresh object -- so .expose is not yet callable at this exact point
+  // in the assignment. Deferring one microtask lets the assignment's
+  // remaining statements (which populate .expose) run first.
+  if (globalThis.__debug__?.expose) {
     globalThis.__debug__.expose('hooks', {
       stats: () => hookEngine.stats(),
       engine: hookEngine,
     }, 'HookEngine registry');
+  } else if (globalThis.__debug__) {
+    queueMicrotask(registerHookDebug);
   }
 }
 

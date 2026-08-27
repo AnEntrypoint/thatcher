@@ -1,22 +1,28 @@
-/* === 247420 Design System — anentrypoint.github.io/design === */
-/* Layered surfaces, monospace labels, loud content inside quiet chrome. */
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Nunito:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+/* === 247420 Design System bridge — real tokens vendored at vendor/design ===
+   The 247420.css sheet (linked separately, before this file, from layout.js)
+   defines the actual --bg / --fg / --accent / --panel-* / --space-* / --fs-*
+   token layer under .ds-247420 scope. This block only aliases thatcher's
+   existing --ds-* / --color-* custom-property names (consumed by ~700 selectors across
+   src/ui/*.css and *.js) onto those real tokens, so the whole app re-skins
+   without a page-by-page markup rewrite. Do not reintroduce literal hex here
+   — bind to var(--token) so theme/accent/density switches on the root still
+   propagate. */
 
 :root {
-  --ds-bg: #1a1b1e;
-  --ds-surface: #25272b;
-  --ds-elevated: #2b2d31;
-  --ds-fg: #eceef2;
-  --ds-muted: #b0b3b8;
-  --ds-border: #3a3d42;
-  --ds-accent: #247420;
-  --ds-accent-light: #3A9A34;
-  --ds-on-accent: #fff;
-  --ds-mint: rgb(182, 222, 193);
-  --ds-pill-radius: 999px;
-  --ds-font-body: 'Nunito', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --ds-font-display: 'Archivo Black', Archivo, 'Nunito', system-ui, sans-serif;
-  --ds-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --ds-bg: var(--bg);
+  --ds-surface: var(--panel-1);
+  --ds-elevated: var(--panel-2);
+  --ds-fg: var(--fg);
+  --ds-muted: var(--fg-3);
+  --ds-border: var(--rule-control);
+  --ds-accent: var(--accent);
+  --ds-accent-light: var(--accent-bright);
+  --ds-on-accent: var(--accent-fg);
+  --ds-mint: var(--success);
+  --ds-pill-radius: var(--r-pill);
+  --ds-font-body: var(--ff-body);
+  --ds-font-display: var(--ff-display);
+  --ds-font-mono: var(--ff-mono);
 }
 
 html, body { font-family: var(--ds-font-body); }
@@ -71,45 +77,29 @@ html, body { overflow-x: hidden; max-width: 100%; }
 /* Modal backdrop */
 .modal-overlay, .confirm-overlay { z-index: var(--z-modal-backdrop); }
 
-/* Design tokens */
+/* Design tokens — aliased onto the real 247420 token layer (colors_and_type.css).
+   No @media dark-scheme block needed here: 247420's own [data-theme] /
+   prefers-color-scheme handling already retunes --bg / --fg / --panel-* / --danger
+   etc. underneath these aliases, so switching data-theme on <html> (layout.js
+   already does this via localStorage + prefers-color-scheme) re-skins every
+   selector below with zero extra CSS. */
 :root {
-  --color-primary: #04141f;
-  --color-primary-hover: #0a2535;
-  --color-surface: #ffffff;
-  --color-bg: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-text-muted: #5a6b7f;
-  --color-text-light: #94a3b8;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
-  --color-info: #2563eb;
-  --radius: 8px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-primary: #64b5f6;
-    --color-primary-hover: #42a5f5;
-    --color-surface: #1a1a1a;
-    --color-bg: #0f172a;
-    --color-border: #334155;
-    --color-text: #f1f5f9;
-    --color-text-muted: #cbd5e1;
-    --color-text-light: #94a3b8;
-    --color-success: #4ade80;
-    --color-warning: #fbbf24;
-    --color-danger: #f87171;
-    --color-info: #60a5fa;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.6), 0 4px 6px rgba(0,0,0,0.4);
-  }
+  --color-primary: var(--accent);
+  --color-primary-hover: var(--accent-bright);
+  --color-surface: var(--panel-1);
+  --color-bg: var(--panel-0);
+  --color-border: var(--rule-control);
+  --color-text: var(--fg);
+  --color-text-muted: var(--fg-2);
+  --color-text-light: var(--fg-3);
+  --color-success: var(--success);
+  --color-warning: var(--warn);
+  --color-danger: var(--danger);
+  --color-info: var(--accent-bright, var(--accent));
+  --radius: var(--r-2);
+  --shadow-sm: var(--panel-shadow-1);
+  --shadow-md: var(--panel-shadow);
+  --shadow-lg: var(--panel-shadow);
 }
 
 /* Page layout */
@@ -1498,88 +1488,27 @@ tr.is-read td { color: rgb(var(--base-content, 30 30 35) / 0.7); }
 
 /* ============================================================
    247420 DESIGN SYSTEM
-   Panel token system, topbar, breadcrumb, IDE-density
-   ============================================================ */
-
-/* --- 247420 tokens: light mode --- */
+   Panel token system, topbar, breadcrumb, IDE-density.
+   --panel-* / --ff-* / --r-* / --acid / --warn / --live / --green / --purple are now
+   real tokens defined by vendor/design/dist/247420.css (linked in
+   layout.js before this file) under .ds-247420 [data-theme=...] — the
+   hand-authored fake values previously here (light-mode --panel-0:
+   #f5f5f0 etc, dark-mode duplicates, a fabricated --live/--acid palette)
+   collided with and overrode the real vendored tokens. Do not redefine
+   any of those names here again; add a thatcher-only alias instead if a
+   selector needs a name the vendor sheet doesn't define. --panel-text-2/
+   -3 didn't exist in the real sheet (which uses --fg-2/-3 directly on
+   --panel-*), so they're aliased below for the ~15 call sites that used
+   them. --live has no 247420 equivalent; aliased to --success. --acid is
+   a real 247420 accent value already (data-accent="acid"), not a raw color. */
 :root {
-  --paper: #EFE9DD;
-  --ink: #0B0B09;
-  --acid: #B8FF00;
-  --link: #1F4DFF;
-  --warn: #FF3B1F;
-  --live: #00A86B;
-  --green: #30A46C;
-  --purple: #8E4EC6;
-
-  --ff-display: 'Archivo Black', sans-serif;
-  --ff-mono: 'JetBrains Mono', monospace;
-  --ff-prose: 'Instrument Serif', serif;
-
-  --r-1: 0;
-  --r-2: 0;
-
-  /* Panel surfaces (light) */
-  --panel-0: #f5f5f0;
-  --panel-1: #ece9e0;
-  --panel-2: #e0ddd4;
-  --panel-3: #d4d1c8;
-  --panel-text: #0B0B09;
-  --panel-text-2: #444444;
-  --panel-text-3: #888888;
-  --panel-hover: rgba(0,0,0,0.04);
-  --panel-select: rgba(0,0,0,0.08);
-  --panel-accent: #B8FF00;
-  --panel-accent-fg: #0B0B09;
-}
-
-/* --- 247420 tokens: dark mode --- */
-[data-theme="dark"] {
-  --panel-0: #0f0f0d;
-  --panel-1: #1a1a16;
-  --panel-2: #222220;
-  --panel-3: #2a2a27;
-  --panel-text: #EFE9DD;
-  --panel-text-2: #aaaaaa;
-  --panel-text-3: #666666;
-  --panel-hover: rgba(255,255,255,0.06);
-  --panel-select: rgba(255,255,255,0.10);
-  --panel-accent: #B8FF00;
-  --panel-accent-fg: #0B0B09;
-  /* Manual dark toggle must drive the --color-* system too: the @media (prefers-color-scheme: dark)
-     block below only fires on OS preference, so without these the toggle left --color-text* dark
-     on a dark --color-bg (witnessed 1.4:1 date cells / breadcrumb-sep on /review). */
-  --color-primary: #64b5f6;
-  --color-primary-hover: #42a5f5;
-  --color-surface: #1a1a1a;
-  --color-bg: #0f172a;
-  --color-border: #334155;
-  --color-text: #f1f5f9;
-  --color-text-muted: #cbd5e1;
-  --color-text-light: #94a3b8;
-  --color-success: #4ade80;
-  --color-warning: #fbbf24;
-  --color-danger: #f87171;
-  --color-info: #60a5fa;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.6), 0 4px 6px rgba(0,0,0,0.4);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --panel-0: #0f0f0d;
-    --panel-1: #1a1a16;
-    --panel-2: #222220;
-    --panel-3: #2a2a27;
-    --panel-text: #EFE9DD;
-    --panel-text-2: #aaaaaa;
-    --panel-text-3: #666666;
-    --panel-hover: rgba(255,255,255,0.06);
-    --panel-select: rgba(255,255,255,0.10);
-    --panel-accent: #B8FF00;
-    --panel-accent-fg: #0B0B09;
-  }
+  --panel-text-2: var(--fg-2);
+  --panel-text-3: var(--fg-3);
+  --panel-hover: color-mix(in oklab, var(--fg) 4%, transparent);
+  --panel-select: color-mix(in oklab, var(--fg) 8%, transparent);
+  --panel-accent-fg: var(--accent-fg);
+  --live: var(--success);
+  --acid: var(--brand-green, #B8FF00);
 }
 
 /* --- Base density (13px IDE-style) --- */
@@ -1652,20 +1581,15 @@ tr.hover-row:hover td, tr.hover-row:hover th { background: var(--panel-hover) !i
 .text-purple { color: var(--purple); }
 
 
-/* === Theme toggle — light overrides; dark = default surfaces above === */
-html[data-theme="light"] {
-  --ds-bg: #f7f8fa;
-  --ds-surface: #ffffff;
-  --ds-elevated: #f1f3f5;
-  --ds-fg: #1a1b1e;
-  --ds-muted: #5a5d62;
-  --ds-border: #d8dadd;
-}
-html[data-theme="light"] body { background: var(--ds-bg); color: var(--ds-fg); }
-html[data-theme="light"] #flexup-dock .fx-msg.bot { background: #fff; }
-html[data-theme="light"] #flexup-dock .fx-msg.user { background: var(--ds-elevated); }
-html[data-theme="light"] #ds-online-status.offline { background: #ffd6d6; color: #4a1d1d; }
-#theme-toggle:hover { color: #fff !important; background: rgba(255,255,255,0.08); }
+/* === Theme toggle — "light" -> real 247420 attribute value is "paper", not
+   "light" (THEME.md: "light" has never existed and silently no-ops). The
+   --ds-bg/--ds-fg/etc aliases already retune automatically once layout.js
+   sets data-theme="paper" (fixed there); only the two hardcoded-hex
+   component overrides below still need their own light-surface values. */
+html[data-theme="paper"] #flexup-dock .fx-msg.bot { background: var(--panel-0); }
+html[data-theme="paper"] #flexup-dock .fx-msg.user { background: var(--panel-2); }
+html[data-theme="paper"] #ds-online-status.offline { background: color-mix(in oklab, var(--danger) 20%, var(--bg)); color: var(--danger); }
+#theme-toggle:hover { color: var(--accent-fg) !important; background: var(--panel-hover); }
 
 /* === Mobile breakpoint hardening: prevent horizontal overflow at 375 === */
 @media (max-width: 480px) {
