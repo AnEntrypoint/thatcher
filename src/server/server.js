@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { createLogger } from '../lib/logger.js';
 import { getLucia } from '../engine.server.js';
 import { requirePermission } from '../lib/auth-middleware.js';
+import { REDIRECT } from '../ui/renderer.js';
 
 // Request-scoped session resolution: NOT engine.server.js's getUser(), which
 // reads a module-level _currentRequest global -- unsafe here since this raw
@@ -253,7 +254,7 @@ export function createServer(options) {
       }
 
       // Static file serving (simplified)
-      if (serveStaticFile(pathname, req, res)) {
+      if (await serveStaticFile(pathname, req, res)) {
         return;
       }
 
@@ -262,6 +263,11 @@ export function createServer(options) {
         try {
           const { handlePage } = await load(path.join(__dirname, '../ui/page-handler.js'));
           const html = await handlePage(pathname, req, res, configEngine, thatcher);
+          // REDIRECT is a sentinel meaning handlePage already wrote the full
+          // response itself (a 302 + res.end()) -- writing another response
+          // on top crashes with ERR_HTTP_HEADERS_SENT, so it must short-circuit
+          // here rather than fall into the `if (html)` HTML-body branch below.
+          if (html === REDIRECT) return;
           if (html) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.setHeader('Content-Length', Buffer.byteLength(html, 'utf-8'));
@@ -311,6 +317,48 @@ async function serveStaticFile(pathname, req, res) {
       }
     } catch (err) {
       if (err.code !== 'ENOENT') staticLog.error(`${filePath} ${err.code}`, { message: err.message });
+    }
+    return false;
+  }
+  // /ui/* assets (styles2.css, layout.js's stylesheets/scripts, the vendored
+  // 247420 design-system dist) are thatcher's own framework-supplied UI, not
+  // something a consuming app is expected to mirror into its own public/ dir
+  // -- layout.js links them at these exact paths, so this server must be able
+  // to answer them itself. 247420.css/247420.js resolve from the vendored
+  // submodule's dist/ (not copied into src/ui/) since that is the single
+  // source of truth updated by `git submodule update`; every other /ui/*
+  // asset resolves directly from src/ui/ (styles2.css, client.js,
+  // event-delegation.js, and any future asset placed there).
+  if (pathname.startsWith('/ui/')) {
+    const name = pathname.slice('/ui/'.length);
+    const isVendorDesignAsset = name === '247420.css' || name === '247420.js';
+    const uiFilePath = isVendorDesignAsset
+      ? path.join(__dirname, '../../vendor/design/dist', name)
+      : path.join(__dirname, '../ui', name);
+    const uiRoot = isVendorDesignAsset
+      ? path.join(__dirname, '../../vendor/design/dist')
+      : path.join(__dirname, '../ui');
+    try {
+      if (await fileExists(uiFilePath) && path.dirname(uiFilePath) === uiRoot) {
+        const content = await fs.promises.readFile(uiFilePath);
+        const ext = path.extname(uiFilePath);
+        const mime = { '.js': 'application/javascript', '.css': 'text/css' }[ext] || 'text/plain';
+        res.setHeader('Content-Type', mime);
+        // no-cache: browser must revalidate every load instead of trusting
+        // its heuristic freshness guess for these no-validator responses --
+        // the previous absence of any Cache-Control let a stale disk-cached
+        // copy silently outlive a real file change server-side, witnessed
+        // as a CSS parse-error fix appearing correct in curl/on disk while
+        // the browser (and, separately, a stale service worker registered
+        // by an unrelated earlier session on this origin) kept serving the
+        // pre-fix bytes.
+        res.setHeader('Cache-Control', 'no-cache');
+        res.writeHead(200);
+        res.end(content);
+        return true;
+      }
+    } catch (err) {
+      if (err.code !== 'ENOENT') staticLog.error(`${uiFilePath} ${err.code}`, { message: err.message });
     }
     return false;
   }
