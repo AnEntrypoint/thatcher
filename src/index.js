@@ -88,8 +88,16 @@ export class Thatcher {
         throw new Error(`Configuration file not found: ${configPath}`);
       }
       const content = fs.readFileSync(configPath, 'utf-8');
-      const { load: yamlLoad } = await import('js-yaml');
-      masterConfig = yamlLoad(content);
+      // YAML11_SCHEMA is load-bearing, not decoration. js-yaml v5 -- which this
+      // package declares (^5.2.1) -- dropped YAML 1.1 merge-key (<<) resolution
+      // from its DEFAULT schema. A config whose entities inject their system
+      // fields with `<<: *system_fields` then parses with those fields missing
+      // and a literal "<<" key in their place: measured on a real config, every
+      // entity lost id, created_at, created_by and updated_at. Loading without
+      // this argument does not throw -- it silently yields a different schema
+      // than the one the file describes.
+      const { load: yamlLoad, YAML11_SCHEMA } = await import('js-yaml');
+      masterConfig = yamlLoad(content, { schema: YAML11_SCHEMA });
     } else if (typeof config === 'object' && config !== null) {
       masterConfig = config;
     } else {
@@ -102,8 +110,9 @@ export class Thatcher {
         if (fs.existsSync(p)) {
           this.options.config = p;
           const content = fs.readFileSync(p, 'utf-8');
-          const { load: yamlLoad } = await import('js-yaml');
-          masterConfig = yamlLoad(content);
+          // Same merge-key requirement as the explicit-path branch above.
+          const { load: yamlLoad, YAML11_SCHEMA } = await import('js-yaml');
+          masterConfig = yamlLoad(content, { schema: YAML11_SCHEMA });
           break;
         }
       }
