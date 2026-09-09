@@ -5,8 +5,13 @@
  * foreign keys, so the relational behaviours of the old query-engine are reimplemented
  * here in JS:
  *   - ref "display" fields (old LEFT JOIN) -> client-side lookup of the referenced row
- *   - soft-delete / archive filtering       -> in-memory predicate on the result set
- *   - sort / limit / offset                  -> busybase order()/range()
+ *   - soft-delete filtering                  -> a WHERE predicate where that is
+ *                                              provably identical, else in-memory
+ *   - archive filtering                      -> in-memory predicate (not SQL-expressible)
+ *   - sort / limit / offset                  -> in-memory; busybase's own
+ *                                              order()/limit()/range() are JS too,
+ *                                              so handing them down buys nothing
+ *                                              (see the note above BUILDER_ROW_CEILING)
  *
  * Every export is async (busybase is async); callers are the already-async API route
  * handlers and crud-handlers, so the await ripple terminates at an existing boundary.
@@ -72,7 +77,11 @@ async function attachRefDisplays(entity, rows) {
   return rows;
 }
 
-// Apply soft-delete / archive default filtering in memory (no SQL WHERE).
+// Apply soft-delete / archive default filtering in memory. Still the
+// correctness authority even when the soft-delete half also rides the WHERE
+// (see fetchVisibleRows): running it on an already-filtered set is a no-op, and
+// running it is what makes the pushdown an optimisation rather than a second,
+// divergent implementation of the same predicate.
 function applyVisibility(spec, rows, where, options) {
   let out = rows;
   if (spec.fields?.status && !('status' in where) && !options.includeDeleted) {
@@ -184,10 +193,137 @@ function applyWhere(builder, where) {
 // adding work.
 const BUILDER_ROW_CEILING = Number.MAX_SAFE_INTEGER;
 
-export async function list(entity, where = {}, options = {}) {
+// THE WHERE CLAUSE IS THE ONLY THING BUSYBASE COMPILES INTO SQL. Its embedded
+// query builder issues exactly `SELECT * FROM <table>` or
+// `SELECT * FROM <table> WHERE <compiled filters>` and then does everything
+// else to the resulting JS array: select() re-projects it with
+// Object.fromEntries, order() calls Array.prototype.sort, limit()/offset()/
+// range() are an Array.prototype.slice, and count('exact') reports that array's
+// length. So a sort, a page window or a column list handed to the builder
+// changes what this process allocates and nothing about what SQLite reads --
+// measured on a 2600-row case table: bare select('*') 94ms, the same read with
+// a four-column select() 98ms, with order()+limit(200) 96ms. The equivalent raw
+// statements are 98ms / 17ms / 9ms, so the pushdown those numbers promise is
+// real but lives in busybase, not here.
+//
+// What that leaves reachable from this file is the WHERE, and the one filter
+// this module applies that belongs in it is the soft-delete default below.
+
+// Where-operators that cannot narrow a read to a small slice of the table: a
+// negation, an open range, or a pattern. Everything else -- a bare scalar, a
+// bare array, $eq, $in, a top-level $or of equalities -- can, and does on the
+// per-case and per-id reads. The distinction is a COST one only; correctness
+// does not depend on it (see fetchVisibleRows' guard, which runs whenever the
+// pushdown is used at all).
+const NON_NARROWING_OPS = new Set(['$ne', '$gt', '$gte', '$lt', '$lte', '$like', '$ilike']);
+function whereNarrows(where) {
+  for (const [k, v] of Object.entries(where)) {
+    if (v === undefined || v === null) continue;
+    if (k === '$or') return true;
+    if (Array.isArray(v)) return true;
+    if (typeof v === 'object') {
+      if (Object.keys(v).some(op => !NON_NARROWING_OPS.has(op))) return true;
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+// Rows a table must be known to hold before the soft-delete pushdown is worth
+// its guard statement. Break-even is around ten soft-deleted rows: the guard
+// costs roughly 0.4ms of fixed per-statement overhead plus a scan, while the
+// pushdown saves the marshalling of each row it removes (about 37us per row on
+// a 24-column case table). 1000 clears that by a wide margin at any plausible
+// soft-delete rate, and keeps a small table -- where the guard is measurably
+// the larger of the two numbers -- on the single-statement path.
+const SOFT_DELETE_PUSHDOWN_MIN_ROWS = 1000;
+
+// Largest row count this module has actually seen come back from an unnarrowed
+// read of each table. A size hint only: it decides whether the pushdown is
+// WORTH attempting, never whether its result is correct (the NULL guard in
+// fetchVisibleRows decides that, every time the pushdown is used). Both ways of
+// being wrong are bounded and cheap -- a low or absent entry (the default, so
+// the first unnarrowed read of a table always takes the pre-existing
+// single-statement path) costs a missed optimisation, and an entry left high by
+// a table that has since shrunk costs one extra statement per read.
+const observedTableRows = new Map();
+function observeTableRows(tbl, n) {
+  if (n > (observedTableRows.get(tbl) || 0)) observedTableRows.set(tbl, n);
+}
+
+// True when applyVisibility() would drop rows on `status` alone -- the same
+// three conditions it tests, hoisted so the predicate can ride the WHERE --
+// AND the read is wide enough for that to be worth an extra statement.
+//
+// The width tests are what keep the pushdown from costing more than it saves.
+// busybase puts no LIMIT in the SQL it emits, so the NULL guard below is a
+// second FULL SCAN however few rows it can match. On a table-wide read of a big
+// table that scan is noise against the marshalling it removes (13600-row event
+// table: 2.1ms guard against 42ms saved); on a read already narrowed to one
+// case's handful of rows, or on any read of a small table, there is almost no
+// marshalling to remove and the guard is pure added cost (measured +60% on a
+// per-case event read, and +15% across a 26-row table, before these tests
+// existed). So: push down only when the caller has not already narrowed AND the
+// table is known to be big enough to pay for it.
+function softDeleteRidesWhere(spec, tbl, where, options) {
+  return Boolean(spec.fields?.status)
+    && !('status' in where)
+    && !options.includeDeleted
+    && !whereNarrows(where)
+    && (observedTableRows.get(tbl) || 0) >= SOFT_DELETE_PUSHDOWN_MIN_ROWS;
+}
+
+// Read the rows a caller may see, moving the soft-delete predicate into the SQL
+// WHERE when that is provably equivalent to filtering it out afterwards.
+//
+// Only the soft-delete half moves. The archive half stays in JS because it is
+// not a comparison: `!r.archived || r.archived === 0` is a JS truthiness test,
+// and busybase binds every column as TEXT, so an archived value of "0" is
+// truthy and IS dropped -- no SQL comparison reproduces that, and rewriting it
+// as one would change which rows come back.
+//
+// The guard: SQL `status <> 'deleted'` is NOT the same predicate as JS
+// `r.status !== 'deleted'`. Three-valued logic makes the comparison NULL for a
+// row whose status is NULL, so SQL drops it while the JS filter keeps it.
+// create() stamps a real status on every row it writes, but busybase grows a
+// table with `ALTER TABLE ... ADD COLUMN`, which leaves the new column NULL on
+// every pre-existing row, so a consuming deployment's table can genuinely hold
+// them. A companion `status IS NULL` read -- capped at one row, since only
+// existence matters -- decides: with no such row the pushdown returns the
+// identical set in the identical order, and with one the caller gets the
+// original unfiltered read instead. Identical, never merely equivalent.
+const NULL_STATUS_PROBE_LIMIT = 1;
+async function fetchVisibleRows(entity, where, options, op) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
-  let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where).limit(BUILDER_ROW_CEILING), 'list');
+  const unnarrowed = !whereNarrows(where);
+  const build = () => applyWhere(client().from(tbl).select('*'), where);
+  const fullRead = async () => {
+    const rows = unwrap(await build().limit(BUILDER_ROW_CEILING), op);
+    if (unnarrowed) observeTableRows(tbl, rows.length);
+    return rows;
+  };
+  if (!softDeleteRidesWhere(spec, tbl, where, options)) return fullRead();
+  const [pushedDown, nullStatus] = await Promise.all([
+    build().neq('status', RECORD_STATUS.DELETED).limit(BUILDER_ROW_CEILING),
+    build().is('status', null).limit(NULL_STATUS_PROBE_LIMIT),
+  ]);
+  if (unwrap(nullStatus, `${op}-null-status-guard`).length) return fullRead();
+  const rows = unwrap(pushedDown, op);
+  observeTableRows(tbl, rows.length);
+  return rows;
+}
+
+// The shared body of list() and listWithPagination(): one read, filtered,
+// scoped, sorted and paged, plus the pre-page total the pagination envelope
+// needs. `total` is the length of the set the page is cut from, which is
+// exactly what count() returns for the same arguments -- sorting and slicing
+// cannot change a set's size -- so a paginated read costs one table read
+// instead of the two a separate count() + list() pair costs.
+async function listResolved(entity, where, options) {
+  const spec = specOf(entity);
+  let rows = await fetchVisibleRows(entity, where, options, 'list');
   rows = applyVisibility(spec, rows, where, options);
 
   // Row-access scoping: when a caller passes options.user AND the entity declares
@@ -220,6 +356,7 @@ export async function list(entity, where = {}, options = {}) {
       return 0;
     });
   }
+  const total = rows.length;
   if (options.offset || options.limit) {
     const off = parseInt(options.offset || 0, 10);
     const lim = options.limit ? parseInt(options.limit, 10) : rows.length;
@@ -229,17 +366,26 @@ export async function list(entity, where = {}, options = {}) {
   const decryptedRows = rows.map(r => decryptFields(r, spec.fields));
   const { computeFormulaFields } = await import('../formula-fields.js');
   const withFormulas = await Promise.all(decryptedRows.map(r => computeFormulaFields(r, spec.fields, entity)));
-  return attachRefDisplays(entity, withFormulas);
+  return { items: await attachRefDisplays(entity, withFormulas), total };
+}
+
+export async function list(entity, where = {}, options = {}) {
+  return (await listResolved(entity, where, options)).items;
 }
 
 export async function count(entity, where = {}, options = {}) {
   const spec = specOf(entity);
-  const tbl = tableName(entity);
   // Same builder ceiling as list(), and for a worse reason: this function's
   // whole answer is rows.length, so the 1000-row default did not truncate a
   // page, it returned a WRONG NUMBER with no way to tell. Measured before this:
   // 886 where 2300 rows matched.
-  let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where).limit(BUILDER_ROW_CEILING), 'count');
+  //
+  // The whole table is still read to produce one integer, and it has to be:
+  // busybase computes count('exact') as the length of the array a full
+  // `SELECT *` already returned, so there is no COUNT(*) to reach from here
+  // (see the builder note above BUILDER_ROW_CEILING). Only the soft-delete
+  // predicate reaches SQL, via fetchVisibleRows.
+  let rows = await fetchVisibleRows(entity, where, options, 'count');
   rows = applyVisibility(spec, rows, where, options);
   if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
     const { permissionService } = await import('../services/permission.service.js');
@@ -250,8 +396,15 @@ export async function count(entity, where = {}, options = {}) {
 
 export async function listWithPagination(entity, where = {}, page = 1, pageSize = 50, options = {}) {
   const finalPage = Math.max(1, page);
-  const total = await count(entity, where, options);
-  const items = await list(entity, where, { ...options, offset: (finalPage - 1) * pageSize, limit: pageSize });
+  // One read, not two: the page and its total come out of the same pass, so a
+  // paginated read no longer scans the table once for count() and again for
+  // list(). `total` is identical to count(entity, where, options) -- both are
+  // the size of the same filtered, scoped set.
+  const { items, total } = await listResolved(entity, where, {
+    ...options,
+    offset: (finalPage - 1) * pageSize,
+    limit: pageSize,
+  });
   return { items, pagination: { page: finalPage, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
 }
 
