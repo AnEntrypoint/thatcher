@@ -22,11 +22,24 @@
 import { getSpec } from '../../config/spec-helpers.js';
 import { RECORD_STATUS } from '../../config/constants.js';
 import { genId, now } from '../id-helpers.js';
+import { setSqlDir, countRows, selectRows, hasNullStatus } from './sql.js';
 
 let _client = null;
 
-export function setBusyBaseClient(client) {
+/**
+ * `dir` is busybase's own data directory. It is optional and additive: with it,
+ * sql.js opens a direct read handle on the same sqlite file and this module can
+ * reach the COUNT(*) and LIMIT/OFFSET that busybase's builder does in JS (see
+ * the note above BUILDER_ROW_CEILING and sql.js's own header). Without it every
+ * fast path below stays off and this module behaves exactly as it did before.
+ *
+ * The handle is only sound because busybase is created here with NO hooks --
+ * its beforeSelect/afterSelect pipes would otherwise rewrite a filter or a row
+ * set behind a raw statement's back. index.js's initDatabase() passes none.
+ */
+export function setBusyBaseClient(client, dir = null) {
   _client = client;
+  setSqlDir(dir);
 }
 
 function client() {
@@ -206,8 +219,16 @@ const BUILDER_ROW_CEILING = Number.MAX_SAFE_INTEGER;
 // statements are 98ms / 17ms / 9ms, so the pushdown those numbers promise is
 // real but lives in busybase, not here.
 //
-// What that leaves reachable from this file is the WHERE, and the one filter
-// this module applies that belongs in it is the soft-delete default below.
+// What that leaves reachable THROUGH THE BUILDER is the WHERE, and the one
+// filter this module applies that belongs in it is the soft-delete default
+// below. The pushdown those numbers promise is reached instead through
+// sql.js's own read handle on the same file (see setBusyBaseClient's `dir`),
+// which is where count() and the page window below go. Two things are still
+// deliberately NOT pushed down anywhere: the caller's SORT, because created_at
+// is coarse unix-seconds and the JS comparator's tie behaviour is what keeps
+// same-second replay order deterministic; and the column list, because this is
+// a generic library and a column no consumer here reads may be the one another
+// consumer's formula field or row-access rule needs.
 
 // Where-operators that cannot narrow a read to a small slice of the table: a
 // negation, an open range, or a pattern. Everything else -- a bare scalar, a
@@ -229,6 +250,16 @@ function whereNarrows(where) {
   }
   return false;
 }
+
+// The three declarations below (SOFT_DELETE_PUSHDOWN_MIN_ROWS,
+// observedTableRows, softDeleteRidesWhere) belong to the BUSYBASE-BUILDER path
+// in fetchVisibleRows, which now runs only when the direct read handle is
+// unavailable or declines the where-object. They are the fallback's cost gates,
+// not the primary read's: with the handle live, the soft-delete predicate rides
+// the WHERE unconditionally, because sql.js's NULL-status guard is an indexed
+// existence probe rather than the second full scan these numbers were measured
+// against. Keep them accurate anyway -- a consumer without @libsql/client, or a
+// where-shape sql.js will not compile, runs entirely on this path.
 
 // Rows a table must be known to hold before the soft-delete pushdown is worth
 // its guard statement. Break-even is around ten soft-deleted rows: the guard
@@ -297,6 +328,42 @@ const NULL_STATUS_PROBE_LIMIT = 1;
 async function fetchVisibleRows(entity, where, options, op) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
+
+  // Read through the direct handle when it can compile this where, because that
+  // read carries `ORDER BY rowid` and busybase's does not.
+  //
+  // This is an ORDER fix, not a speed one -- the same rows either way. busybase
+  // issues an unordered `SELECT *`, so its row order is whatever plan SQLite
+  // picks. On an unindexed store that is always a table scan, i.e. rowid
+  // order, and callers built on it: this module's own sort is a plain
+  // Array.prototype.sort, so rows that tie on every sort key come back in the
+  // order the READ produced, and a consumer whose comparator is coarse (a
+  // whole turn's events sharing one unix second) is relying on that.
+  //
+  // Add an index and the plan can change under them. Witnessed on the 100x
+  // fixture: with `case.ref` indexed, `ref < 'zzz'` becomes an index range scan
+  // and returns the identical 2300 rows in ref order instead of insertion
+  // order, and the tie order of the sorted list changes with it. Reading here
+  // with `ORDER BY rowid` pins insertion order whatever the planner does, so
+  // an index stays a pure cost change.
+  //
+  // The soft-delete predicate rides along where SQL reproduces it exactly (the
+  // same NULL-status guard as the busybase path below); applyVisibility still
+  // runs afterwards either way and is a no-op on an already-filtered set.
+  const st = await statusPushdown(spec, tbl, where, options);
+  if (st) {
+    const direct = await selectRows(tbl, where, {
+      excludeDeleted: st.excludeDeleted,
+      deletedValue: RECORD_STATUS.DELETED,
+      limit: null,
+      offset: 0,
+    });
+    if (direct) {
+      if (!whereNarrows(where)) observeTableRows(tbl, direct.length);
+      return direct;
+    }
+  }
+
   const unnarrowed = !whereNarrows(where);
   const build = () => applyWhere(client().from(tbl).select('*'), where);
   const fullRead = async () => {
@@ -315,14 +382,108 @@ async function fetchVisibleRows(entity, where, options, op) {
   return rows;
 }
 
+// ---------------------------------------------------------------------------
+// Reaching SQL for the things busybase does to a JS array.
+//
+// Everything below is an OPTIMISATION with a proof obligation attached: it may
+// only run where the JS work it replaces is provably inert on THIS call, and it
+// returns null (falling back to the untouched path above) the moment it cannot
+// establish that. The three obligations are the three things listResolved() does
+// between the read and the page, and each has its own predicate here.
+// ---------------------------------------------------------------------------
+
+// Row-access scoping (permissionService.filterRecords) removes rows AFTER the
+// read, so any pushdown that changes WHICH rows are read is wrong whenever it
+// can fire.
+function rowAccessScopes(spec, options) {
+  return Boolean(options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id));
+}
+
+// The archive half of applyVisibility. It stays in JS forever -- it is a JS
+// truthiness test (`!r.archived || r.archived === 0`) over a TEXT column, so an
+// archived value of "0" is truthy and IS dropped, and no SQL comparison
+// reproduces that. A pushdown is therefore only admissible when this half
+// removes nothing at all.
+function archiveFilters(spec, where, options) {
+  return Boolean(spec.fields?.archived) && !('archived' in where) && !options.includeArchived;
+}
+
+// The soft-delete half. Resolves to `{ excludeDeleted }` when SQL can reproduce
+// applyVisibility's status filter exactly, or null when it cannot. Three of the
+// four branches are inert by construction (no status column, the caller already
+// named status in the where, or includeDeleted); the fourth pays for the same
+// NULL-status guard fetchVisibleRows documents, because SQL `status <> 'x'` is
+// not JS `!==` on a NULL-status row.
+async function statusPushdown(spec, tbl, where, options) {
+  if (!spec.fields?.status || ('status' in where) || options.includeDeleted) return { excludeDeleted: false };
+  const nulls = await hasNullStatus(tbl);
+  if (nulls !== false) return null;
+  return { excludeDeleted: true };
+}
+
 // The shared body of list() and listWithPagination(): one read, filtered,
 // scoped, sorted and paged, plus the pre-page total the pagination envelope
 // needs. `total` is the length of the set the page is cut from, which is
 // exactly what count() returns for the same arguments -- sorting and slicing
 // cannot change a set's size -- so a paginated read costs one table read
 // instead of the two a separate count() + list() pair costs.
-async function listResolved(entity, where, options) {
+// `needTotal` is false for list(), which throws the total away. On the original
+// path the total is free (it is the length of an array already in hand); on the
+// pushed-down path it is a second statement, and issuing a COUNT(*) nobody
+// reads would turn a one-statement read into a two-statement one.
+async function listResolved(entity, where, options, needTotal = true) {
   const spec = specOf(entity);
+
+  // The sort keys are a property of the SPEC and the OPTIONS, never of the
+  // rows, so they can be resolved before the read -- which is what lets the
+  // page pushdown below decide whether a sort is going to happen at all.
+  const sortSpec = options.sort || spec.list?.defaultSort;
+  const sortKeys = (Array.isArray(sortSpec) ? sortSpec : sortSpec ? [sortSpec] : [])
+    .filter(s => s && s.field && spec.fields?.[s.field]);
+
+  // LIMIT/OFFSET pushdown. The page this replaces is `rows.slice(off, off+lim)`
+  // over the rows the read returned, so pushing the window into SQL is
+  // identical exactly when nothing between the read and the slice can change
+  // which rows fall in the window:
+  //   - no sort (a sort reorders the set the page is cut from -- and the sort
+  //     itself is NEVER pushed down: created_at is coarse unix-SECONDS, a whole
+  //     turn's events share one second, and the JS comparator's stable-sort tie
+  //     behaviour is what keeps same-second replay order deterministic);
+  //   - no row-access scoping (it removes rows after the read);
+  //   - the archive filter removes nothing;
+  //   - the soft-delete filter is reproducible in the WHERE.
+  // Fail any of those, or fail to reach SQL at all, and the original path runs.
+  const paged = Boolean(options.offset || options.limit);
+  // The window itself has to be one SQL can express. Array.prototype.slice
+  // coerces its arguments in ways LIMIT/OFFSET do not -- a NaN start is 0 with
+  // a NaN end, so the JS page comes back EMPTY, and a negative start counts
+  // back from the end of the array. Neither has a LIMIT/OFFSET equivalent, so a
+  // window that is not a plain non-negative integer pair takes the JS path.
+  const offRaw = parseInt(options.offset || 0, 10);
+  const limRaw = options.limit ? parseInt(options.limit, 10) : null;
+  const windowIsPlain = Number.isInteger(offRaw) && offRaw >= 0
+    && (limRaw === null || (Number.isInteger(limRaw) && limRaw >= 0));
+  if (paged && windowIsPlain && !sortKeys.length && !rowAccessScopes(spec, options) && !archiveFilters(spec, where, options)) {
+    const tbl = tableName(entity);
+    const st = await statusPushdown(spec, tbl, where, options);
+    if (st) {
+      const off = offRaw;
+      const lim = limRaw;
+      const opts = { excludeDeleted: st.excludeDeleted, deletedValue: RECORD_STATUS.DELETED };
+      const [page, total] = await Promise.all([
+        selectRows(tbl, where, { ...opts, limit: lim, offset: off }),
+        // `total` is the size of the set the page is cut from, which is what
+        // count() returns for the same arguments -- one COUNT(*) instead of
+        // marshalling the whole set to read its .length.
+        needTotal ? countRows(tbl, where, opts) : Promise.resolve(null),
+      ]);
+      if (page && (!needTotal || total !== null)) {
+        if (needTotal && !whereNarrows(where)) observeTableRows(tbl, total);
+        return { items: await hydrate(entity, spec, page), total };
+      }
+    }
+  }
+
   let rows = await fetchVisibleRows(entity, where, options, 'list');
   rows = applyVisibility(spec, rows, where, options);
 
@@ -333,7 +494,7 @@ async function listResolved(entity, where, options) {
   // are unaffected. This makes a config row_access spec actually enforced on the
   // read path (previously list() took no user, so the spec was inert and a scoped
   // enquiry would leak every row).
-  if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
+  if (rowAccessScopes(spec, options)) {
     const { permissionService } = await import('../services/permission.service.js');
     rows = permissionService.filterRecords(options.user, spec, rows);
   }
@@ -342,9 +503,7 @@ async function listResolved(entity, where, options) {
   // tie-broken order (e.g. [{field:'priority',dir:'DESC'},{field:'last_event_at',
   // dir:'DESC'}]) -- so a recency-with-tiebreak list is config, not a JS sort in
   // the caller. Each key is guarded against spec.fields; unknown keys are skipped.
-  const sortSpec = options.sort || spec.list?.defaultSort;
-  const sortKeys = (Array.isArray(sortSpec) ? sortSpec : sortSpec ? [sortSpec] : [])
-    .filter(s => s && s.field && spec.fields?.[s.field]);
+  // Resolved above, before the read, so the page pushdown can see it.
   if (sortKeys.length) {
     rows.sort((a, b) => {
       for (const s of sortKeys) {
@@ -362,15 +521,22 @@ async function listResolved(entity, where, options) {
     const lim = options.limit ? parseInt(options.limit, 10) : rows.length;
     rows = rows.slice(off, off + lim);
   }
+  return { items: await hydrate(entity, spec, rows), total };
+}
+
+// Decrypt, compute formula fields, attach ref displays. The page is already
+// cut by the time this runs on either path, so both produce the same rows in
+// the same order from the same input.
+async function hydrate(entity, spec, rows) {
   const { decryptFields } = await import('../field-encryption.js');
   const decryptedRows = rows.map(r => decryptFields(r, spec.fields));
   const { computeFormulaFields } = await import('../formula-fields.js');
   const withFormulas = await Promise.all(decryptedRows.map(r => computeFormulaFields(r, spec.fields, entity)));
-  return { items: await attachRefDisplays(entity, withFormulas), total };
+  return attachRefDisplays(entity, withFormulas);
 }
 
 export async function list(entity, where = {}, options = {}) {
-  return (await listResolved(entity, where, options)).items;
+  return (await listResolved(entity, where, options, false)).items;
 }
 
 export async function count(entity, where = {}, options = {}) {
@@ -380,14 +546,29 @@ export async function count(entity, where = {}, options = {}) {
   // page, it returned a WRONG NUMBER with no way to tell. Measured before this:
   // 886 where 2300 rows matched.
   //
-  // The whole table is still read to produce one integer, and it has to be:
-  // busybase computes count('exact') as the length of the array a full
-  // `SELECT *` already returned, so there is no COUNT(*) to reach from here
-  // (see the builder note above BUILDER_ROW_CEILING). Only the soft-delete
-  // predicate reaches SQL, via fetchVisibleRows.
+  // COUNT(*) instead of marshalling the whole table to read an array's length.
+  // busybase itself cannot do this -- it computes count('exact') as the length
+  // of the array a full `SELECT *` already returned (see the builder note above
+  // BUILDER_ROW_CEILING) -- so this goes through sql.js's own read handle on
+  // the same file. Measured on the 13600-row event table: 192ms against 0.07ms.
+  //
+  // It is admissible only where the two JS filters below would remove nothing:
+  // the archive filter has no SQL equivalent, and row-access scoping is a
+  // per-user predicate this module cannot express. Where either can fire, or
+  // where the where-object is a shape sql.js will not compile, the original
+  // full-read path runs unchanged.
+  if (!rowAccessScopes(spec, options) && !archiveFilters(spec, where, options)) {
+    const tbl = tableName(entity);
+    const st = await statusPushdown(spec, tbl, where, options);
+    if (st) {
+      const n = await countRows(tbl, where, { excludeDeleted: st.excludeDeleted, deletedValue: RECORD_STATUS.DELETED });
+      if (n !== null) return n;
+    }
+  }
+
   let rows = await fetchVisibleRows(entity, where, options, 'count');
   rows = applyVisibility(spec, rows, where, options);
-  if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
+  if (rowAccessScopes(spec, options)) {
     const { permissionService } = await import('../services/permission.service.js');
     rows = permissionService.filterRecords(options.user, spec, rows);
   }

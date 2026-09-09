@@ -37,6 +37,9 @@ export class Thatcher {
     return {
       config: options.config || null,
       databasePath: options.databasePath || path.resolve(process.cwd(), 'data', 'app.db'),
+      // Extra columns this consumer wants indexed, as { table: [column, ...] }.
+      // Additive to the set derived from the config below; see initDatabase().
+      indexes: options.indexes || {},
       env: options.env || {},
       plugins: options.plugins || [],
       server: {
@@ -157,9 +160,40 @@ export class Thatcher {
     const client = await createEmbedded({ dir });
 
     const store = await import(resolveModule('./lib/busybase/store.js'));
-    store.setBusyBaseClient(client);
+    // The DIRECTORY, not just the client. busybase's returned client exposes
+    // `{ from, auth, channel, removeAllChannels, close, _bus }` and no handle
+    // onto the database, so COUNT(*)/LIMIT/OFFSET are unreachable through it --
+    // its builder does all three to a JS array. Handing the store the directory
+    // lets it open its own read handle on the same `${dir}/db.sqlite` busybase
+    // opened. Purely additive: without it the store runs its previous path.
+    store.setBusyBaseClient(client, dir);
     const audit = await import(resolveModule('./lib/busybase/audit.js'));
     audit.setBusyBaseClient(client);
+
+    // Indexes. busybase emits the DDL for these tables (`CREATE TABLE IF NOT
+    // EXISTS ... TEXT` on first insert, `ALTER TABLE ... ADD COLUMN` as fields
+    // appear) and declares no key of any kind, so a store grown this way has
+    // zero indexes and zero primary keys: every point lookup is a full table
+    // scan. Measured on a 2600-case/13600-event store, 100 iterations each:
+    // `case WHERE id=?` 542us -> 285us, `case WHERE ref=?` 545us -> 280us,
+    // `event WHERE case_id=?` 2149us -> 250us.
+    //
+    // HERE is the right place for it, and the alternatives are worse:
+    //   - not in busybase, whose src/*.js are build outputs of another repo;
+    //   - not in a migration or a doctor/setup command, because busybase
+    //     creates tables on FIRST INSERT and columns on first write, so a
+    //     one-shot step permanently misses every table that did not exist when
+    //     it ran, and a deployment that never runs doctor never gets an index
+    //     at all;
+    //   - not lazily on first read, which would put DDL on a hot path.
+    // Store init runs once per process, after the client exists and before any
+    // read, and `CREATE INDEX IF NOT EXISTS` over columns that already exist is
+    // idempotent -- a no-op on every boot after the first, and a catch-up for
+    // whatever busybase created since. sql.js's ensureIndexes explains why an
+    // index cannot change a result set and what it refuses to index.
+    const { ensureIndexes } = await import(resolveModule('./lib/busybase/sql.js'));
+    const made = await ensureIndexes(this.deriveIndexColumns());
+    if (made.length && globalThis.__debug__) globalThis.__debug__.expose('indexes', () => made, 'DB Indexes');
 
     this.busybase = client;
     globalThis.__thatcherBusyBase = client;
@@ -167,6 +201,52 @@ export class Thatcher {
       globalThis.__debug__.expose('datastore', { kind: () => 'busybase', dir: () => dir }, 'Data Store');
     }
     _databaseInitialized = true;
+  }
+
+  /**
+   * Which columns to index, as { table: [column, ...] }, derived from the
+   * config rather than hardcoded -- thatcher is a generic library and knows no
+   * consumer's table names.
+   *
+   * Three rules, each naming a lookup this codebase actually issues:
+   *   1. the entity's `id` field -- get()/update()/remove() are all `WHERE id=?`;
+   *   2. a `<entity>_id` field whose prefix names a known entity. This is not a
+   *      guess: it is the same foreign-key convention getChildren() itself
+   *      defaults to (`childDef.fk || `${parentEntity}_id``), and it is what
+   *      every child read filters on;
+   *   3. a field the config explicitly marks `index: true` or `unique: true`.
+   * `unique` produces a PLAIN index, never a UNIQUE one -- a unique index would
+   * turn a duplicate insert into an error, which is a behaviour change, and the
+   * point of this is to be unobservable except in the timings.
+   *
+   * options.indexes is merged on top for columns only the consumer knows are
+   * hot (a business key, an external routing key).
+   */
+  deriveIndexColumns() {
+    const out = {};
+    const add = (tbl, col) => {
+      if (!tbl || !col) return;
+      const list = out[tbl] || (out[tbl] = []);
+      if (!list.includes(col)) list.push(col);
+    };
+    const entities = _configEngine?.getAllEntities?.() || [];
+    const known = new Set(entities);
+    for (const name of entities) {
+      let spec;
+      try { spec = _configEngine.generateEntitySpec(name); } catch { continue; }
+      if (!spec || spec.embedded) continue;
+      // Same mapping store.js's tableName() applies.
+      const tbl = name === 'user' ? 'users' : name;
+      for (const [field, def] of Object.entries(spec.fields || {})) {
+        if (def?.type === 'id') add(tbl, field);
+        else if (def?.index || def?.unique) add(tbl, field);
+        else if (field.endsWith('_id') && known.has(field.slice(0, -3))) add(tbl, field);
+      }
+    }
+    for (const [tbl, cols] of Object.entries(this.options.indexes || {})) {
+      for (const col of cols || []) add(tbl, col);
+    }
+    return out;
   }
 
   async loadPlugins() {
@@ -285,6 +365,16 @@ export class Thatcher {
     // the silent second-handle-fork above, which is a real, distinct benefit.
     if (this.busybase) {
       try { this.busybase.close?.() } catch { /* best-effort */ }
+      // The store's own read handle on the same file is a SECOND open handle,
+      // and the same second-handle-fork this comment describes applies to it:
+      // leaving it open would keep the file open after the client that named it
+      // is gone, and a later initDatabase() would silently keep reading through
+      // a handle pointed at the previous directory.
+      try {
+        const { closeSql, setSqlDir } = await import(resolveModule('./lib/busybase/sql.js'))
+        closeSql()
+        setSqlDir(null)
+      } catch { /* best-effort */ }
       this.busybase = null
       globalThis.__thatcherBusyBase = null
       _databaseInitialized = false
@@ -317,6 +407,15 @@ export class Thatcher {
   async get(entity, id, opts = {}) {
     const { get } = await import(resolveModule('./lib/busybase/store.js'));
     return get(entity, id, opts);
+  }
+
+  // How many rows match, without materialising them. The store reaches a real
+  // `SELECT COUNT(*)` for this where it provably can (see busybase/store.js's
+  // count()); a caller counting via list().length instead pays for the whole
+  // matching set to be marshalled into JS to read one integer.
+  async count(entity, where = {}, opts = {}) {
+    const { count } = await import(resolveModule('./lib/busybase/store.js'));
+    return count(entity, where, opts);
   }
 
   async create(entity, data, user) {
