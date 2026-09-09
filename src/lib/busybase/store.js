@@ -155,10 +155,39 @@ function applyWhere(builder, where) {
   return builder;
 }
 
+// busybase's query builder defaults to a 1000-row page when no .limit() is set
+// (`const lim = Math.max(0, q.limit || 1000)`), and it applies that AFTER
+// reading and filtering the table -- so a caller asking for 10000 rows silently
+// received 1000 and had no way to tell. That default is a sensible guard for an
+// HTTP-shaped client; it is wrong here, because everything below -- the
+// visibility filter, the row-access scoping, the tie-broken sort and the
+// caller's own offset/limit page -- operates on the set this line returns. A
+// truncated input means the sort ranks the wrong rows and the page is cut from
+// the wrong set, with no error and no flag.
+//
+// Measured consequences in a consuming deployment before this line existed: a
+// health sweep asking for 10000 open cases checked 1000 of 1900 and silently
+// left 900 unswept; a privacy erasure asking for 10000 cases could not see past
+// 1000; count() returned 886 where 2300 rows matched; and every truncation
+// flag built on a limit+1 sentinel read false forever, because the sentinel row
+// was itself inside the truncated page.
+//
+// The ceiling goes on the BUILDER, not on the JS slice below, and it is
+// deliberately not the caller's own options.limit: that is the page size wanted
+// AFTER sorting, so pushing it down here would sort only the first N rows in
+// rowid order and return a different, wrong page. Sorting is likewise NOT
+// pushed down -- store/query.js re-sorts same-second rows in JS on purpose, for
+// replay determinism, and the builder's own sort would break that.
+//
+// This costs nothing: busybase already reads and filters the whole table before
+// applying the limit, so raising the ceiling removes a truncation rather than
+// adding work.
+const BUILDER_ROW_CEILING = Number.MAX_SAFE_INTEGER;
+
 export async function list(entity, where = {}, options = {}) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
-  let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'list');
+  let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where).limit(BUILDER_ROW_CEILING), 'list');
   rows = applyVisibility(spec, rows, where, options);
 
   // Row-access scoping: when a caller passes options.user AND the entity declares
@@ -206,7 +235,11 @@ export async function list(entity, where = {}, options = {}) {
 export async function count(entity, where = {}, options = {}) {
   const spec = specOf(entity);
   const tbl = tableName(entity);
-  let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where), 'count');
+  // Same builder ceiling as list(), and for a worse reason: this function's
+  // whole answer is rows.length, so the 1000-row default did not truncate a
+  // page, it returned a WRONG NUMBER with no way to tell. Measured before this:
+  // 886 where 2300 rows matched.
+  let rows = unwrap(await applyWhere(client().from(tbl).select('*'), where).limit(BUILDER_ROW_CEILING), 'count');
   rows = applyVisibility(spec, rows, where, options);
   if (options.user && (spec.rowAccess || spec.row_access || spec.fields?.organization_id)) {
     const { permissionService } = await import('../services/permission.service.js');
