@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { createLogger } from './lib/logger.js';
+import { createRequire } from 'module';
+
+var require = createRequire(import.meta.url);
+var module = { exports: {} };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const log = createLogger('[Thatcher]');
