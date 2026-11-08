@@ -17,8 +17,7 @@ export async function GET() {
   } catch {}
   let table_counts = {};
   try {
-    // entity names (busybase tables); 'user' maps to the users table in the store
-    const entities = ['user', 'engagement', 'review', 'rfi_template', 'entity_type', 'engagement_type', 'client'];
+    const entities = ['user'];
     for (const e of entities) {
       try { table_counts[e] = await count(e, {}); } catch { table_counts[e] = null; }
     }

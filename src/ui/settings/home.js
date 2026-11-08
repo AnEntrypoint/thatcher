@@ -1,25 +1,11 @@
-/*
- * Settings landing page + system info + users list. Ported unchanged (function
- * bodies verbatim) from the original settings-renderer.js, which also carried
- * the shared page-shell helpers (now settings/shared.js) and re-exported teams/
- * rfi-sections (now settings/teams.js, imported directly by callers instead).
- */
 import { settingsPage, settingsBack, icon, SPACING, esc, TABLE_SCRIPT, roleBadge, statusBadge } from '@/ui/settings/shared.js';
 
 const SETTINGS_CARDS = [
   { key: 'system', icon: 'gear', title: 'System Info', desc: 'Database, server, cache configuration', href: '/admin/settings/system' },
   { key: 'users', icon: 'user', title: 'Users', desc: 'Manage user accounts and roles', href: '/admin/settings/users', countKey: 'users' },
   { key: 'teams', icon: 'users', title: 'Teams', desc: 'Manage audit teams', href: '/admin/settings/teams', countKey: 'teams' },
-  { key: 'rfi-sections', icon: 'folder', title: 'RFI Sections', desc: 'Manage RFI section categories and colors', href: '/admin/settings/rfi-sections', countKey: 'rfiSections' },
-  { key: 'templates', icon: 'document', title: 'Templates', desc: 'Review templates and sections', href: '/admin/settings/templates', countKey: 'templates' },
-  { key: 'notifications', icon: 'bell', title: 'Notifications', desc: 'Configure alerts, reminders, and reports', href: '/admin/settings/notifications' },
-  { key: 'integrations', icon: 'link', title: 'Integrations', desc: 'Google Drive, Gmail, and external services', href: '/admin/settings/integrations' },
   { key: 'checklists', icon: 'clipboard', title: 'Checklists', desc: 'Manage checklist definitions', href: '/admin/settings/checklists', countKey: 'checklists' },
-  { key: 'rfi-templates', icon: 'list', title: 'RFI Templates', desc: 'Manage RFI template definitions', href: '/admin/settings/rfi-templates', countKey: 'rfiTemplates' },
-  { key: 'recreation', icon: 'list', title: 'Audit Logs', desc: 'Audit trail, recreation history and event log', href: '/admin/settings/recreation' },
   { key: 'entity-types', icon: 'building', title: 'Entity Types', desc: 'Manage client entity type definitions', href: '/admin/settings/entity-types', countKey: 'entityTypes' },
-  { key: 'engagement-types', icon: 'document', title: 'Engagement Types', desc: 'Manage engagement type definitions', href: '/admin/settings/engagement-types', countKey: 'engagementTypes' },
-  { key: 'permissions', icon: 'lock', title: 'Permissions', desc: 'MWR permissions and access control', href: '/admin/settings/permissions' },
 ];
 
 export function renderSettingsHome(user, _config = {}, counts = {}) {
@@ -52,7 +38,6 @@ export function renderSettingsSystem(user, config = {}) {
   const t = config.thresholds || {};
   const sections = [
     { icon: 'database', title: 'System Information', items: [['Database Type', config.database?.type || 'SQLite'], ['Server Port', config.server?.port || 3004], ['Session TTL', (t.cache?.session_ttl_seconds || 3600) + 's'], ['Page Size (Default)', t.system?.default_page_size || 50], ['Page Size (Max)', t.system?.max_page_size || 500]] },
-    { icon: 'clipboard', title: 'RFI Configuration', items: [['Max Days Outstanding', (t.rfi?.max_days_outstanding || 90) + ' days'], ['Escalation Delay', (t.rfi?.escalation_delay_hours || 24) + ' hours'], ['Notification Days', (t.rfi?.notification_days || [7, 3, 1, 0]).join(', ')]] },
     { icon: 'mail', title: 'Email Configuration', items: [['Batch Size', t.email?.send_batch_size || 10], ['Max Retries', t.email?.send_max_retries || 3], ['Rate Limit Delay', (t.email?.rate_limit_delay_ms || 6000) + 'ms']] },
     { icon: 'gear', title: 'Workflow Configuration', items: [['Stage Transition Lockout', (t.workflow?.stage_transition_lockout_minutes || 5) + ' min'], ['Collaborator Default Expiry', (t.collaborator?.default_expiry_days || 7) + ' days'], ['Collaborator Max Expiry', (t.collaborator?.max_expiry_days || 30) + ' days']] },
   ];
